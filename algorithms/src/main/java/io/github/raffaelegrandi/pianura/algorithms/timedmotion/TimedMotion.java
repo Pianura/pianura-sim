@@ -46,4 +46,4 @@ public class TimedMotion extends RobotDummy {
 		sleepSim(st_val);
 	}//sleepTime	
 	
-}//end TestDummy
+}
