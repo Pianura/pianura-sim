@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Timeout;
 
 import io.github.raffaelegrandi.pianura.arena.ArenaObjectType;
 import io.github.raffaelegrandi.pianura.arena.Obstacle;
+import io.github.raffaelegrandi.pianura.examples.braitenberg.BraitenbergScenario;
 import io.github.raffaelegrandi.pianura.examples.obstacles.ObstaclesScenario;
 import io.github.raffaelegrandi.pianura.algorithms.iravoidance.IrAvoider;
 import io.github.raffaelegrandi.pianura.sim.SimClock;
@@ -84,4 +85,39 @@ class ExamplesTest {
         assertTrue(p.stream().anyMatch(s -> s.contains("white rectangle") && s.contains("red rectangle")
             && s.contains("overlap")), p.toString());
     }
+
+    @Test
+    @Timeout(60)
+    void braitenbergVehiclesMoveAndRarelyTouch() {
+        BraitenbergScenario sc = new BraitenbergScenario();
+        List<RobotDummy> robots = sc.getRobots();
+        SimClock clock = new SimClock(Const.physicsStep);
+        SimEngine engine = new SimEngine(clock,
+            new CollisionDetector(sc.getObstacles(), sc.getArenaWidthPx(), sc.getArenaHeightPx()), robots);
+        engine.setLogger(m -> {});
+        for (RobotDummy r : robots) r.attachClock(clock);
+        startRobots(robots);
+        int n = robots.size(), samples = 0;
+        int[] contact = new int[n];
+        double[] path = new double[n];
+        Position[] last = new Position[n];
+        for (int i = 0; i < n; i++) last[i] = robots.get(i).getPosition();
+        for (int k = 1; k <= 600; k++) {                 // 60 s, sampled every 0.1 s
+            engine.runUntil(k * 0.1);
+            samples++;
+            for (int i = 0; i < n; i++) {
+                RobotDummy r = robots.get(i);
+                if (r.hasCollision()) contact[i]++;
+                Position p = r.getPosition();
+                path[i] += Math.hypot(p.x - last[i].x, p.y - last[i].y);
+                last[i] = p;
+            }
+        }
+        engine.stop();
+        for (int i = 0; i < n; i++) {
+            assertTrue(path[i] > 40, "vehicle " + (i + 1) + " moved only " + path[i] + " cells");
+            assertTrue(contact[i] < samples * 0.05, "vehicle " + (i + 1) + " in contact " + contact[i] + "/" + samples);
+        }
+    }
+
 }
