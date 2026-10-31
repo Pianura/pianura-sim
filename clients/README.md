@@ -1,15 +1,16 @@
 # Driving Pianura robots from outside (UDP + JSON)
 
 Pianura robots can be driven by any program that speaks UDP and JSON. This folder contains
-a ready-made client:
+ready-made clients:
 
 | Client | Folder | Needs |
 |---|---|---|
 | Python | [`python/`](python) | Python 3.8 or later, standard library only |
+| MATLAB / GNU Octave | [`matlab/`](matlab) | MATLAB (no toolbox) or GNU Octave 7 or later with Java |
 
-The client folder has its own quick start. This page describes what is common to every
-client: the Pianura side, the two modes and the messages, for anyone who wants to write a
-client in another language (C, MATLAB, Julia, another JVM, ...).
+Each folder has its own quick start. This page describes what is common to all of them: the
+Pianura side, the two modes and the messages, for anyone who wants to write a client in
+another language (C, Julia, another JVM, ...).
 
 ## On the Pianura side
 

@@ -34,8 +34,8 @@ written in 2008 and used for years at the University of Bologna; see [Origins](#
   vehicle, radio beacons, line following, remote control
 - **Radio between robots**: range, losses and latency, plus a live connectivity window
   (graph, adjacency and incidence matrices)
-- **Remote control over UDP + JSON**, with a ready-made Python client; lockstep mode for
-  reproducible experiments, real-time mode for realistic timing
+- **Remote control over UDP + JSON**, with ready-made Python and MATLAB clients; lockstep
+  mode for reproducible experiments, real-time mode for realistic timing
 - **Arenas of any size**: zoom, pan and fly over large maps with a minimap
 - **Floors**: checkerboard, grid, random tiles, Voronoi tiles, a line-following track,
   or any image
@@ -186,9 +186,12 @@ public class Main {
 
 ## Remote control
 
-Robots can be driven by any program that speaks UDP and JSON: Python, C, MATLAB, another
-JVM. [`clients/python`](clients/python) contains a Python client (standard library only),
-an example and the description of the protocol.
+Robots can be driven by any program that speaks UDP and JSON. [`clients`](clients/README.md)
+describes the protocol and contains two ready-made clients:
+
+- [`clients/python`](clients/python): Python, standard library only;
+- [`clients/matlab`](clients/matlab): MATLAB with no toolbox (or GNU Octave), with a
+  go-to-goal example that plots its errors.
 
 ---
 
@@ -220,7 +223,7 @@ Pianura is a Gradle build with three modules:
 core/          the simulator: the library (jar name pianura), no dependencies beyond the JDK
 algorithms/    reference robot controllers, one package each        → algorithms/README.md
 examples/      example scenarios, run with ./gradlew run -Pexample=  → examples/README.md
-clients/python Python client for remote control over UDP
+clients/       Python and MATLAB clients for remote control over UDP
 docs/img/      screenshots
 ```
 

@@ -30,3 +30,7 @@ Thumbs.db
 # Python
 __pycache__/
 *.pyc
+
+# MATLAB / Octave
+*.asv
+octave-workspace

@@ -24,7 +24,7 @@ arrange the scene if you like, then press **Run** (or Space).
 | `obstacles` | Nine robots and mixed obstacles; some obstacles overlap or stick out of the arena on purpose, to show the scenario warnings | `IrAvoider` | JUSE, 2008–2011 (was `testRobots4`) |
 | `rooms` | An 80×50 arena with a stone floor, rooms and corridors: zoom, pan and the side panel | `IrAvoider` | added 2026 |
 | `linefollowing` | A track on the floor and a robot with two optical sensors under its nose. The controller is empty: writing it is the exercise | none (yours) | added 2026 |
-| `remote` | Two robots driven from outside over UDP, waiting for a client (see [`../clients/python`](../clients/python)) | remote | added 2026 |
+| `remote` | Two robots driven from outside over UDP, waiting for a client from Python or MATLAB (see [`../clients`](../clients/README.md)) | remote | added 2026 |
 | `radio` | Fourteen robots exchanging radio beacons, with the connectivity window | `BeaconWanderer` | added 2026 |
 | `largemap` | A 300×200 building generated from a seed, explored by 60 robots: fly over it with the minimap | `BeaconWanderer` | added 2026 |
 | `braitenberg` | Five Braitenberg vehicles with trails on | `BraitenbergVehicle` | added 2026 |
