@@ -20,7 +20,7 @@ arrange the scene if you like, then press **Run** (or Space).
 
 | Example | What it shows | Controller | Origin |
 |---|---|---|---|
-| `timedmotion` | Two robots in the original JUSE arena, moving open-loop | `TimedMotion` | JUSE, 2008–2011 (was `testRobots3`) |
+| `timedmotion` | Two robots in an open arena, moving open-loop | `TimedMotion` | JUSE, 2008–2011 (was `testRobots3`) |
 | `obstacles` | Nine robots and mixed obstacles; some obstacles overlap or stick out of the arena on purpose, to show the scenario warnings | `IrAvoider` | JUSE, 2008–2011 (was `testRobots4`) |
 | `rooms` | An 80×50 arena with a stone floor, rooms and corridors: zoom, pan and the side panel | `IrAvoider` | added 2026 |
 | `linefollowing` | A track on the floor and a robot with two optical sensors under its nose. The controller is empty: writing it is the exercise | none (yours) | added 2026 |
