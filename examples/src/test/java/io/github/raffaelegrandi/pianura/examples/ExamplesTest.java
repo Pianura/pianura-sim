@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Timeout;
 
 import io.github.raffaelegrandi.pianura.arena.ArenaObjectType;
 import io.github.raffaelegrandi.pianura.arena.Obstacle;
-import io.github.raffaelegrandi.pianura.examples.scenario04.ScenarioTest04;
+import io.github.raffaelegrandi.pianura.examples.obstacles.ObstaclesScenario;
 import io.github.raffaelegrandi.pianura.algorithms.iravoidance.IrAvoider;
 import io.github.raffaelegrandi.pianura.sim.SimClock;
 import io.github.raffaelegrandi.pianura.sim.SimEngine;
@@ -79,7 +79,7 @@ class ExamplesTest {
 
     @Test
     void scenarioTest04OverlapsAreFound() {
-        List<String> p = new CollisionDetector(new ScenarioTest04().getObstacles()).validateObstacles();
+        List<String> p = new CollisionDetector(new ObstaclesScenario().getObstacles()).validateObstacles();
         p.forEach(System.out::println);
         assertTrue(p.stream().anyMatch(s -> s.contains("white rectangle") && s.contains("red rectangle")
             && s.contains("overlap")), p.toString());

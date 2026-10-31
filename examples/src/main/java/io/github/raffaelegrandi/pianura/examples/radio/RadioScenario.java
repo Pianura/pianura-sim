@@ -1,4 +1,4 @@
-package io.github.raffaelegrandi.pianura.examples.scenario08;
+package io.github.raffaelegrandi.pianura.examples.radio;
 
 import java.awt.Color;
 
@@ -11,9 +11,9 @@ import io.github.raffaelegrandi.pianura.units.ControllerRobot;
 import io.github.raffaelegrandi.pianura.utils.Position;
 
 /** Fourteen robots exchanging beacons over a radio with a 9-cell range. */
-public class ScenarioTest08 extends ScenarioManager {
+public class RadioScenario extends ScenarioManager {
 
-	public ScenarioTest08(){
+	public RadioScenario(){
 		setArenaSize(60, 40);
 		setFloor(FloorStyle.grid(new Color(250, 250, 246), new Color(215, 220, 228), 1));
 		getCommSettings().setRange(9);

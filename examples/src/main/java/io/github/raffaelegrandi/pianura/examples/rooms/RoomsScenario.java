@@ -1,4 +1,4 @@
-package io.github.raffaelegrandi.pianura.examples.scenario05;
+package io.github.raffaelegrandi.pianura.examples.rooms;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -14,13 +14,13 @@ import io.github.raffaelegrandi.pianura.algorithms.iravoidance.IrAvoider;
  * Arena grande (80 x 50 celle) con pavimento in pietra, stanze e corridoi:
  * esempio per zoom, spostamento della vista e pannello laterale.
  */
-public class ScenarioTest05 extends ScenarioManager {
+public class RoomsScenario extends ScenarioManager {
 
 	private static final Color WALL = new Color(120, 110, 100);
 	private static final Color BOX = new Color(70, 110, 160);
 	private static final Color PILLAR = new Color(235, 235, 230);
 
-	public ScenarioTest05(){
+	public RoomsScenario(){
 		setArenaSize(80, 50);
 		setFloor(FloorStyle.voronoiTiles());
 		buildObstacles();

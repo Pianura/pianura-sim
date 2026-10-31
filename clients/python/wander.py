@@ -1,7 +1,7 @@
 """
 Example: robots that wander around and steer away from obstacles, driven from Python.
 
-    1. run the Pianura example scenario 07 (./gradlew run -Pexample=07): it starts paused
+    1. run the Pianura example remote (./gradlew run -Pexample=remote): it starts paused
     2. python3 wander.py 1 2          (one thread per robot id)
     3. press Run (or Space) in Pianura
 

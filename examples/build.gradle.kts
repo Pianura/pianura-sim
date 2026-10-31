@@ -8,10 +8,16 @@ dependencies {
     implementation(project(":algorithms"))
 }
 
-// ./gradlew run               -> example scenario 04, the default demo
-// ./gradlew run -Pexample=07  -> any other example scenario (03..09)
-val example = providers.gradleProperty("example").getOrElse("04").padStart(2, '0')
+// Every folder in the examples package is one example, started by its Main class:
+//   ./gradlew run                    -> obstacles, the default demo
+//   ./gradlew run -Pexample=radio    -> any other example (list in examples/README.md)
+val examplesDir = file("src/main/java/io/github/raffaelegrandi/pianura/examples")
+val available = examplesDir.listFiles { f -> f.isDirectory }.orEmpty().map { it.name }.sorted()
+val example = providers.gradleProperty("example").getOrElse("obstacles")
+require(example in available) {
+    "Unknown example '$example'. Available: ${available.joinToString(", ")}"
+}
 
 application {
-    mainClass.set("io.github.raffaelegrandi.pianura.examples.scenario$example.MainClassTest$example")
+    mainClass.set("io.github.raffaelegrandi.pianura.examples.$example.Main")
 }

@@ -6,7 +6,7 @@ library only) and an example (`wander.py`).
 
 ## Quick start
 
-1. Run the example scenario 07 from the project root: `./gradlew run -Pexample=07`. It opens
+1. Run the example `remote` from the project root: `./gradlew run -Pexample=remote`. It opens
    paused, with two remote robots waiting on UDP port 5555.
 2. Start the client: `python3 wander.py 1 2`
 3. Press **Run** (or Space) in Pianura.

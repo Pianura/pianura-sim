@@ -1,4 +1,4 @@
-package io.github.raffaelegrandi.pianura.examples.scenario03;
+package io.github.raffaelegrandi.pianura.examples.timedmotion;
 
 import io.github.raffaelegrandi.pianura.algorithms.timedmotion.TimedMotion;
 import java.awt.Color;
@@ -9,9 +9,9 @@ import io.github.raffaelegrandi.pianura.arena.Obstacle;
 import io.github.raffaelegrandi.pianura.structures.ScenarioManager;
 import io.github.raffaelegrandi.pianura.utils.Position;
 
-public class ScenarioTest03 extends ScenarioManager {
+public class TimedMotionScenario extends ScenarioManager {
 
-	public ScenarioTest03(){
+	public TimedMotionScenario(){
 		buildRobotsVector();
 		buildObstaclesVector();
 	}//ScenarioBuilder
@@ -41,4 +41,4 @@ public class ScenarioTest03 extends ScenarioManager {
 		
 	}//buildObstaclesVector
 	
-}//end ScenarioTest01
+}

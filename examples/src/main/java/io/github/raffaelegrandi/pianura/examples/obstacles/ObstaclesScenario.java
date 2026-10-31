@@ -1,4 +1,4 @@
-package io.github.raffaelegrandi.pianura.examples.scenario04;
+package io.github.raffaelegrandi.pianura.examples.obstacles;
 
 import io.github.raffaelegrandi.pianura.algorithms.iravoidance.IrAvoider;
 import java.awt.Color;
@@ -9,9 +9,9 @@ import io.github.raffaelegrandi.pianura.arena.Obstacle;
 import io.github.raffaelegrandi.pianura.structures.ScenarioManager;
 import io.github.raffaelegrandi.pianura.utils.Position;
 
-public class ScenarioTest04 extends ScenarioManager {
+public class ObstaclesScenario extends ScenarioManager {
 
-	public ScenarioTest04(){
+	public ObstaclesScenario(){
 		buildRobotsVector();
 		buildObstaclesVector();
 	}//ScenarioBuilder
@@ -54,4 +54,4 @@ public class ScenarioTest04 extends ScenarioManager {
 		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_OVAL,Color.WHITE,new Position(11.0,29.5,0),new Dimension(6,3)));
 	}//buildObstaclesVector
 
-}//end ScenarioTest04
+}//end ObstaclesScenario

@@ -1,4 +1,4 @@
-package io.github.raffaelegrandi.pianura.examples.scenario06;
+package io.github.raffaelegrandi.pianura.examples.linefollowing;
 
 import io.github.raffaelegrandi.pianura.gui.floor.FloorStyle;
 import io.github.raffaelegrandi.pianura.structures.ScenarioManager;
@@ -12,9 +12,9 @@ import io.github.raffaelegrandi.pianura.utils.Position;
  * la luminosità del pavimento: 0 = nero (linea), 255 = bianco. L'algoritmo è da scrivere:
  * il controllore qui sotto è volutamente vuoto e il robot resta fermo.
  */
-public class ScenarioTest06 extends ScenarioManager {
+public class LineFollowingScenario extends ScenarioManager {
 
-	public ScenarioTest06(){
+	public LineFollowingScenario(){
 		setArenaSize(40, 30);
 		setFloor(FloorStyle.track());
 

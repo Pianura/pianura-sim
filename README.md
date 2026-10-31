@@ -56,24 +56,24 @@ cd Pianura
 ./gradlew run
 ```
 
-This opens example scenario 04: nine robots avoiding rectangular and oval obstacles.
-Scenarios open paused: arrange the scene if you like, then press **Run** (or Space).
+This opens the example `obstacles`: nine robots avoiding rectangular and oval obstacles.
+Examples open paused: arrange the scene if you like, then press **Run** (or Space).
 
-To run another example, pass its number:
+To run another example, pass its name:
 
 ```bash
-./gradlew run -Pexample=09
+./gradlew run -Pexample=largemap
 ```
 
 | Example | What it shows |
 |---------|---------------|
-| 03 | Two robots in the original JUSE arena |
-| 04 | Nine robots and mixed obstacles (the default demo); some obstacles overlap on purpose, to show the scenario warnings |
-| 05 | A large 80×50 arena with rooms and corridors: zoom, pan and the side panel |
-| 06 | Line following: a track on the floor and a robot with two optical sensors, waiting for your controller |
-| 07 | Two robots driven from outside over UDP (see [`clients/python`](clients/python)) |
-| 08 | Fourteen robots exchanging radio beacons, with the connectivity window |
-| 09 | A 300×200 map to fly over, explored by a swarm of 60 robots |
+| `timedmotion` | Two robots in the original JUSE arena |
+| `obstacles` | Nine robots and mixed obstacles (the default demo); some obstacles overlap on purpose, to show the scenario warnings |
+| `rooms` | A large 80×50 arena with rooms and corridors: zoom, pan and the side panel |
+| `linefollowing` | Line following: a track on the floor and a robot with two optical sensors, waiting for your controller |
+| `remote` | Two robots driven from outside over UDP (see [`clients/python`](clients/python)) |
+| `radio` | Fourteen robots exchanging radio beacons, with the connectivity window |
+| `largemap` | A 300×200 map to fly over, explored by a swarm of 60 robots |
 
 ---
 

@@ -1,4 +1,4 @@
-package io.github.raffaelegrandi.pianura.examples.scenario09;
+package io.github.raffaelegrandi.pianura.examples.largemap;
 
 import java.awt.Color;
 import java.awt.geom.Rectangle2D;
@@ -19,11 +19,11 @@ import io.github.raffaelegrandi.pianura.algorithms.beaconwanderer.BeaconWanderer
  * inside, and a swarm of explorers exchanging radio beacons.
  *
  * Everything is generated from a seed, so the map is always the same. Change the size, the
- * number of robots or the seed to try larger maps (e.g. new ScenarioTest09(1000, 1000, 400, 1)).
+ * number of robots or the seed to try larger maps (e.g. new LargeMapScenario(1000, 1000, 400, 1)).
  */
-public class ScenarioTest09 extends ScenarioManager {
+public class LargeMapScenario extends ScenarioManager {
 
-	public ScenarioTest09() { this(300, 200, 60, 9); }
+	public LargeMapScenario() { this(300, 200, 60, 9); }
 
 	/**
 	 * @param widthCells  arena width in cells
@@ -31,7 +31,7 @@ public class ScenarioTest09 extends ScenarioManager {
 	 * @param robots      number of robots
 	 * @param seed        generator seed (same seed, same map)
 	 */
-	public ScenarioTest09(int widthCells, int heightCells, int robots, long seed) {
+	public LargeMapScenario(int widthCells, int heightCells, int robots, long seed) {
 		setArenaSize(widthCells, heightCells);
 		setFloor(FloorStyle.voronoiTiles(new Color(196, 186, 168), 3, seed));
 		getCommSettings().setRange(8);
