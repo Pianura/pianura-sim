@@ -12,7 +12,7 @@ import io.github.raffaelegrandi.pianura.gui.floor.FloorStyle;
 import io.github.raffaelegrandi.pianura.structures.ScenarioManager;
 import io.github.raffaelegrandi.pianura.units.ControllerRobot;
 import io.github.raffaelegrandi.pianura.utils.Position;
-import io.github.raffaelegrandi.pianura.examples.scenario08.BeaconWanderer;
+import io.github.raffaelegrandi.pianura.algorithms.beaconwanderer.BeaconWanderer;
 
 /**
  * A large map to fly over: a building of rooms and corridors, crates and columns scattered

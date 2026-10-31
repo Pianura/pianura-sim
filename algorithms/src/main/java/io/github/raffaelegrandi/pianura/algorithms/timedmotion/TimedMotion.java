@@ -1,11 +1,17 @@
-package io.github.raffaelegrandi.pianura.examples.scenario03;
+package io.github.raffaelegrandi.pianura.algorithms.timedmotion;
 
 import io.github.raffaelegrandi.pianura.units.RobotDummy;
 import io.github.raffaelegrandi.pianura.units.UnitObject;
 import io.github.raffaelegrandi.pianura.utils.Position;
 
 
-public class TestDummy03 extends RobotDummy {
+/**
+ * Open-loop motion: a fixed sequence of wheel speeds, each held for a fixed time, then the robot
+ * stops. No sensor is read.
+ *
+ * <p>From JUSE (2008-2011), where it was {@code TestDummy03}.
+ */
+public class TimedMotion extends RobotDummy {
 
 	/* 
 	 * Robot physical parameter
@@ -15,14 +21,14 @@ public class TestDummy03 extends RobotDummy {
 	double wlk_init, wrk_init;
 	boolean active = true;
 
-	public TestDummy03(int unitIDnum, Position unitPos, double sensRange) {
+	public TimedMotion(int unitIDnum, Position unitPos, double sensRange) {
 		super(unitIDnum, unitPos, sensRange);
 	}
 
 	@Override
 
 	public void executeLoop() {
-		System.out.println("TestDummy #"+this.getIDnum()+" started");
+		System.out.println("TimedMotion #"+this.getIDnum()+" started");
 		setMotorSpeed(1.5,1.5);		
 		sleepSimTime(2);
 		setMotorSpeed(1.5,6);

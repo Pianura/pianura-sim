@@ -1,4 +1,4 @@
-package io.github.raffaelegrandi.pianura.examples.scenario08;
+package io.github.raffaelegrandi.pianura.algorithms.beaconwanderer;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Timeout;
 import io.github.raffaelegrandi.pianura.arena.ArenaObjectType;
 import io.github.raffaelegrandi.pianura.arena.Obstacle;
 import io.github.raffaelegrandi.pianura.examples.scenario04.ScenarioTest04;
-import io.github.raffaelegrandi.pianura.examples.scenario04.TestDummy04;
+import io.github.raffaelegrandi.pianura.algorithms.iravoidance.IrAvoider;
 import io.github.raffaelegrandi.pianura.sim.SimClock;
 import io.github.raffaelegrandi.pianura.sim.SimEngine;
 import io.github.raffaelegrandi.pianura.units.RobotDummy;
@@ -50,11 +50,11 @@ class ExamplesTest {
 
     private static List<double[]> runSwarm(double seconds) {
         List<RobotDummy> robots = new ArrayList<>();
-        robots.add(new TestDummy04(1, new Position(7, 17, Math.toRadians(90)), 2));
-        robots.add(new TestDummy04(2, new Position(10, 20, 0), 2));
-        robots.add(new TestDummy04(3, new Position(17, 19, 0), 2));
-        robots.add(new TestDummy04(4, new Position(30, 18, 0), 2));
-        robots.add(new TestDummy04(5, new Position(21, 30, 0), 2));
+        robots.add(new IrAvoider(1, new Position(7, 17, Math.toRadians(90)), 2));
+        robots.add(new IrAvoider(2, new Position(10, 20, 0), 2));
+        robots.add(new IrAvoider(3, new Position(17, 19, 0), 2));
+        robots.add(new IrAvoider(4, new Position(30, 18, 0), 2));
+        robots.add(new IrAvoider(5, new Position(21, 30, 0), 2));
         SimEngine engine = setup(robots, someObstacles());
         startRobots(robots);
         engine.runUntil(seconds);

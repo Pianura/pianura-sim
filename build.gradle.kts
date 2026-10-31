@@ -1,4 +1,4 @@
-// Settings shared by all modules (core, examples).
+// Settings shared by all modules (core, algorithms, examples).
 subprojects {
     apply(plugin = "java")
 

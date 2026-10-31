@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     implementation(project(":core"))
+    implementation(project(":algorithms"))
 }
 
 // ./gradlew run               -> example scenario 04, the default demo

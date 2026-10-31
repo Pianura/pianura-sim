@@ -1,5 +1,6 @@
 package io.github.raffaelegrandi.pianura.examples.scenario04;
 
+import io.github.raffaelegrandi.pianura.algorithms.iravoidance.IrAvoider;
 import java.awt.Color;
 import java.awt.Dimension;
 
@@ -16,16 +17,16 @@ public class ScenarioTest04 extends ScenarioManager {
 	}//ScenarioBuilder
 
 	private void buildRobotsVector(){
-		addRobot(new TestDummy04(1,new Position(7,17,Math.toRadians(90)),2));
-		addRobot(new TestDummy04(2,new Position(10,20,0),2));
-		addRobot(new TestDummy04(3,new Position(11,12,0),2));
-		addRobot(new TestDummy04(4,new Position(5,15,0),2));
-		addRobot(new TestDummy04(5,new Position(17,19,0),2));
-		addRobot(new TestDummy04(6,new Position(21,30,0),2));
-		addRobot(new TestDummy04(7,new Position(30,18,0),2));
-		addRobot(new TestDummy04(8,new Position(31,12,0),2));
+		addRobot(new IrAvoider(1,new Position(7,17,Math.toRadians(90)),2));
+		addRobot(new IrAvoider(2,new Position(10,20,0),2));
+		addRobot(new IrAvoider(3,new Position(11,12,0),2));
+		addRobot(new IrAvoider(4,new Position(5,15,0),2));
+		addRobot(new IrAvoider(5,new Position(17,19,0),2));
+		addRobot(new IrAvoider(6,new Position(21,30,0),2));
+		addRobot(new IrAvoider(7,new Position(30,18,0),2));
+		addRobot(new IrAvoider(8,new Position(31,12,0),2));
 		// era (33,12): a contatto con il robot 8 (centri a 2 celle = somma dei raggi)
-		addRobot(new TestDummy04(9,new Position(34,12,0),2));
+		addRobot(new IrAvoider(9,new Position(34,12,0),2));
 	}//buildRobotsVector
 
 	private void buildObstaclesVector(){

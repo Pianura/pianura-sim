@@ -1,5 +1,6 @@
 package io.github.raffaelegrandi.pianura.examples.scenario03;
 
+import io.github.raffaelegrandi.pianura.algorithms.timedmotion.TimedMotion;
 import java.awt.Color;
 import java.awt.Dimension;
 
@@ -16,8 +17,8 @@ public class ScenarioTest03 extends ScenarioManager {
 	}//ScenarioBuilder
 	
 	private void buildRobotsVector(){		
-		addRobot(new TestDummy03(1,new Position(7,7,0),2));
-		addRobot(new TestDummy03(2,new Position(10,10,0),2));
+		addRobot(new TimedMotion(1,new Position(7,7,0),2));
+		addRobot(new TimedMotion(2,new Position(10,10,0),2));
 		/*	addRobot(new TestDummy02(3,new Position(11,12,0),2));		
 		addRobot(new TestDummy02(4,new Position(5,15,0),2));		
 		addRobot(new TestDummy02(5,new Position(17,19,0),2));		

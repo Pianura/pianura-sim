@@ -8,7 +8,7 @@ import io.github.raffaelegrandi.pianura.arena.Obstacle;
 import io.github.raffaelegrandi.pianura.gui.floor.FloorStyle;
 import io.github.raffaelegrandi.pianura.structures.ScenarioManager;
 import io.github.raffaelegrandi.pianura.utils.Position;
-import io.github.raffaelegrandi.pianura.examples.scenario04.TestDummy04;
+import io.github.raffaelegrandi.pianura.algorithms.iravoidance.IrAvoider;
 
 /**
  * Arena grande (80 x 50 celle) con pavimento in pietra, stanze e corridoi:
@@ -53,7 +53,7 @@ public class ScenarioTest05 extends ScenarioManager {
 			{ 34, 6, 0 }, { 36, 22, 120 }, { 46, 44, -90 }, { 48, 18, 200 },
 			{ 60, 6, 30 }, { 75, 6, 150 }, { 60, 32, 0 }, { 76, 32, 270 }, { 62, 46, 60 } };
 		for (int i = 0; i < p.length; i++) {
-			addRobot(new TestDummy04(i + 1, new Position(p[i][0], p[i][1], Math.toRadians(p[i][2])), 2));
+			addRobot(new IrAvoider(i + 1, new Position(p[i][0], p[i][1], Math.toRadians(p[i][2])), 2));
 		}
 	}
 

@@ -1,11 +1,17 @@
-package io.github.raffaelegrandi.pianura.examples.scenario04;
+package io.github.raffaelegrandi.pianura.algorithms.iravoidance;
 
 import io.github.raffaelegrandi.pianura.units.RobotDummy;
 import io.github.raffaelegrandi.pianura.units.UnitObject;
 import io.github.raffaelegrandi.pianura.utils.Const;
 import io.github.raffaelegrandi.pianura.utils.Position;
 
-public class TestDummy04 extends RobotDummy {
+/**
+ * Reactive obstacle avoidance on the infrared sensors: an obstacle on the front right makes the
+ * robot turn counter-clockwise, one on the front left clockwise, otherwise it goes straight.
+ *
+ * <p>From JUSE (2008-2011), where it was {@code TestDummy04}.
+ */
+public class IrAvoider extends RobotDummy {
 
 	UnitObject tempUObj = this.getUnitObject();
 	double wlk_init = 500;
@@ -14,13 +20,13 @@ public class TestDummy04 extends RobotDummy {
 	int lastRotDir = -1;
 	boolean avoiding = false;
 
-	public TestDummy04(int unitIDnum, Position unitPos, double sensRange) {
+	public IrAvoider(int unitIDnum, Position unitPos, double sensRange) {
 		super(unitIDnum, unitPos, sensRange);
 	}
 
 	@Override
 	public void executeLoop() {
-		System.out.println("TestDummy #"+this.getIDnum()+" started");
+		System.out.println("IrAvoider #"+this.getIDnum()+" started");
 		setMotorSpeed(wlk_init,wrk_init);
 		navigationManager();
 		setActive(false);

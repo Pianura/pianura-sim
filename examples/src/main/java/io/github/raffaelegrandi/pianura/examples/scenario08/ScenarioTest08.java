@@ -6,6 +6,7 @@ import io.github.raffaelegrandi.pianura.arena.ArenaObjectType;
 import io.github.raffaelegrandi.pianura.arena.Obstacle;
 import io.github.raffaelegrandi.pianura.gui.floor.FloorStyle;
 import io.github.raffaelegrandi.pianura.structures.ScenarioManager;
+import io.github.raffaelegrandi.pianura.algorithms.beaconwanderer.BeaconWanderer;
 import io.github.raffaelegrandi.pianura.units.ControllerRobot;
 import io.github.raffaelegrandi.pianura.utils.Position;
 
