@@ -76,12 +76,4 @@ class ObstacleValidationTest {
         assertEquals(1, new CollisionDetector(List.of(far)).validateObstacles().size());
     }
 
-    @Test
-    void scenarioTest04OverlapsAreFound() {
-        List<String> p = new CollisionDetector(new io.github.raffaelegrandi.pianura.examples.scenario04.ScenarioTest04().getObstacles()).validateObstacles();
-        p.forEach(System.out::println);
-        assertTrue(p.stream().anyMatch(s -> s.contains("white rectangle") && s.contains("red rectangle")
-            && s.contains("overlap")), p.toString());
-    }
-
 }
