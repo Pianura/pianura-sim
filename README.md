@@ -36,7 +36,8 @@ written in 2008 and used for years at the University of Bologna; see [Origins](#
   (graph, adjacency and incidence matrices)
 - **Remote control over UDP + JSON**, with ready-made Python and MATLAB clients; lockstep
   mode for reproducible experiments, real-time mode for realistic timing
-- **Arenas of any size**: zoom, pan and fly over large maps with a minimap
+- **Arenas of any size**: zoom, pan and fly over large maps; click or drag on the minimap to
+  move the view
 - **Floors**: checkerboard, grid, random tiles, Voronoi tiles, a line-following track,
   or any image
 - **Scene editing**: before starting, drag, resize and rotate obstacles and robots

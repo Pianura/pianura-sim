@@ -35,6 +35,20 @@ arrange the scene if you like, then press **Run** (or Space).
 | ![linefollowing](../docs/img/linefollowing.png) | ![radio](../docs/img/radio.png) |
 | `linefollowing` | `radio` |
 
+## Large maps and the minimap
+
+When the arena does not fit in the window, a **minimap** appears in the bottom-right corner of
+the view, inside the main window: the whole arena, a yellow dot for each robot and a white
+rectangle for the part you are looking at.
+
+- **Click** on the minimap to move the view there, or **drag** on it to slide the view across
+  the map; the zoom does not change.
+- On the arena itself: drag to pan, mouse wheel to zoom, W A S D to fly (Shift for faster),
+  Home to fit the whole arena, double click on a robot to follow it.
+- The minimap can be switched off in the side panel (*View → Minimap*).
+
+![largemap with the minimap in the bottom-right corner](../docs/img/largemap.png)
+
 ## Adding an example
 
 1. Create a package under `io.github.raffaelegrandi.pianura.examples`, named after what the
