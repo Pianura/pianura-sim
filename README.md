@@ -14,6 +14,8 @@ or ROS 2 integration, a heavier simulator such as Gazebo is a better fit.
 Pianura is the evolution of **JUSE** (Java UniBot Simulation Environment), a simulator
 written in 2008 and used for years at the University of Bologna; see [Origins](#origins).
 
+![Nine robots avoiding obstacles, with their trails](docs/img/obstacles.png)
+
 ---
 
 ## Features
@@ -28,11 +30,14 @@ written in 2008 and used for years at the University of Bologna; see [Origins](#
   are reproducible
 - **Two ways to program a robot**: a sequential control loop, or a controller called
   at a fixed period
+- **Reference algorithms and examples** to start from: obstacle avoidance, a Braitenberg
+  vehicle, radio beacons, line following, remote control
 - **Radio between robots**: range, losses and latency, plus a live connectivity window
   (graph, adjacency and incidence matrices)
-- **Remote control over UDP + JSON**, with a ready-made Python client; lockstep mode for
-  reproducible experiments, real-time mode for realistic timing
-- **Arenas of any size**: zoom, pan and fly over large maps with a minimap
+- **Remote control over UDP + JSON**, with ready-made Python and MATLAB clients; lockstep
+  mode for reproducible experiments, real-time mode for realistic timing
+- **Arenas of any size**: zoom, pan and fly over large maps; click or drag on the minimap to
+  move the view
 - **Floors**: checkerboard, grid, random tiles, Voronoi tiles, a line-following track,
   or any image
 - **Scene editing**: before starting, drag, resize and rotate obstacles and robots
@@ -56,24 +61,19 @@ cd Pianura
 ./gradlew run
 ```
 
-This opens example scenario 04: nine robots avoiding rectangular and oval obstacles.
-Scenarios open paused: arrange the scene if you like, then press **Run** (or Space).
+This opens the example `obstacles`: nine robots avoiding rectangular and oval obstacles.
+Examples open paused: arrange the scene if you like, then press **Run** (or Space).
 
-To run another example, pass its number:
+To run another example, pass its name:
 
 ```bash
-./gradlew run -Pexample=09
+./gradlew run -Pexample=braitenberg
 ```
 
-| Example | What it shows |
-|---------|---------------|
-| 03 | Two robots in the original JUSE arena |
-| 04 | Nine robots and mixed obstacles (the default demo); some obstacles overlap on purpose, to show the scenario warnings |
-| 05 | A large 80×50 arena with rooms and corridors: zoom, pan and the side panel |
-| 06 | Line following: a track on the floor and a robot with two optical sensors, waiting for your controller |
-| 07 | Two robots driven from outside over UDP (see [`clients/python`](clients/python)) |
-| 08 | Fourteen robots exchanging radio beacons, with the connectivity window |
-| 09 | A 300×200 map to fly over, explored by a swarm of 60 robots |
+The available examples are `timedmotion`, `obstacles`, `rooms`, `linefollowing`, `remote`,
+`radio`, `largemap` and `braitenberg`. [`examples/README.md`](examples/README.md) says what
+each one shows, with screenshots; the controllers they use are described in
+[`algorithms/README.md`](algorithms/README.md).
 
 ---
 
@@ -187,9 +187,12 @@ public class Main {
 
 ## Remote control
 
-Robots can be driven by any program that speaks UDP and JSON: Python, C, MATLAB, another
-JVM. [`clients/python`](clients/python) contains a Python client (standard library only),
-an example and the description of the protocol.
+Robots can be driven by any program that speaks UDP and JSON. [`clients`](clients/README.md)
+describes the protocol and contains two ready-made clients:
+
+- [`clients/python`](clients/python): Python, standard library only;
+- [`clients/matlab`](clients/matlab): MATLAB with no toolbox (or GNU Octave), with a
+  go-to-goal example that plots its errors.
 
 ---
 
@@ -215,8 +218,19 @@ The 18 IR and bump sensors are spaced 20° apart, starting from the robot's head
 
 ## Project structure
 
+Pianura is a Gradle build with three modules:
+
 ```
-src/main/java/io/github/raffaelegrandi/pianura/
+core/          the simulator: the library (jar name pianura), no dependencies beyond the JDK
+algorithms/    reference robot controllers, one package each        → algorithms/README.md
+examples/      example scenarios, run with ./gradlew run -Pexample=  → examples/README.md
+clients/       Python and MATLAB clients for remote control over UDP
+docs/img/      screenshots
+```
+
+Inside `core`, under `src/main/java/io/github/raffaelegrandi/pianura/`:
+
+```
 ├── Simulator.java     entry point: wires scenario, simulation engine and GUI
 ├── sim/               simulation engine and simulated clock
 ├── units/             robots and controllers
@@ -229,11 +243,10 @@ src/main/java/io/github/raffaelegrandi/pianura/
 ├── gui/               Swing user interface
 │   ├── view/          arena view, minimap, side panel, connectivity window
 │   └── floor/         floor styles
-├── utils/             constants, Position, log
-└── examples/          example scenarios 03–09
-src/test/java/         unit tests (JUnit 5)
-clients/python/        Python client for remote control
+└── utils/             constants, Position, log
 ```
+
+Unit tests (JUnit 5) are in each module's `src/test/java`; `./gradlew test` runs them all.
 
 ---
 
