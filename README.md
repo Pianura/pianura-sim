@@ -56,8 +56,8 @@ written in 2008 and used for years at the University of Bologna; see [Origins](#
 ## Quick start
 
 ```bash
-git clone https://github.com/raffaeleGrandi/Pianura.git
-cd Pianura
+git clone https://github.com/Pianura/pianura-sim.git
+cd pianura-sim
 ./gradlew run
 ```
 
