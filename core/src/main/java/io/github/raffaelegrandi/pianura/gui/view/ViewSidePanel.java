@@ -101,6 +101,8 @@ public class ViewSidePanel extends JPanel {
         livelli.add(layer("Robot trails", () -> options.trails, v -> options.trails = v));
         livelli.add(layer("Floor sensors", () -> options.floorSensors, v -> options.floorSensors = v));
         livelli.add(layer("Robot IDs", () -> options.ids, v -> options.ids = v));
+        livelli.add(layer("Robot drawings", () -> options.drawings, v -> options.drawings = v));
+        livelli.add(layer("Drawings: selected robot only", () -> options.drawingsSelectedOnly, v -> options.drawingsSelectedOnly = v));
         // distanza dell'etichetta dal centro, in raggi del robot (0 = sopra il robot)
         JLabel distLabel = new JLabel();
         distLabel.setAlignmentX(Component.LEFT_ALIGNMENT);

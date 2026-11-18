@@ -221,6 +221,53 @@ class RemoteServerTest {
 
     @Test
     @Timeout(20)
+    void clientDrawsDebugShapes() throws Exception {
+        Sim sim = new Sim(RemoteServer.Mode.LOCKSTEP, 1000);
+        try (Client c = new Client(sim.server.getPort())) {
+            c.send(Client.msg("type", "hello", "robot", 1));
+            c.receive();
+            sim.runAsync(0.3);
+            int n = 0;
+            while (true) {
+                Map<String, Object> s = c.receive();
+                if (!"sensors".equals(s.get("type"))) continue;
+                List<Object> draw = new ArrayList<>();
+                draw.add(Client.msg("op", "clear", "layer", "plan"));
+                draw.add(Client.msg("op", "polyline", "layer", "plan", "xs", List.of(1.0, 2.0, 3.0), "ys", List.of(1.0, 1.0, 2.0), "color", "#2060ff"));
+                draw.add(Client.msg("op", "text", "layer", "plan", "x", 3.0, "y", 2.0, "text", "goal", "color", List.of(255.0, 0.0, 0.0)));
+                draw.add(Client.msg("op", "point", "x", 5.0, "y", 5.0));      // default layer, grows at every step
+                c.send(Client.msg("type", "cmd", "robot", 1, "seq", s.get("seq"), "v", 1.0, "draw", draw));
+                n++;
+                if ((Double) s.get("t") >= 0.3 - 1e-9) break;
+            }
+            sim.finish();
+            var d = sim.robot.getDrawings();
+            assertEquals(List.of("plan", "default"), List.copyOf(d.keySet()));
+            assertEquals(2, d.get("plan").size(), "cleared at every step: only the last polyline and text");
+            assertEquals(new java.awt.Color(0x20, 0x60, 0xff), d.get("plan").get(0).color());
+            assertEquals("goal", d.get("plan").get(1).text());
+            assertEquals(java.awt.Color.RED, d.get("plan").get(1).color());
+            assertEquals(n, d.get("default").size(), "never cleared: one point per step");
+            assertEquals(10.3, sim.robot.getPosition().x, 1e-6, "drawing does not change the motion");
+        }
+    }
+
+    @Test
+    @Timeout(20)
+    void malformedDrawingsAreRejected() throws Exception {
+        Sim sim = new Sim(RemoteServer.Mode.LOCKSTEP, 1000);
+        try (Client c = new Client(sim.server.getPort())) {
+            c.send(Client.msg("type", "cmd", "robot", 1, "v", 1.0, "draw", List.of(Client.msg("op", "line", "x1", 1.0))));
+            assertTrue(((String) c.receive().get("message")).contains("draw[0]: \"y1\" must be a number"));
+            c.send(Client.msg("type", "cmd", "robot", 1, "draw", List.of(Client.msg("op", "spiral"))));
+            assertTrue(((String) c.receive().get("message")).contains("unknown op"));
+            c.send(Client.msg("type", "cmd", "robot", 1, "draw", List.of(Client.msg("op", "point", "x", 1.0, "y", 1.0, "color", "red"))));
+            assertTrue(((String) c.receive().get("message")).contains("\"color\""));
+        } finally { sim.engine.stop(); sim.server.close(); }
+    }
+
+    @Test
+    @Timeout(20)
     void closingTheServerTellsConnectedClients() throws Exception {
         Sim sim = new Sim(RemoteServer.Mode.LOCKSTEP, 1000);
         try (Client c = new Client(sim.server.getPort())) {

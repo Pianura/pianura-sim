@@ -28,6 +28,7 @@ public abstract class RobotUnit implements Runnable{
 	// strada percorsa da ciascuna ruota (celle, con segno): scritta dal motore, letta dalla vista
 	private volatile double leftWheelTravel = 0, rightWheelTravel = 0;
 	private volatile double metersPerCell = Const.DEFAULT_METERS_PER_CELL;
+	private volatile io.github.raffaelegrandi.pianura.viz.Viz viz;   // created on first use
 
 	public RobotUnit(int unitIDnum, Position unitPos, double sensRange, Color unitColor){
 		unitObj = new UnitObject(new ObjectID(ArenaObjectType.UNIT, unitColor, unitPos, Const.unitDim), sensRange);
@@ -155,6 +156,46 @@ public abstract class RobotUnit implements Runnable{
 	public double getRightWheelTravel(){ return rightWheelTravel; }
 
 	/***********************************************************************************************************/
+	/*  Debug drawings                                                                                         */
+	/***********************************************************************************************************/
+
+	/**
+	 * Debug drawing layer {@code name} of this robot, drawn over the arena (world coordinates in
+	 * cells). Shows what the algorithm thinks: a planned path, a tree, an estimated map...
+	 * <pre>
+	 *   viz("plan").clear().color(Color.BLUE).polyline(xs, ys).disc(goalX, goalY, 0.3);
+	 * </pre>
+	 * What is drawn appears at the next {@link #sleepSim(double)}. Call it from the robot's own code.
+	 */
+	public io.github.raffaelegrandi.pianura.viz.VizLayer viz(String name){ return drawings().layer(name); }
+
+	/** The default debug drawing layer ({@code viz("default")}). */
+	public io.github.raffaelegrandi.pianura.viz.VizLayer viz(){ return drawings().layer(io.github.raffaelegrandi.pianura.viz.Viz.DEFAULT_LAYER); }
+
+	/** All the debug drawings of this robot (layers, clearAll(), publish()). */
+	public io.github.raffaelegrandi.pianura.viz.Viz drawings(){
+		io.github.raffaelegrandi.pianura.viz.Viz v = viz;
+		if (v == null) {
+			synchronized (this) {
+				if (viz == null) viz = new io.github.raffaelegrandi.pianura.viz.Viz(m -> System.err.println("Robot #" + getIDnum() + ": " + m));
+				v = viz;
+			}
+		}
+		return v;
+	}
+
+	/** Published debug drawings (layer name to shapes), empty if the robot never drew. For the view; any thread. */
+	public java.util.Map<String, java.util.List<io.github.raffaelegrandi.pianura.viz.Shape>> getDrawings(){
+		io.github.raffaelegrandi.pianura.viz.Viz v = viz;
+		return v == null ? java.util.Map.of() : v.snapshot();
+	}
+
+	private void publishDrawings(){
+		io.github.raffaelegrandi.pianura.viz.Viz v = viz;
+		if (v != null) v.publish();
+	}
+
+	/***********************************************************************************************************/
 	/*  Tempo simulato                                                                                         */
 	/***********************************************************************************************************/
 
@@ -214,6 +255,7 @@ public abstract class RobotUnit implements Runnable{
 	 * e la simulazione è riproducibile.
 	 */
 	public void sleepSim(double seconds){
+		publishDrawings();   // what was drawn since the last sleep becomes visible all at once
 		if (clock == null) {   // fuori da una simulazione (es. test): tempo reale
 			try { Thread.sleep((long)(seconds * 1000)); }
 			catch (InterruptedException e) { Thread.currentThread().interrupt(); }
@@ -240,6 +282,7 @@ public abstract class RobotUnit implements Runnable{
 			System.err.println("Robot #" + getIDnum() + " terminated by an error: " + e);
 			e.printStackTrace();
 		} finally {
+			publishDrawings();
 			activeStatus = false;
 			if (clock != null) clock.deregister(this);
 		}

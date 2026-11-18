@@ -44,6 +44,7 @@ public final class RemoteController implements RobotController {
     private boolean idleApplied = false;
     private boolean stoppedSent = false;   // guarded by lock
     private final List<Outgoing> outgoing = new ArrayList<>();   // radio messages to send, guarded by lock
+    private final List<java.util.function.Consumer<io.github.raffaelegrandi.pianura.viz.Viz>> drawing = new ArrayList<>();   // debug drawings to apply, guarded by lock
 
     private volatile RobotUnit robot;   // known once the robot is created (geometry and scale for the welcome)
 
@@ -127,12 +128,19 @@ public final class RemoteController implements RobotController {
             }
         }
 
+        // debug drawings (protocol 3): "draw": [{"op": ..., ...}, ...]
+        List<java.util.function.Consumer<io.github.raffaelegrandi.pianura.viz.Viz>> draw = List.of();
+        if (msg.containsKey("draw")) {
+            try { draw = DrawOps.parse(msg.get("draw")); }
+            catch (IllegalArgumentException e) { return "cmd: " + e.getMessage(); }
+        }
+
         Command c = null;
         if (msg.containsKey("left") || msg.containsKey("right")) {
             double l = MiniJson.num(msg, "left", Double.NaN), r = MiniJson.num(msg, "right", Double.NaN);
             if (!Double.isFinite(l) || !Double.isFinite(r)) return "cmd: \"left\" and \"right\" must both be numbers";
             c = new Command(s, true, l, r);
-        } else if (msg.containsKey("v") || radio.isEmpty()) {
+        } else if (msg.containsKey("v") || (radio.isEmpty() && !msg.containsKey("draw"))) {
             double v = MiniJson.num(msg, "v", Double.NaN), w = MiniJson.num(msg, "w", 0);
             if (!Double.isFinite(v) || !Double.isFinite(w)) return "cmd: \"v\" (and optional \"w\") must be numbers, or use \"left\"/\"right\"";
             c = new Command(s, false, v, w);
@@ -144,6 +152,7 @@ public final class RemoteController implements RobotController {
             else if (last != null) last = new Command(s, last.wheels(), last.a(), last.b());   // messages only: keep moving as before
             else last = new Command(s, false, 0, 0);
             outgoing.addAll(radio);
+            drawing.addAll(draw);
             lagging = false;
             replied.signalAll();
         } finally { lock.unlock(); }
@@ -178,6 +187,7 @@ public final class RemoteController implements RobotController {
 
         Command cmd;
         List<Outgoing> radio;
+        List<java.util.function.Consumer<io.github.raffaelegrandi.pianura.viz.Viz>> draw;
         lock.lock();
         try {
             if (server.getMode() == RemoteServer.Mode.LOCKSTEP && !lagging) {
@@ -197,11 +207,17 @@ public final class RemoteController implements RobotController {
             cmd = last;
             radio = new ArrayList<>(outgoing);      // each message is sent once, now, from the robot thread
             outgoing.clear();
+            draw = new ArrayList<>(drawing);
+            drawing.clear();
         } finally { lock.unlock(); }
 
         if (cmd != null) {
             if (cmd.wheels()) robot.setWheelSpeeds(cmd.a(), cmd.b());
             else robot.setRobotSpeed(cmd.a(), cmd.b());
+        }
+        if (!draw.isEmpty()) {
+            io.github.raffaelegrandi.pianura.viz.Viz viz = robot.drawings();
+            for (var op : draw) op.accept(viz);
         }
         for (Outgoing o : radio) {
             try {

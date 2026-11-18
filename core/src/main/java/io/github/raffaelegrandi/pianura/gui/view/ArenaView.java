@@ -727,10 +727,13 @@ public class ArenaView extends JPanel {
         if (options.trails) paintTrails(g, rs, px);
         if (options.sensorRange) paintSensorRanges(g, rs, pos, px);
         if (options.sensorRays) paintRays(g, rs, pos, px);
+        List<RobotUnit> drawers = options.drawings ? drawingRobots(rs) : List.of();
+        for (RobotUnit r : drawers) paintDrawings(g, r, px);
         for (int i = 0; i < rs.size(); i++) paintRobot(g, rs.get(i), pos[i], px);
         if (options.floorSensors) paintFloorSensors(g, rs, px);
 
         g.setTransform(screen);
+        for (RobotUnit r : drawers) paintDrawingTexts(g, r);
         if (options.ids) paintLabels(g, rs, pos);
         if (editable()) paintEditHint(g);
         if (minimapVisible()) paintMinimap(g, rs, pos);
@@ -962,6 +965,71 @@ public class ArenaView extends JPanel {
                     g.setColor(none);
                     g.draw(new Line2D.Double(sx, sy, cx + max * Math.cos(a), cy + max * Math.sin(a)));
                 }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ debug drawings (robot.viz)
+
+    private List<RobotUnit> drawingRobots(List<RobotUnit> rs) {
+        if (!options.drawingsSelectedOnly) return rs;
+        RobotUnit s = selected;
+        return s == null ? List.of() : List.of(s);
+    }
+
+    private static final Font DRAWING_FONT = new Font(Font.SANS_SERIF, Font.PLAIN, 11);
+
+    /** Shapes of every layer of the robot, in world coordinates (text apart: see paintDrawingTexts). */
+    private void paintDrawings(Graphics2D g, RobotUnit r, double px) {
+        double k = Const.cellSize;
+        for (List<io.github.raffaelegrandi.pianura.viz.Shape> layer : r.getDrawings().values()) {
+            for (io.github.raffaelegrandi.pianura.viz.Shape s : layer) {
+                g.setColor(s.color());
+                g.setStroke(new BasicStroke((float) (s.width() * px), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                switch (s.kind()) {
+                    case POINT -> {
+                        double d = Math.max(2.5 * px, s.width() * 1.5 * px);
+                        g.fill(new Ellipse2D.Double(s.c(0) * k - d, s.c(1) * k - d, 2 * d, 2 * d));
+                    }
+                    case LINE -> g.draw(new Line2D.Double(s.c(0) * k, s.c(1) * k, s.c(2) * k, s.c(3) * k));
+                    case ARROW -> {
+                        Point2D a = new Point2D.Double(s.c(0) * k, s.c(1) * k), b = new Point2D.Double(s.c(2) * k, s.c(3) * k);
+                        double head = Math.max(7, 4 * s.width()) * px;
+                        double len = a.distance(b);
+                        if (len > head) {   // the line stops at the base of the head, so the tip stays sharp
+                            double f = (len - head * 0.8) / len;
+                            g.draw(new Line2D.Double(a.getX(), a.getY(), a.getX() + (b.getX() - a.getX()) * f, a.getY() + (b.getY() - a.getY()) * f));
+                        }
+                        paintArrowHead(g, a, b, 0, Math.min(head, len));
+                    }
+                    case CIRCLE -> g.draw(new Ellipse2D.Double((s.c(0) - s.c(2)) * k, (s.c(1) - s.c(2)) * k, 2 * s.c(2) * k, 2 * s.c(2) * k));
+                    case DISC -> g.fill(new Ellipse2D.Double((s.c(0) - s.c(2)) * k, (s.c(1) - s.c(2)) * k, 2 * s.c(2) * k, 2 * s.c(2) * k));
+                    case RECT -> g.fill(new Rectangle2D.Double(s.c(0) * k, s.c(1) * k, s.c(2) * k, s.c(3) * k));
+                    case POLYLINE, POLYGON -> {
+                        Path2D p = new Path2D.Double();
+                        p.moveTo(s.c(0) * k, s.c(1) * k);
+                        for (int i = 2; i + 1 < s.size(); i += 2) p.lineTo(s.c(i) * k, s.c(i + 1) * k);
+                        if (s.kind() == io.github.raffaelegrandi.pianura.viz.Shape.Kind.POLYGON) p.closePath();
+                        g.draw(p);
+                    }
+                    case TEXT -> {}   // in screen coordinates, after the robots
+                }
+            }
+        }
+    }
+
+    /** Text of the drawings, in screen coordinates: readable at any zoom, with a light halo. */
+    private void paintDrawingTexts(Graphics2D g, RobotUnit r) {
+        g.setFont(DRAWING_FONT);
+        for (List<io.github.raffaelegrandi.pianura.viz.Shape> layer : r.getDrawings().values()) {
+            for (io.github.raffaelegrandi.pianura.viz.Shape s : layer) {
+                if (s.kind() != io.github.raffaelegrandi.pianura.viz.Shape.Kind.TEXT) continue;
+                Point2D p = vt.toScreen(s.c(0) * Const.cellSize, s.c(1) * Const.cellSize);
+                float x = (float) p.getX(), y = (float) p.getY();
+                g.setColor(new Color(255, 255, 255, 170));
+                for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) if (dx != 0 || dy != 0) g.drawString(s.text(), x + dx, y + dy);
+                g.setColor(s.color());
+                g.drawString(s.text(), x, y);
             }
         }
     }

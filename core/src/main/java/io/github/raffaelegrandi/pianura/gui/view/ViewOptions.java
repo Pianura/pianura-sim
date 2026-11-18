@@ -25,6 +25,10 @@ public final class ViewOptions {
     public volatile boolean minimap = true;
     /** The view scrolls when the pointer rests near its border (like strategy games). */
     public volatile boolean edgeScroll = true;
+    /** Debug drawings made by the robots' code (robot.viz(...)). */
+    public volatile boolean drawings = true;
+    /** Only the drawings of the selected robot (useful with many robots). */
+    public volatile boolean drawingsSelectedOnly = false;
     /** Griglia delle celle sopra il pavimento. */
     public volatile boolean grid = false;
 }
