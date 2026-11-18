@@ -8,8 +8,13 @@ swarms. You write a robot in a few lines of plain Java, or drive it from any lan
 UDP, and watch it move in a 2D arena.
 
 It is meant for students, teachers and researchers who want something that starts with a
-single command and can be read and modified in an afternoon. If you need full 3D physics
-or ROS 2 integration, a heavier simulator such as Gazebo is a better fit.
+single command and can be read and modified in an afternoon, in Java, Python or MATLAB.
+
+Pianura is complementary to full robot simulators such as **Webots** and **Gazebo**, not a
+replacement: it trades 3D physics, cameras and detailed robot models for a flat world where
+an algorithm is quick to write, to watch and to repeat, even with dozens of robots. Learn and
+prototype here; when you need realistic physics, real sensor models or ROS 2, move to one of
+them.
 
 Pianura is the evolution of **JUSE** (Java UniBot Simulation Environment), a simulator
 written in 2008 and used for years at the University of Bologna; see [Origins](#origins).
@@ -263,6 +268,8 @@ algorithms/    reference robot controllers, one package each        → algorith
 examples/      example scenarios, run with ./gradlew run -Pexample=  → examples/README.md
 clients/       Python and MATLAB clients for remote control over UDP
 docs/img/      screenshots
+docs/brand/    logo and avatar of the Pianura organization
+CITATION.cff   how to cite Pianura (GitHub's "Cite this repository")
 ```
 
 Inside `core`, under `src/main/java/io/github/raffaelegrandi/pianura/`:
@@ -277,6 +284,7 @@ Inside `core`, under `src/main/java/io/github/raffaelegrandi/pianura/`:
 ├── structures/        ScenarioManager
 ├── comm/              radio network between robots
 ├── remote/            UDP + JSON remote control
+├── viz/               debug drawings of the robots (named layers)
 ├── gui/               Swing user interface
 │   ├── view/          arena view, minimap, side panel, connectivity window
 │   └── floor/         floor styles
@@ -315,8 +323,12 @@ If you use Pianura in academic work, please cite the paper that describes the or
 JUSE and the UniBot project:
 
 > R. Grandi, R. Falconi, C. Melchiorri, *"UniBot Remote Laboratory: A Scalable Web-Based
-> Set-up for Education and Experimental Activities in Robotics"*, IFAC World Congress 2011,
-> Milan, Italy. DOI: [10.3182/20110828-6-IT-1002.03103](https://doi.org/10.3182/20110828-6-IT-1002.03103)
+> Set-up for Education and Experimental Activities in Robotics"*, Proceedings of the 18th IFAC
+> World Congress, Milan, Italy, 2011, pp. 8521–8526.
+> DOI: [10.3182/20110828-6-IT-1002.03103](https://doi.org/10.3182/20110828-6-IT-1002.03103)
+
+The same data are in [`CITATION.cff`](CITATION.cff), which GitHub turns into the
+**Cite this repository** button (APA and BibTeX).
 
 ---
 

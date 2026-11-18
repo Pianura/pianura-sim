@@ -1,0 +1,46 @@
+cff-version: 1.2.0
+message: >-
+  If you use Pianura in academic work, please cite the paper that describes
+  the original JUSE and the UniBot project (preferred citation below).
+type: software
+title: "Pianura: a 2D simulator for differential-drive robots"
+abstract: >-
+  A 2D simulator for teaching and research on mobile robots and swarms:
+  differential-drive kinematics, infrared, bump and floor sensors computed
+  by ray casting, radio between robots, a simulated clock, debug drawings,
+  and remote control over UDP from Python and MATLAB. Evolved from JUSE
+  (Java UniBot Simulation Environment, University of Bologna, 2008-2011).
+authors:
+  - family-names: Grandi
+    given-names: Raffaele
+repository-code: "https://github.com/Pianura/pianura-sim"
+license: MIT
+keywords:
+  - robotics
+  - mobile robots
+  - simulation
+  - swarm robotics
+  - education
+preferred-citation:
+  type: conference-paper
+  title: >-
+    UniBot Remote Laboratory: A Scalable Web-Based Set-up for Education
+    and Experimental Activities in Robotics
+  authors:
+    - family-names: Grandi
+      given-names: Raffaele
+    - family-names: Falconi
+      given-names: Riccardo
+    - family-names: Melchiorri
+      given-names: Claudio
+  collection-title: Proceedings of the 18th IFAC World Congress
+  conference:
+    name: 18th IFAC World Congress
+    city: Milan
+    country: IT
+  publisher:
+    name: IFAC
+  start: 8521
+  end: 8526
+  year: 2011
+  doi: 10.3182/20110828-6-IT-1002.03103
