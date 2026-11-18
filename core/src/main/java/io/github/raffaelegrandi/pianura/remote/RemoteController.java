@@ -234,17 +234,19 @@ public final class RemoteController implements RobotController {
 
     /** Sends "stopped" to the client (once): robot disabled, simulation stopped or server closing. */
     void notifyStopped() {
-        SocketAddress to;
+        // Sent while holding the lock: when the robot's thread (onStop) and RemoteServer.close()
+        // race, close() waits here until the message is out, and only then closes the socket.
+        // Otherwise the robot's thread could mark it as sent and lose it on the closed socket.
         lock.lock();
         try {
-            to = client;
+            SocketAddress to = client;
             if (stoppedSent || to == null) return;
             stoppedSent = true;
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("type", "stopped");
+            m.put("robot", robotId);
+            server.send(to, m);
         } finally { lock.unlock(); }
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("type", "stopped");
-        m.put("robot", robotId);
-        server.send(to, m);
     }
 
     private Map<String, Object> sensors(RobotUnit r, double t, long s) {
