@@ -23,7 +23,11 @@ import io.github.raffaelegrandi.pianura.utils.Position;
  * l'intersezione più vicina con:
  *   - gli ostacoli statici dello scenario e i bordi dell'arena (forme costruite una volta);
  *   - i corpi degli altri robot (cerchi ricostruiti a ogni passo da SimEngine).
- * Il valore del sensore è la distanza in pixel dalla superficie del robot.
+ * Il valore di un sensore IR è la distanza in celle dalla superficie del robot al primo
+ * oggetto colpito; se nel campo non c'è nulla vale la portata del sensore (saturazione,
+ * come un sensore reale). I bump valgono 1 se c'è contatto, 0 altrimenti.
+ * Internamente il detector lavora in pixel di mondo (celle x Const.cellSize); verso
+ * l'esterno pubblica solo celle.
  *
  * Il detector è privo di stato mutabile condiviso: può essere invocato
  * per robot diversi senza sincronizzazione.
@@ -186,8 +190,8 @@ public class CollisionDetector {
         SensorArray irSensors   = testUnit.getIrSensors();
         int n = Const.sensorCount;
 
-        int[] bumpVal = new int[n];
-        int[] irVal   = new int[n];
+        double[] bumpVal = new double[n];
+        double[] irVal   = new double[n];
         java.util.Arrays.fill(bumpVal, bumpSensors.getInitValue());
         java.util.Arrays.fill(irVal,   irSensors.getInitValue());
         Point2D[] bumpPts = new Point2D[n];
@@ -221,18 +225,17 @@ public class CollisionDetector {
             double d = findNearestHit(candidates, cx, cy, dx, dy, maxRayDist);
             if (d < 0) continue;  // niente nel campo: restano i valori di riposo
 
-            int surfaceDist = (int) Math.max(0, d - robotRadiusPx);
+            double surfacePx = Math.max(0, d - robotRadiusPx);
             Point2D hit = new Point2D.Double((cx + d * dx) / cellSizePx, (cy + d * dy) / cellSizePx);
 
-            irVal[i] = surfaceDist;
+            irVal[i] = Math.min(surfacePx / cellSizePx, testUnit.getSensorRange());
             irPts[i] = hit;
 
-            if (surfaceDist < bumpRangePx) {
-                // >= 1: il valore 0 coincide con "a riposo" per i bump
-                bumpVal[i] = Math.max(1, surfaceDist);
+            if (surfacePx < bumpRangePx) {
+                bumpVal[i] = 1;
                 bumpPts[i] = hit;
                 if (Const.debugEnabled)
-                    System.out.println("CD>unit #" + testUnit.getIDnum() + " bump #" + i + " dist:" + surfaceDist + "px");
+                    System.out.println("CD>unit #" + testUnit.getIDnum() + " bump #" + i + " dist:" + surfacePx + "px");
             }
         }
 

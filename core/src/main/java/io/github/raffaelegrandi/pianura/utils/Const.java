@@ -42,6 +42,9 @@ public class Const {
 	public static final int sensorsCheckingRange0 = 3; // in pixels
 	public static final double sensorsCheckingRangeMin = 0.5; // in cells
 
+	/** Default scale of a scenario: one cell is 5 cm, so the robot (2 cells across) is 10 cm wide. */
+	public static final double DEFAULT_METERS_PER_CELL = 0.05;
+
 	public static boolean debugEnabled = false;
 	/** Passo della fisica in secondi di tempo simulato (100 Hz). */
 	public static final double physicsStep = 0.01;

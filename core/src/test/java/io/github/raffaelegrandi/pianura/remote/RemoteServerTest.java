@@ -95,9 +95,17 @@ class RemoteServerTest {
             c.send(Client.msg("type", "hello", "robot", 1));
             Map<String, Object> w = c.receive();
             assertEquals("welcome", w.get("type"));
-            assertEquals(2.0, w.get("protocol"));
+            assertEquals(3.0, w.get("protocol"));
             assertEquals("lockstep", w.get("mode"));
             assertEquals(0.1, w.get("period"));
+            Map<?, ?> units = (Map<?, ?>) w.get("units");
+            assertEquals("cell", units.get("length"));
+            assertEquals(0.05, units.get("meters_per_cell"));
+            Map<?, ?> body = (Map<?, ?>) w.get("body");
+            assertEquals(1.0, body.get("radius"));
+            assertEquals(2.0, body.get("wheel_base"));
+            assertEquals(18.0, body.get("ir_count"));
+            assertEquals(sim.robot.getIrRange(), body.get("ir_range"));
         } finally { sim.engine.stop(); sim.server.close(); }
     }
 
@@ -115,7 +123,10 @@ class RemoteServerTest {
                 Map<String, Object> s = c.receive();
                 if (!"sensors".equals(s.get("type"))) continue;
                 times.add((Double) s.get("t"));
-                assertEquals(18, ((List<?>) s.get("ir")).size());
+                List<?> ir = (List<?>) s.get("ir");
+                assertEquals(18, ir.size());
+                for (Object v : ir) assertTrue((Double) v >= 0 && (Double) v <= sim.robot.getIrRange(), "IR in celle: " + ir);
+                for (Object b : (List<?>) s.get("bump")) assertInstanceOf(Boolean.class, b);
                 assertEquals(2, ((List<?>) s.get("floor")).size());
                 c.send(Client.msg("type", "cmd", "robot", 1, "seq", s.get("seq"), "v", 1.0, "w", 0.0));
                 if ((Double) s.get("t") >= 2.0 - 1e-9) break;
@@ -129,7 +140,7 @@ class RemoteServerTest {
 
     @Test
     @Timeout(20)
-    void wheelCommandsUseMotorUnits() throws Exception {
+    void wheelCommandsAreInCellsPerSecond() throws Exception {
         Sim sim = new Sim(RemoteServer.Mode.LOCKSTEP, 1000);
         try (Client c = new Client(sim.server.getPort())) {
             c.send(Client.msg("type", "hello", "robot", 1));
@@ -138,12 +149,12 @@ class RemoteServerTest {
             while (true) {
                 Map<String, Object> s = c.receive();
                 if (!"sensors".equals(s.get("type"))) continue;
-                c.send(Client.msg("type", "cmd", "robot", 1, "seq", s.get("seq"), "left", 400.0, "right", 400.0));
+                c.send(Client.msg("type", "cmd", "robot", 1, "seq", s.get("seq"), "left", 1.0, "right", 1.0));
                 if ((Double) s.get("t") >= 1.0 - 1e-9) break;
             }
             sim.finish();
         }
-        // setMotorSpeed(400, 400): v = 0.25 * 4 = 1 cella/s
+        // ruote a 1 cella/s: il robot va dritto a 1 cella/s
         assertEquals(11.0, sim.robot.getPosition().x, 1e-6);
     }
 

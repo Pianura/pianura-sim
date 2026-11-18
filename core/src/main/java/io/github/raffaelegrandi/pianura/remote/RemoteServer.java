@@ -20,13 +20,14 @@ import io.github.raffaelegrandi.pianura.utils.Position;
  * UDP server that lets programs outside Pianura (Python, C, another JVM, ...) drive robots.
  *
  * One server, one UDP socket, any number of robots: every message carries the robot id.
- * Messages are JSON objects, one per datagram (see {@code clients/python/README.md}):
+ * Messages are JSON objects, one per datagram (see {@code clients/README.md}).
+ * Units: lengths in cells (the welcome says how many meters a cell is), time in s, angles in rad:
  * <pre>
  *   client → Pianura   {"type":"hello","robot":1}
- *   Pianura → client   {"type":"welcome","protocol":2,"robot":1,"mode":"lockstep","period":0.1,...}
+ *   Pianura → client   {"type":"welcome","protocol":3,"robot":1,"mode":"lockstep","period":0.1,"units":{...},"body":{...}}
  *   Pianura → client   {"type":"sensors","robot":1,"seq":7,"t":0.7,"pose":{...},"ir":[...],"bump":[...],"floor":[...],
  *                    ...,"inbox":[{"from":2,"to":"all","t":0.6,"data":{...}}]}
- *   client → Pianura   {"type":"cmd","robot":1,"seq":7,"v":1.0,"w":0.3}      (or "left"/"right" wheel speeds)
+ *   client → Pianura   {"type":"cmd","robot":1,"seq":7,"v":1.0,"w":0.3}      (or "left"/"right" wheel speeds, cells/s)
  *                   optional radio messages: "broadcast": data, "send": [{"to":3,"data":...}]
  *   client → Pianura   {"type":"bye","robot":1}
  * </pre>
@@ -58,8 +59,12 @@ public final class RemoteServer implements AutoCloseable {
 
     public enum Mode { REALTIME, LOCKSTEP }
 
-    /** 2 = protocol 1 + radio messages ("inbox" in sensors, "broadcast"/"send" in cmd). */
-    public static final int PROTOCOL_VERSION = 2;
+    /**
+     * 3 = units in cells everywhere: "ir" in cells from the body ("ir_range" when nothing is in range),
+     * "bump" as booleans, wheel commands in cells/s; the welcome carries "meters_per_cell" and the
+     * robot's geometry ("body"). Version 2 added radio messages, version 1 was the first one.
+     */
+    public static final int PROTOCOL_VERSION = 3;
     public static final int DEFAULT_PORT = 5555;
     public static final long DEFAULT_REPLY_TIMEOUT_MS = 1000;
 
@@ -108,7 +113,9 @@ public final class RemoteServer implements AutoCloseable {
     public ControllerRobot createRobot(int id, Position pos, double sensorRange, double controlPeriod) {
         RemoteController c = controller(id);
         c.setPeriod(controlPeriod);
-        return new ControllerRobot(id, pos, sensorRange, controlPeriod, c);
+        ControllerRobot robot = new ControllerRobot(id, pos, sensorRange, controlPeriod, c);
+        c.setRobot(robot);
+        return robot;
     }
 
     /** Tells every connected client that the simulation is over, then closes the socket. */

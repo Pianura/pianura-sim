@@ -990,7 +990,7 @@ public class ArenaView extends JPanel {
     private void paintFloorSensors(Graphics2D g, List<RobotUnit> rs, double px) {
         for (RobotUnit r : rs) {
             io.github.raffaelegrandi.pianura.units.sensors.FloorSensorArray fs = r.getUnitObject().getFloorSensors();
-            double d = Math.max(fs.getLayout().footprintPx(), 1.0);   // pallino = area sensibile reale
+            double d = Math.max(fs.getLayout().footprintCells() * Const.cellSize, 1.0);   // pallino = area sensibile reale
             for (int k = 0; k < fs.count(); k++) {
                 Point2D p = fs.getPosition(k);
                 if (p == null) continue;

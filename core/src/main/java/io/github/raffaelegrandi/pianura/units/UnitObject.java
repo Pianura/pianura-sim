@@ -18,14 +18,14 @@ public class UnitObject extends ArenaObjectABS {
 	private Position oldPos;
 
 	double wheelRadius = 0.25; // cells
-	double wheelsDistance = 2; // cells
+	double wheelsDistance = 2; // cells: distance between the wheels (= robot diameter)
 
 	public UnitObject(ObjectID unitIDref, double sensRange){
 		super(unitIDref);
-		bumpSensors = new SensorArray();
-		irSensors = new SensorArray(255);
-		collHand = new CollisionHandler(bumpSensors);
 		sensorRange = sensRange < Const.sensorsCheckingRangeMin ? Const.sensorsCheckingRangeMin : sensRange;
+		bumpSensors = new SensorArray();
+		irSensors = new SensorArray(sensorRange);   // a riposo = portata: nulla nel campo
+		collHand = new CollisionHandler(bumpSensors);
 		oldPos = this.getExactPos();
 	}
 
@@ -37,6 +37,7 @@ public class UnitObject extends ArenaObjectABS {
 
 	public SensorArray getIrSensors(){ return irSensors; }
 
+	/** Portata dei sensori IR in celle, misurata dalla superficie del robot. */
 	public double getSensorRange(){ return sensorRange; }
 
 	/** Sensori ottici rivolti verso il pavimento. */

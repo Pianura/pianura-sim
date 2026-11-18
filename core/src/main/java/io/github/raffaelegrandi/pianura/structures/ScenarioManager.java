@@ -17,6 +17,7 @@ public class ScenarioManager {
 	private final io.github.raffaelegrandi.pianura.comm.CommSettings commSettings = new io.github.raffaelegrandi.pianura.comm.CommSettings();
 	private double arenaWidthCells = Const.gridCellCount;
 	private double arenaHeightCells = Const.gridCellCount;
+	private double metersPerCell = Const.DEFAULT_METERS_PER_CELL;
 
 	public ScenarioManager(){
 		robots = new ArrayList<>();
@@ -47,6 +48,18 @@ public class ScenarioManager {
 		arenaWidthCells = widthCells;
 		arenaHeightCells = heightCells;
 	}
+
+	/**
+	 * Scale of the scenario: how many meters one cell stands for (default 0.05, so the robot,
+	 * 2 cells across, is 10 cm wide). Pianura keeps working in cells; the scale is shown in the
+	 * window and sent to remote clients, which may convert to meters (e.g. a ROS bridge).
+	 */
+	public void setMetersPerCell(double m){
+		if (!(m > 0)) throw new IllegalArgumentException("metersPerCell must be > 0");
+		metersPerCell = m;
+	}
+
+	public double getMetersPerCell(){ return metersPerCell; }
 
 	public double getArenaWidth(){ return arenaWidthCells; }
 

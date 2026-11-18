@@ -10,12 +10,12 @@ import java.util.Arrays;
  * Ogni sensore sta a una distanza dal centro pari a {@code radiusFraction} del raggio
  * del robot e a un angolo rispetto alla direzione di marcia (gradi, positivo = verso
  * destra, cioè in senso orario sullo schermo). Legge il colore medio del pavimento
- * in un'area circolare di raggio {@code footprintPx} (pixel di mondo): con un'area
+ * in un'area circolare di raggio {@code footprintCells} (celle): con un'area
  * più grande il passaggio sul bordo di una linea è più graduale, come per un sensore
  * a riflessione reale.
  *
  * Predefinito: due sensori a 97% del raggio, a −20° (sinistra, indice 0) e +20° (destra, indice 1),
- * distanti tra loro circa 2/3 di cella; impronta di raggio 1.5 px.
+ * distanti tra loro circa 2/3 di cella; impronta di raggio 0.1 celle (5 mm con la scala predefinita).
  *
  * Thread-safety: come {@code SensorArray}, le letture sono pubblicate in blocco
  * (snapshot immutabile) dal motore e lette dal thread del robot.
@@ -24,13 +24,13 @@ public class FloorSensorArray {
 
     public static final double DEFAULT_RADIUS_FRACTION = 0.97;
     public static final double[] DEFAULT_ANGLES_DEG = { -20, 20 };
-    public static final double DEFAULT_FOOTPRINT_PX = 1.5;
+    public static final double DEFAULT_FOOTPRINT_CELLS = 0.1;
 
     /** Configurazione: posizioni e area sensibile. */
-    public record Layout(double radiusFraction, double footprintPx, double[] anglesDeg) {
+    public record Layout(double radiusFraction, double footprintCells, double[] anglesDeg) {
         public Layout {
             if (radiusFraction < 0) throw new IllegalArgumentException("radiusFraction must be >= 0");
-            if (footprintPx < 0) throw new IllegalArgumentException("footprintPx must be >= 0");
+            if (footprintCells < 0) throw new IllegalArgumentException("footprintCells must be >= 0");
             anglesDeg = anglesDeg.clone();
         }
         public int count() { return anglesDeg.length; }
@@ -43,7 +43,7 @@ public class FloorSensorArray {
     private volatile Reading reading;
 
     public FloorSensorArray() {
-        this(new Layout(DEFAULT_RADIUS_FRACTION, DEFAULT_FOOTPRINT_PX, DEFAULT_ANGLES_DEG));
+        this(new Layout(DEFAULT_RADIUS_FRACTION, DEFAULT_FOOTPRINT_CELLS, DEFAULT_ANGLES_DEG));
     }
 
     public FloorSensorArray(Layout layout) {

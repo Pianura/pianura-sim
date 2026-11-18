@@ -21,14 +21,14 @@ public class CollisionHandler {
 	}
 
 	private boolean checkFWDgroup(){
-		int collisionSum = 0;
+		double collisionSum = 0;
 		for(int j=0; j<3; j++){collisionSum += unitSensors.getSensorValue(j);}
 		for(int j=16; j<Const.sensorCount; j++){collisionSum += unitSensors.getSensorValue(j);}
 		return collisionSum != 0;
 	}
 
 	private boolean checkBWDgroup(){
-		int collisionSum = 0;
+		double collisionSum = 0;
 		for(int j=7; j<12; j++){collisionSum += unitSensors.getSensorValue(j);}
 		return collisionSum != 0;
 	}

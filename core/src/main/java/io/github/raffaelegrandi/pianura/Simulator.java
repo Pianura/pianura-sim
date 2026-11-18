@@ -46,6 +46,7 @@ public class Simulator {
 		engine = new SimEngine(clock, collDetect, scenarioMngRef.getRobots());
 		engine.setFloor(scenarioMngRef.getFloor());   // letto dai sensori ottici e mostrato dalla vista
 		engine.setCommSettings(scenarioMngRef.getCommSettings());
+		engine.setMetersPerCell(scenarioMngRef.getMetersPerCell());
 		scenarioMngRef.setUnitsManagerSet(true);
 
 		JFrame.setDefaultLookAndFeelDecorated(true);

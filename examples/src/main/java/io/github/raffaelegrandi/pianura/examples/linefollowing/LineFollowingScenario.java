@@ -23,8 +23,8 @@ public class LineFollowingScenario extends ScenarioManager {
 			int left  = robot.getFloorGray(0);   // 0 = nero, 255 = bianco
 			int right = robot.getFloorGray(1);
 			// TODO: algoritmo di line-following, es. un controllo proporzionale sull'errore (left - right)
-			//       robot.setMotorSpeed(sinistra, destra);
-			robot.setMotorSpeed(0, 0);
+			//       robot.setWheelSpeeds(sinistra, destra);   // celle/s, es. 1.0 ± k * (left - right)
+			robot.setWheelSpeeds(0, 0);
 		}));
 	}
 

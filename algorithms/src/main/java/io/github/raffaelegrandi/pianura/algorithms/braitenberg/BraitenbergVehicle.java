@@ -18,8 +18,8 @@ import io.github.raffaelegrandi.pianura.utils.Const;
  * an obstacle head-on would have no reason to turn either way. After a contact the vehicle turns
  * on the spot, away from the side it was steering to.
  *
- * <p>Infrared readings are the distance in pixels from the robot's surface to the nearest hit,
- * 255 when nothing is within the sensing range; sensors are numbered clockwise from the heading,
+ * <p>Infrared readings are the distance in cells from the robot's surface to the nearest hit,
+ * equal to the sensing range when nothing is within it; sensors are numbered clockwise from the heading,
  * 20 degrees apart. Give the robot a sensing range of about 4 cells, so it has time to react.
  *
  * <p>Added in 2026. First written for the historical edition of JUSE (as a {@code RobotDummy}
@@ -64,8 +64,8 @@ public class BraitenbergVehicle implements RobotController {
 			robot.setRobotSpeed(0, lastSteer >= 0 ? -ESCAPE_SPEED : ESCAPE_SPEED);
 			return;
 		}
-		double range = robot.getUnitObject().getSensorRange() * Const.cellSize;   // pixels
-		int[] ir = robot.getAllSens();
+		double range = robot.getIrRange();              // cells
+		double[] ir = robot.getIr();
 		double steer = 0, brake = 0;
 		for (int i = 0; i < ir.length; i++) {
 			double activation = ir[i] < range ? (range - ir[i]) / range : 0;   // 0 far .. 1 touching

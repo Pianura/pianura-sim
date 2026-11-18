@@ -22,7 +22,7 @@ import io.github.raffaelegrandi.pianura.utils.Position;
  */
 public final class RemoteController implements RobotController {
 
-    /** A command: either body speeds (v, w) or wheel speeds (left, right, same units as setMotorSpeed). */
+    /** A command: either body speeds (v cells/s, w rad/s) or wheel speeds (left, right, cells/s). */
     private record Command(long seq, boolean wheels, double a, double b) {}
 
     /** A radio message asked by the client: to = Message.BROADCAST or a robot id. */
@@ -45,12 +45,16 @@ public final class RemoteController implements RobotController {
     private boolean stoppedSent = false;   // guarded by lock
     private final List<Outgoing> outgoing = new ArrayList<>();   // radio messages to send, guarded by lock
 
+    private volatile RobotUnit robot;   // known once the robot is created (geometry and scale for the welcome)
+
     RemoteController(RemoteServer server, int robotId) {
         this.server = server;
         this.robotId = robotId;
     }
 
     void setPeriod(double p) { period = p; }
+
+    void setRobot(RobotUnit r) { robot = r; }
 
     public int getRobotId() { return robotId; }
 
@@ -74,11 +78,23 @@ public final class RemoteController implements RobotController {
         w.put("robot", robotId);
         w.put("mode", server.getMode().name().toLowerCase());
         if (!Double.isNaN(period)) w.put("period", period);
+        RobotUnit r = robot;
         Map<String, Object> units = new LinkedHashMap<>();
         units.put("length", "cell");
+        units.put("meters_per_cell", r != null ? r.getMetersPerCell() : io.github.raffaelegrandi.pianura.utils.Const.DEFAULT_METERS_PER_CELL);
         units.put("time", "s");
         units.put("angle", "rad");
         w.put("units", units);
+        if (r != null) {                    // protocol 3: the robot's geometry, in cells
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("radius", r.getBodyRadius());
+            body.put("wheel_base", r.getWheelBase());
+            body.put("wheel_radius", r.getWheelRadius());
+            body.put("ir_count", r.getIrCount());
+            body.put("ir_range", r.getIrRange());
+            body.put("floor_count", r.getFloorSensorCount());
+            w.put("body", body);
+        }
         server.send(from, w);
         server.log("Remote client for robot #" + robotId + " connected from " + from);
     }
@@ -143,6 +159,7 @@ public final class RemoteController implements RobotController {
 
     @Override
     public void control(RobotUnit robot, double simTime) {
+        this.robot = robot;
         SocketAddress to;
         long mySeq;
         lock.lock();
@@ -183,7 +200,7 @@ public final class RemoteController implements RobotController {
         } finally { lock.unlock(); }
 
         if (cmd != null) {
-            if (cmd.wheels()) robot.setMotorSpeed(cmd.a(), cmd.b());
+            if (cmd.wheels()) robot.setWheelSpeeds(cmd.a(), cmd.b());
             else robot.setRobotSpeed(cmd.a(), cmd.b());
         }
         for (Outgoing o : radio) {
@@ -226,8 +243,13 @@ public final class RemoteController implements RobotController {
         pose.put("y", p.y);
         pose.put("theta", p.theta);
         m.put("pose", pose);
-        m.put("ir", r.getAllSens());
-        m.put("bump", r.getUnitObject().getBumpSensors().getSensors());
+        double[] ir = r.getIr();
+        for (int i = 0; i < ir.length; i++) ir[i] = Math.round(ir[i] * 1000) / 1000.0;   // 1/1000 of a cell is plenty
+        m.put("ir", ir);
+        double[] bumpValues = r.getUnitObject().getBumpSensors().getSensors();
+        List<Boolean> bump = new ArrayList<>(bumpValues.length);
+        for (double b : bumpValues) bump.add(b != 0);
+        m.put("bump", bump);
         m.put("contact", r.hasCollision());
         m.put("floor", r.getFloorGrays());
         Map<String, Object> wheels = new LinkedHashMap<>();

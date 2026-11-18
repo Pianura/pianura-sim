@@ -99,7 +99,7 @@ class SensorArrayTest {
     void getSensorsReturnsSameArray() {
         SensorArray sa = new SensorArray();
         sa.setSensorValue(2, 7);
-        int[] arr = sa.getSensors();
+        double[] arr = sa.getSensors();
         assertEquals(7, arr[2]);
         assertEquals(sa.length(), arr.length);
     }

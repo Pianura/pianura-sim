@@ -27,6 +27,7 @@ public abstract class RobotUnit implements Runnable{
 	private volatile boolean collisionStatus = false;
 	// strada percorsa da ciascuna ruota (celle, con segno): scritta dal motore, letta dalla vista
 	private volatile double leftWheelTravel = 0, rightWheelTravel = 0;
+	private volatile double metersPerCell = Const.DEFAULT_METERS_PER_CELL;
 
 	public RobotUnit(int unitIDnum, Position unitPos, double sensRange, Color unitColor){
 		unitObj = new UnitObject(new ObjectID(ArenaObjectType.UNIT, unitColor, unitPos, Const.unitDim), sensRange);
@@ -57,9 +58,39 @@ public abstract class RobotUnit implements Runnable{
 
 	/***********************************************************************************************************/
 
-	public int[] getAllSens(){ return unitObj.getIrSensors().getSensors();}
+	/*  Units: lengths in cells, time in seconds, angles in radians. One cell is
+	 *  getMetersPerCell() meters (scenario setting, default 0.05 m: a robot 10 cm across). */
 
-	public int getOneSen(int index){ return unitObj.getIrSensors().getSensorValue(index);}
+	/**
+	 * The 18 infrared sensors: distance in cells from the robot's surface to the nearest object,
+	 * {@link #getIrRange()} when nothing is in range. Index 0 points straight ahead, then
+	 * clockwise on screen every 20 degrees.
+	 */
+	public double[] getIr(){ return unitObj.getIrSensors().getSensors(); }
+
+	/** Infrared sensor {@code index}, in cells (see {@link #getIr()}). */
+	public double getIr(int index){ return unitObj.getIrSensors().getSensorValue(index); }
+
+	/** Range of the infrared sensors in cells, measured from the robot's surface. */
+	public double getIrRange(){ return unitObj.getSensorRange(); }
+
+	/** Number of infrared sensors (18). */
+	public int getIrCount(){ return unitObj.getIrSensors().length(); }
+
+	/** Radius of the robot's body, cells (1). */
+	public double getBodyRadius(){ return (double) Const.unitRadius / Const.cellSize; }
+
+	/** Distance between the two wheels, cells (2: the wheels sit on the rim of the body). */
+	public double getWheelBase(){ return unitObj.wheelsDistance; }
+
+	/** Radius of the wheels, cells: converts wheel speeds (cells/s) into wheel turn rates (rad/s). */
+	public double getWheelRadius(){ return unitObj.wheelRadius; }
+
+	/** Scale of the scenario: meters per cell (default 0.05). Lengths in the API stay in cells. */
+	public double getMetersPerCell(){ return metersPerCell; }
+
+	/** Set by the simulation from the scenario (ScenarioManager.setMetersPerCell). Not meant for robot code. */
+	public void attachScale(double metersPerCell){ this.metersPerCell = metersPerCell; }
 
 	/***********************************************************************************************************/
 	/*  Sensori ottici di pavimento (line-following)                                                           */
@@ -79,22 +110,27 @@ public abstract class RobotUnit implements Runnable{
 
 	/**
 	 * Configura i sensori ottici: distanza dal centro come frazione del raggio del robot,
-	 * raggio dell'area sensibile in pixel di mondo, angoli in gradi rispetto alla direzione
-	 * di marcia (negativo = sinistra, positivo = destra). Esempio: {@code configureFloorSensors(0.97, 2, -20, 20)}.
+	 * raggio dell'area sensibile in celle, angoli in gradi rispetto alla direzione
+	 * di marcia (negativo = sinistra, positivo = destra). Esempio: {@code configureFloorSensors(0.97, 0.1, -20, 20)}.
 	 */
-	public void configureFloorSensors(double radiusFraction, double footprintPx, double... anglesDeg){
-		unitObj.getFloorSensors().setLayout(new io.github.raffaelegrandi.pianura.units.sensors.FloorSensorArray.Layout(radiusFraction, footprintPx, anglesDeg));
+	public void configureFloorSensors(double radiusFraction, double footprintCells, double... anglesDeg){
+		unitObj.getFloorSensors().setLayout(new io.github.raffaelegrandi.pianura.units.sensors.FloorSensorArray.Layout(radiusFraction, footprintCells, anglesDeg));
 	}
 
 	/**********************************************************************************************************/
 
-	public void setMotorSpeed(double wlk, double wrk){
-		double lftSpeed = wlk/100;
-		double rgtSpeed = wrk/100;
-		vK = eq_Vk(lftSpeed, rgtSpeed);
-		wK = eq_Wk(lftSpeed, rgtSpeed);
+	/**
+	 * Wheel speeds in cells/s (speed of each wheel on the ground; negative = backwards).
+	 * Equal speeds go straight; left faster than right turns clockwise on screen (to the right).
+	 * Equivalent to {@code setRobotSpeed((left + right) / 2, (left - right) / getWheelBase())}.
+	 */
+	public void setWheelSpeeds(double left, double right){
+		double L = unitObj.wheelsDistance;
+		vK = (left + right) / 2;
+		wK = (left - right) / L;
 	}
 
+	/** Body speeds: linear in cells/s, angular in rad/s (positive = clockwise on screen). */
 	public void setRobotSpeed(double linSpeed, double angSpeed){
 		vK = linSpeed;
 		wK = angSpeed;
@@ -228,9 +264,11 @@ public abstract class RobotUnit implements Runnable{
 		collisionStatus = false;
 	}
 
-	public void forward(double speed){ this.setMotorSpeed(Math.abs(speed), Math.abs(speed)); }
+	/** Straight ahead at {@code speed} cells/s. */
+	public void forward(double speed){ setRobotSpeed(Math.abs(speed), 0); }
 
-	public void backward(double speed){ this.setMotorSpeed(-Math.abs(speed), -Math.abs(speed)); }
+	/** Straight back at {@code speed} cells/s. */
+	public void backward(double speed){ setRobotSpeed(-Math.abs(speed), 0); }
 
 	/***********************************************************************************************************/
 
@@ -262,7 +300,7 @@ public abstract class RobotUnit implements Runnable{
 		boolean blocked = false;
 		SensorArray bump = unitObj.getBumpSensors();
 		if (!bump.isEmpty()) {
-			int[] contacts = bump.getSensors();
+			double[] contacts = bump.getSensors();
 			// Due passate: con più contatti (es. angolo tra due pareti) una sola
 			// proiezione può reintrodurre una componente verso il primo contatto.
 			for (int pass = 0; pass < 2; pass++) {
@@ -290,7 +328,7 @@ public abstract class RobotUnit implements Runnable{
 
 	public void stopUnit(){
 		System.out.println("Executing stopUnit");
-		setMotorSpeed(0,0);
+		setRobotSpeed(0, 0);
 	}
 
 	/** Muove il robot ignorando i contatti. */
@@ -316,19 +354,6 @@ public abstract class RobotUnit implements Runnable{
 		int dir = this.getDirection();
 		if(Const.debugEnabled)System.out.println("Direction of unit #"+getIDnum()+" = "+dir);
 		return unitObj.detectCollisions(dir);
-	}
-
-	/************************************************************************************************/
-
-	private double eq_Vk(double wlk, double wrk){
-		double res = unitObj.wheelRadius*(wlk+wrk)/2;
-		return res;
-	}
-
-	private double eq_Wk(double wlk, double wrk){
-		double res = (unitObj.wheelRadius*(wlk-wrk)/unitObj.wheelsDistance);
-		if (res == 0) res=0.00000000001;
-		return res;
 	}
 
 	/************************************************************************************************/

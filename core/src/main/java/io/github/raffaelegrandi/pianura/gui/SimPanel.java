@@ -68,7 +68,7 @@ public class SimPanel extends JPanel implements ActionListener{
 
 		if (engine != null) arena.setNetwork(engine.getNetwork(), engine.getClock());
 		sidePanel = new ViewSidePanel(arena, options, scenario.getFloor(), this::changeFloor,
-			ViewSidePanel.arenaInfo(scenario.getArenaWidth(), scenario.getArenaHeight(),
+			ViewSidePanel.arenaInfo(scenario.getArenaWidth(), scenario.getArenaHeight(), scenario.getMetersPerCell(),
 				scenario.getNumObstacles(), scenario.getNumRobots()),
 			engine != null ? engine.getNetwork() : null, this::openConnectivityWindow);
 		this.robots = scenario.getRobots();

@@ -77,7 +77,7 @@ class FloorSensorTest {
     void footprintGivesGradualSignalOnTheEdge() {
         // sensore singolo esattamente sul bordo della linea (x = 308): metà nero, metà bianco
         RobotDummy r = robot(300, 300, 0);
-        r.configureFloorSensors(8.0 / 15, 3, 0);             // 8 px davanti al centro, verso destra (θ = 0)
+        r.configureFloorSensors(8.0 / 15, 0.2, 0);           // 8 px davanti al centro, verso destra (θ = 0); impronta 0.2 celle = 3 px
         sense(r, LINE);
         int g = r.getFloorGray(0);
         assertTrue(g > 90 && g < 165, "valore sul bordo dovrebbe essere intermedio: " + g);
@@ -91,7 +91,7 @@ class FloorSensorTest {
     @Test
     void layoutIsConfigurable() {
         RobotDummy r = robot(300, 300, 0);
-        r.configureFloorSensors(0.5, 1, -90, 0, 90);
+        r.configureFloorSensors(0.5, 0.1, -90, 0, 90);
         sense(r, FloorStyle.plain(Color.WHITE));
         assertEquals(3, r.getFloorSensorCount());
         Point2D left = r.getUnitObject().getFloorSensors().getPosition(0);

@@ -17,14 +17,14 @@ import io.github.raffaelegrandi.pianura.utils.Const;
  */
 public class SensorArray {
 
-	private record Snapshot(int[] values, Point2D[] points, int activeCount) {}
+	private record Snapshot(double[] values, Point2D[] points, int activeCount) {}
 
 	private final int arrayLength = Const.sensorCount;
 	private final double[] sensorAngleArray;
-	private final int initSensValue;
+	private final double initSensValue;
 	private volatile Snapshot snapshot;
 
-	public SensorArray(int initVal){
+	public SensorArray(double initVal){
 		initSensValue = initVal;
 		sensorAngleArray = new double[arrayLength];
 		double sensorStepAngle = 360.0 / arrayLength; // 20 gradi
@@ -38,24 +38,24 @@ public class SensorArray {
 
 	/***********************************************************************************************/
 
-	/** Valore "a riposo" del sensore (0 per i bump, 255 per gli IR). */
-	public int getInitValue(){ return initSensValue; }
+	/** Valore "a riposo" del sensore: 0 per i bump, la portata (celle) per gli IR. */
+	public double getInitValue(){ return initSensValue; }
 
 	/**
 	 * Pubblica atomicamente un nuovo set di letture.
 	 * Gli array vengono copiati: il chiamante può riusarli.
 	 * Un sensore è considerato attivo se il suo valore differisce dal valore di riposo.
 	 */
-	public void publish(int[] values, Point2D[] points){
-		int[] v = Arrays.copyOf(values, arrayLength);
+	public void publish(double[] values, Point2D[] points){
+		double[] v = Arrays.copyOf(values, arrayLength);
 		Point2D[] p = Arrays.copyOf(points, arrayLength);
 		int count = 0;
-		for (int x : v) if (x != initSensValue) count++;
+		for (double x : v) if (x != initSensValue) count++;
 		snapshot = new Snapshot(v, p, count);
 	}
 
 	public void resetSensors(){
-		int[] v = new int[arrayLength];
+		double[] v = new double[arrayLength];
 		Arrays.fill(v, initSensValue);
 		snapshot = new Snapshot(v, new Point2D[arrayLength], 0);
 	}
@@ -63,9 +63,9 @@ public class SensorArray {
 	/* Modifiche puntuali (copy-on-write sullo snapshot). Il simulatore usa publish();
 	 * questi metodi restano per test e per codice esistente. */
 
-	public synchronized void setSensorValue(int sensNum, int sensValue){
+	public synchronized void setSensorValue(int sensNum, double sensValue){
 		Snapshot s = snapshot;
-		int[] v = s.values().clone();
+		double[] v = s.values().clone();
 		v[sensNum] = sensValue;
 		publish(v, s.points());
 	}
@@ -81,10 +81,10 @@ public class SensorArray {
 
 	/***********************************************************************************************/
 
-	public int getSensorValue(int sensNum){ return snapshot.values()[sensNum]; }
+	public double getSensorValue(int sensNum){ return snapshot.values()[sensNum]; }
 
 	/** Restituisce una copia delle letture correnti. */
-	public int[] getSensors(){ return snapshot.values().clone(); }
+	public double[] getSensors(){ return snapshot.values().clone(); }
 
 	public double getSensorAngle(int sensNum){ return sensorAngleArray[sensNum]; }
 

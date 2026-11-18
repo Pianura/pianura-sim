@@ -98,6 +98,17 @@ public final class SimEngine {
 
     public SimClock getClock() { return clock; }
 
+    private volatile double metersPerCell = io.github.raffaelegrandi.pianura.utils.Const.DEFAULT_METERS_PER_CELL;
+
+    /** Scale of the scenario (meters per cell), passed on to the robots. Lengths in the simulation stay in cells. */
+    public void setMetersPerCell(double m) {
+        if (!(m > 0)) throw new IllegalArgumentException("metersPerCell must be > 0");
+        metersPerCell = m;
+        for (RobotUnit r : robots) r.attachScale(m);
+    }
+
+    public double getMetersPerCell() { return metersPerCell; }
+
     public void setLogger(Consumer<String> logger) { this.logger = logger; }
 
     // ------------------------------------------------------------------
@@ -316,7 +327,7 @@ public final class SimEngine {
         for (int i = 0; i < l.count(); i++) {
             double a = p.theta + l.angleRad(i);
             double x = p.x * cell + d * Math.cos(a), y = p.y * cell + d * Math.sin(a);
-            rgb[i] = fm.sampleRGB(x, y, l.footprintPx());
+            rgb[i] = fm.sampleRGB(x, y, l.footprintCells() * cell);
             at[i] = new java.awt.geom.Point2D.Double(x / cell, y / cell);
         }
         fs.publish(rgb, at);

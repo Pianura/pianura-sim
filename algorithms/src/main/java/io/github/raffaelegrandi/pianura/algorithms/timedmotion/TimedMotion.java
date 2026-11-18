@@ -6,10 +6,12 @@ import io.github.raffaelegrandi.pianura.utils.Position;
 
 
 /**
- * Open-loop motion: a fixed sequence of wheel speeds, each held for a fixed time, then the robot
- * stops. No sensor is read.
+ * Open-loop motion: a fixed sequence of wheel speeds (cells/s), each held for a fixed time, then
+ * the robot stops. No sensor is read.
  *
- * <p>From JUSE (2008-2011), where it was {@code TestDummy03}.
+ * <p>From JUSE (2008-2011), where it was {@code TestDummy03}. The sequence keeps the original
+ * ratios between the wheels (1.5:1.5, 1.5:6, 2:6, 2:2); in the old motor units those speeds were
+ * so low that the robot barely moved, so they are now half a cell per second per unit.
  */
 public class TimedMotion extends RobotDummy {
 
@@ -29,13 +31,13 @@ public class TimedMotion extends RobotDummy {
 
 	public void executeLoop() {
 		System.out.println("TimedMotion #"+this.getIDnum()+" started");
-		setMotorSpeed(1.5,1.5);		
+		setWheelSpeeds(0.75, 0.75);   // straight on
 		sleepSimTime(2);
-		setMotorSpeed(1.5,6);
+		setWheelSpeeds(0.75, 3);      // right wheel faster: curve to the left
 		sleepSimTime(2);
-		setMotorSpeed(2,6);
+		setWheelSpeeds(1, 3);
 		sleepSimTime(1);
-		setMotorSpeed(2,2);
+		setWheelSpeeds(1, 1);
 		sleepSimTime(4);
 		setActive(false);		
 		System.out.println("EndLoop - Disable Unit");

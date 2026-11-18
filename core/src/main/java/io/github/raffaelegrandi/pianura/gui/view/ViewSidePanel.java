@@ -201,8 +201,9 @@ public class ViewSidePanel extends JPanel {
         }
         UnitObject u = r.getUnitObject();
         Position p = r.getPosition();
-        int[] ir = u.getIrSensors().getSensors();
-        int minIr = Integer.MAX_VALUE, minIdx = -1;
+        double[] ir = r.getIr();
+        double minIr = Double.MAX_VALUE;
+        int minIdx = -1;
         for (int i = 0; i < ir.length; i++) if (ir[i] < minIr) { minIr = ir[i]; minIdx = i; }
         boolean contact = !u.getBumpSensors().isEmpty();
         double deg = Math.toDegrees(p.theta) % 360;
@@ -213,7 +214,7 @@ public class ViewSidePanel extends JPanel {
         robotInfo.setText(String.format(Locale.ROOT, "<html>Robot #%d — %s<br>x  = %7.2f cells<br>y  = %7.2f cells<br>θ  = %6.1f°<br>"
                 + "IR min = %s<br>contact: %s<br>floor: %s</html>",
             r.getIDnum(), r.isActive() ? "active" : "stopped", p.x, p.y, deg,
-            minIr >= u.getIrSensors().getInitValue() ? "—" : (minIr + " px (s" + minIdx + ")"),
+            minIr >= r.getIrRange() ? "—" : String.format(Locale.ROOT, "%.2f cells, %s (s%d)", minIr, meters(minIr * r.getMetersPerCell()), minIdx),
             contact ? "<font color='#c00000'>yes</font>" : "no", fl));
     }
 
@@ -293,10 +294,20 @@ public class ViewSidePanel extends JPanel {
         return l;
     }
 
-    /** Testo informativo sull'arena per il pannello. */
-    public static String arenaInfo(double wCells, double hCells, int obstacles, int robots) {
-        return String.format(Locale.ROOT, "<html>%s × %s cells (%d × %d px)<br>%d obstacles · %d robots</html>",
-            fmt(wCells), fmt(hCells), Math.round(wCells * Const.cellSize), Math.round(hCells * Const.cellSize), obstacles, robots);
+    /** Testo informativo sull'arena per il pannello, con la scala dello scenario. */
+    public static String arenaInfo(double wCells, double hCells, double metersPerCell, int obstacles, int robots) {
+        return String.format(Locale.ROOT, "<html>%s × %s cells (%s × %s)<br>1 cell = %s<br>%d obstacles · %d robots</html>",
+            fmt(wCells), fmt(hCells), meters(wCells * metersPerCell), meters(hCells * metersPerCell),
+            meters(metersPerCell), obstacles, robots);
+    }
+
+    /** A length in meters, written in cm below one meter (e.g. "5 cm", "2.4 m"). */
+    static String meters(double m) {
+        if (m < 1) {
+            double cm = m * 100;
+            return (cm == Math.rint(cm) ? String.valueOf((long) cm) : String.format(Locale.ROOT, "%.1f", cm)) + " cm";
+        }
+        return (m == Math.rint(m) ? String.valueOf((long) m) : String.format(Locale.ROOT, "%.2f", m)) + " m";
     }
 
     private static String fmt(double v) { return v == Math.rint(v) ? String.valueOf((long) v) : String.format(Locale.ROOT, "%.1f", v); }

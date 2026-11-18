@@ -9,7 +9,7 @@ package io.github.raffaelegrandi.pianura.units;
  *
  * <pre>
  *   addRobot(new ControllerRobot(1, new Position(5, 5, 0), 2, 0.1,
- *       (robot, t) -&gt; robot.forward(500)));
+ *       (robot, t) -&gt; robot.forward(1.0)));   // 1 cell/s straight ahead
  * </pre>
  *
  * Lo stesso contratto vale per i controllori remoti (es. un programma esterno

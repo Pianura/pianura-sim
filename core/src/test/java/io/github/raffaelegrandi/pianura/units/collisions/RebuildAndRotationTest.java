@@ -30,15 +30,15 @@ class RebuildAndRotationTest {
         RobotDummy r = new RobotDummy(1, new Position(10, 10, 0), 5) { @Override public void executeLoop() {} };
         CollisionDetector cd = new CollisionDetector(List.of(o));
         cd.testUnitForCollisions(r.getUnitObject());
-        assertEquals(255, r.getUnitObject().getIrSensors().getSensorValue(0), "ostacolo fuori portata");
+        assertEquals(5.0, r.getIr(0), "ostacolo fuori portata: il sensore vale la portata (5 celle)");
 
         o.getID().setPos(new Position(14, 10, 0));    // spostato davanti al robot
         cd.testUnitForCollisions(r.getUnitObject());
-        assertEquals(255, r.getUnitObject().getIrSensors().getSensorValue(0), "senza rebuild le forme sono le vecchie");
+        assertEquals(5.0, r.getIr(0), "senza rebuild le forme sono le vecchie");
         cd.rebuild();
         cd.testUnitForCollisions(r.getUnitObject());
-        // centro robot x=150px, faccia dell'ostacolo x=195px, raggio robot 15px → 30px
-        assertEquals(30, r.getUnitObject().getIrSensors().getSensorValue(0));
+        // centro robot x=10, faccia dell'ostacolo x=13, raggio robot 1 → 2 celle dalla superficie
+        assertEquals(2.0, r.getIr(0), 1e-9);
     }
 
     @Test
