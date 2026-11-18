@@ -214,7 +214,7 @@ public class ViewSidePanel extends JPanel {
         robotInfo.setText(String.format(Locale.ROOT, "<html>Robot #%d — %s<br>x  = %7.2f cells<br>y  = %7.2f cells<br>θ  = %6.1f°<br>"
                 + "IR min = %s<br>contact: %s<br>floor: %s</html>",
             r.getIDnum(), r.isActive() ? "active" : "stopped", p.x, p.y, deg,
-            minIr >= r.getIrRange() ? "—" : String.format(Locale.ROOT, "%.2f cells, %s (s%d)", minIr, meters(minIr * r.getMetersPerCell()), minIdx),
+            minIr >= r.getIrRange() ? "—" : String.format(Locale.ROOT, "%.2f cells (s%d)<br>%s= %s", minIr, minIdx, "&nbsp;".repeat(7), meters(minIr * r.getMetersPerCell())),
             contact ? "<font color='#c00000'>yes</font>" : "no", fl));
     }
 
