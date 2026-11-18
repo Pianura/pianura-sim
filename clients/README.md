@@ -51,6 +51,7 @@ angles turn **clockwise** on screen.
 | `{"type":"cmd","robot":1,"seq":7,"v":1.0,"w":0.3}` | Linear speed `v` (cells/s), angular speed `w` (rad/s). `seq` echoes the sensor message being answered (required in lockstep mode). |
 | `{"type":"cmd","robot":1,"seq":7,"left":1.0,"right":0.5}` | Wheel speeds in cells/s (speed of each wheel on the ground). Equivalent to `v = (left + right) / 2`, `w = (left - right) / wheel_base`. |
 | `{"type":"cmd","robot":1,"seq":7,"v":1.0,"broadcast":{...},"send":[{"to":3,"data":"hi"}]}` | Optional radio messages, see [Radio messages](#radio-messages). A `cmd` with messages but no speeds keeps the previous speeds. |
+| `{"type":"cmd","robot":1,"seq":7,"v":1.0,"draw":[{"op":"line","layer":"plan",...}]}` | Optional debug drawings over the arena, see [Debug drawings](#debug-drawings). A `cmd` with drawings but no speeds keeps the previous speeds. |
 | `{"type":"bye","robot":1}` | Stop driving robot 1 (it keeps its last command). |
 
 ### Pianura → client
@@ -103,6 +104,41 @@ The radio range is set in the scenario (`getCommSettings().setRange(cells)`, 6 c
 default) or per robot (`robot.setCommRange(cells)`). The **Connectivity window** in Pianura shows
 who hears whom while the simulation runs.
 
+## Debug drawings
+
+A client can draw over the arena what its algorithm thinks (the route, the target, an estimated
+map), in named layers that never affect the simulation. `"draw"` is a list of operations,
+applied in order at the control instant of the command:
+
+```json
+"draw": [
+  {"op": "clear", "layer": "plan"},
+  {"op": "polyline", "layer": "plan", "xs": [5, 20, 33], "ys": [5, 4, 4], "color": "#2060ff"},
+  {"op": "disc", "layer": "plan", "x": 33, "y": 4, "r": 0.3, "color": [255, 0, 0]},
+  {"op": "text", "layer": "plan", "x": 33.5, "y": 3.5, "text": "goal"}
+]
+```
+
+| `op` | Fields (cells) |
+|---|---|
+| `clear` | empties `layer` |
+| `clear_all` | empties every layer of the robot |
+| `point` | `x`, `y` |
+| `line`, `arrow` | `x1`, `y1`, `x2`, `y2` (the arrow points at `x2`, `y2`) |
+| `circle`, `disc` | `x`, `y`, `r` (outline, filled) |
+| `rect` | `x`, `y` (top-left corner), `w`, `h`, filled: one cell of a grid map is `x=i, y=j, w=1, h=1` |
+| `polyline`, `polygon` | `xs`, `ys` (polygon = closed outline) |
+| `text` | `x`, `y` (left end of the baseline), `text` |
+
+Every operation can carry `layer` (default `"default"`), `color` (`"#rrggbb"`, `"#rrggbbaa"`,
+or `[r, g, b]` / `[r, g, b, a]` with 0–255 values; without it the shape takes the last color
+used in its layer) and `width` (line width in screen pixels). A layer keeps its shapes until it
+is cleared: redraw it at every step, or let it grow (a trail, a map). A robot holds at most
+50,000 shapes, and a whole command must fit in one UDP datagram (about 64 KB), so draw only
+what changes. A malformed operation rejects the whole command with an `error`.
+
+In Pianura, **Robot drawings** in the side panel shows or hides the drawings.
+
 ## Versions
 
 Clients and server must speak the same protocol version, otherwise the client refuses the
@@ -110,6 +146,6 @@ welcome: update the clients together with Pianura.
 
 | Version | Changes |
 |---|---|
-| 3 | Units in cells everywhere: `ir` in cells (was px, 255 = nothing), `bump` as booleans, wheel commands in cells/s (were JUSE's motor units); `meters_per_cell` and `body` in the welcome |
+| 3 | Units in cells everywhere: `ir` in cells (was px, 255 = nothing), `bump` as booleans, wheel commands in cells/s (were JUSE's motor units); `meters_per_cell` and `body` in the welcome; debug drawings (`draw` in cmd) |
 | 2 | Radio messages: `inbox` in sensors, `broadcast` / `send` in cmd |
 | 1 | First version |

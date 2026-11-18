@@ -63,6 +63,9 @@ fixed weight, and the behaviour comes from the wiring alone.
 - frontal wiring: an obstacle ahead slows the vehicle down;
 - after a contact the vehicle turns on the spot for a moment.
 
+It draws its intention (layer `steer`): an arrow from the body towards where it is heading half a
+second from now, longer when it goes faster, red while it turns away from a contact.
+
 Give it a sensing range of about 4 cells. In the example `braitenberg`, five vehicles run for
 120 s without touching anything. The constants at the top of the class (`CRUISE`,
 `STEER_GAIN`, `BRAKE_GAIN`, `SKEW`, `ESCAPE_SPEED`, `ESCAPE_TICKS`) can be changed to see how

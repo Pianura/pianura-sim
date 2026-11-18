@@ -24,6 +24,13 @@ classdef PianuraRobot < handle
     % wheel_radius, ir_count, ir_range). The y axis grows downwards and positive angles turn
     % clockwise on screen.
     %
+    % Debug drawings appear over the arena in Pianura, in named layers, and leave with the next
+    % drive()/wheels(). Coordinates in cells; color optional ([r g b] 0..1, 'r', 'b', ... or '#rrggbb'):
+    %   robot.drawClear('plan');
+    %   robot.drawPolyline('plan', xs, ys, 'b');
+    %   robot.drawDisc('plan', gx, gy, 0.3, [1 0 0]);
+    % A layer keeps its shapes until drawClear: redraw it at every step, or let it grow.
+    %
     % Errors (catch them with try/catch and look at err.identifier):
     %   Pianura:stopped   the simulation was stopped, or the robot was disabled
     %   Pianura:timeout   no message from Pianura within the timeout
@@ -51,6 +58,7 @@ classdef PianuraRobot < handle
         LastSeq = []
         Broadcasts = {}
         Sends = {}
+        Draws = {}
     end
 
     methods
@@ -149,6 +157,67 @@ classdef PianuraRobot < handle
             obj.Sends{end + 1} = struct('to', double(to), 'data', {data});
         end
 
+        % ---- debug drawings (layer = name of the layer, e.g. 'plan'; color is optional) ----
+
+        function drawClear(obj, layer)
+            % drawClear(layer): remove every shape of the layer.
+            obj.addDraw(layer, 'clear', [], struct());
+        end
+
+        function drawClearAll(obj)
+            % drawClearAll(): clear every layer of this robot.
+            obj.Draws{end + 1} = struct('op', 'clear_all');
+        end
+
+        function drawPoint(obj, layer, x, y, color)
+            if nargin < 5, color = []; end
+            obj.addDraw(layer, 'point', color, struct('x', x, 'y', y));
+        end
+
+        function drawLine(obj, layer, x1, y1, x2, y2, color)
+            if nargin < 7, color = []; end
+            obj.addDraw(layer, 'line', color, struct('x1', x1, 'y1', y1, 'x2', x2, 'y2', y2));
+        end
+
+        function drawArrow(obj, layer, x1, y1, x2, y2, color)
+            % drawArrow(layer, x1, y1, x2, y2, color): line with an arrowhead at (x2, y2).
+            if nargin < 7, color = []; end
+            obj.addDraw(layer, 'arrow', color, struct('x1', x1, 'y1', y1, 'x2', x2, 'y2', y2));
+        end
+
+        function drawCircle(obj, layer, x, y, r, color)
+            if nargin < 6, color = []; end
+            obj.addDraw(layer, 'circle', color, struct('x', x, 'y', y, 'r', r));
+        end
+
+        function drawDisc(obj, layer, x, y, r, color)
+            % drawDisc(layer, x, y, r, color): filled circle.
+            if nargin < 6, color = []; end
+            obj.addDraw(layer, 'disc', color, struct('x', x, 'y', y, 'r', r));
+        end
+
+        function drawRect(obj, layer, x, y, w, h, color)
+            % drawRect(layer, x, y, w, h, color): filled rectangle, top-left corner at (x, y).
+            if nargin < 7, color = []; end
+            obj.addDraw(layer, 'rect', color, struct('x', x, 'y', y, 'w', w, 'h', h));
+        end
+
+        function drawPolyline(obj, layer, xs, ys, color)
+            if nargin < 5, color = []; end
+            obj.addDraw(layer, 'polyline', color, struct('xs', {num2cell(double(xs(:))')}, 'ys', {num2cell(double(ys(:))')}));
+        end
+
+        function drawPolygon(obj, layer, xs, ys, color)
+            % drawPolygon(layer, xs, ys, color): closed outline.
+            if nargin < 5, color = []; end
+            obj.addDraw(layer, 'polygon', color, struct('xs', {num2cell(double(xs(:))')}, 'ys', {num2cell(double(ys(:))')}));
+        end
+
+        function drawText(obj, layer, x, y, txt, color)
+            if nargin < 6, color = []; end
+            obj.addDraw(layer, 'text', color, struct('x', x, 'y', y, 'text', char(txt)));
+        end
+
         function close(obj)
             % Stop driving the robot (it keeps its last command) and release the socket.
             if isempty(obj.Socket), return; end
@@ -185,9 +254,25 @@ classdef PianuraRobot < handle
             if ~isempty(sends)
                 msg.send = sends;                % a cell array is always encoded as a JSON array
             end
+            if ~isempty(obj.Draws)
+                msg.draw = obj.Draws;
+            end
             obj.Broadcasts = {};
             obj.Sends = {};
+            obj.Draws = {};
             obj.sendJson(msg);
+        end
+
+        function addDraw(obj, layer, op, color, fields)
+            d = struct('op', op, 'layer', char(layer));
+            names = fieldnames(fields);
+            for k = 1:numel(names)
+                d.(names{k}) = fields.(names{k});
+            end
+            if ~isempty(color)
+                d.color = PianuraRobot.colorString(color);
+            end
+            obj.Draws{end + 1} = d;
         end
 
         function sendJson(obj, msg)
@@ -218,6 +303,26 @@ classdef PianuraRobot < handle
     methods (Static, Access = private)
         function v = row(x)
             v = double(x(:))';
+        end
+
+        function c = colorString(color)
+            % '#rrggbb' or '#rrggbbaa' from [r g b] / [r g b a] (0..1), a short name or a '#...' string.
+            if ischar(color) && ~isempty(color) && color(1) == '#'
+                c = color; return;
+            end
+            if ischar(color)
+                names = 'rgbcmykw';
+                rgb = [1 0 0; 0 0.6 0; 0 0.35 1; 0 0.7 0.8; 0.8 0 0.8; 1 0.8 0; 0 0 0; 1 1 1];
+                k = find(names == lower(color(1)), 1);
+                if numel(color) ~= 1 || isempty(k)
+                    error('Pianura:color', 'unknown color ''%s'': use r g b c m y k w, ''#rrggbb'' or [r g b] in 0..1', color);
+                end
+                color = rgb(k, :);
+            end
+            if ~isnumeric(color) || ~any(numel(color) == [3 4]) || any(color(:) < 0 | color(:) > 1)
+                error('Pianura:color', 'a color must be [r g b] or [r g b a] with values in 0..1');
+            end
+            c = ['#', sprintf('%02x', round(255 * color(:)'))];
         end
 
         function v = fieldOr(s, name, default)

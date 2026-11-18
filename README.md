@@ -32,6 +32,8 @@ written in 2008 and used for years at the University of Bologna; see [Origins](#
   at a fixed period
 - **Reference algorithms and examples** to start from: obstacle avoidance, a Braitenberg
   vehicle, radio beacons, line following, remote control
+- **Debug drawings**: a robot's code draws what its algorithm thinks (paths, targets, trees,
+  estimated maps) in named layers over the arena, from Java, Python or MATLAB
 - **Radio between robots**: range, losses and latency, plus a live connectivity window
   (graph, adjacency and incidence matrices)
 - **Remote control over UDP + JSON**, with ready-made Python and MATLAB clients; lockstep
@@ -148,6 +150,31 @@ declares how big a cell is with `setMetersPerCell(m)` (default 0.05: the robot i
 and 3 cells/s are 15 cm/s). The scale is shown in the side panel and sent to remote clients;
 the simulation itself stays in cells. The y axis grows downwards and positive angles turn
 clockwise, as on screen.
+
+### Debug drawings
+
+A robot can draw over the arena what its algorithm thinks: the planned path, the target, a
+search tree, an estimated map. Drawings live in named layers, in world coordinates (cells),
+and never affect the simulation:
+
+```java
+Position p = robot.getPosition();
+robot.viz("plan").clear()                      // redrawn at every step
+     .color(Color.BLUE).polyline(xs, ys)
+     .color(Color.RED).disc(goalX, goalY, 0.3).text(goalX + 0.5, goalY, "goal")
+     .arrow(p.x, p.y, goalX, goalY);
+robot.viz("trail").point(p.x, p.y);            // never cleared: it grows
+```
+
+Shapes: `point`, `line`, `arrow`, `circle`, `disc`, `rect` (filled, for map cells), `polyline`,
+`polygon`, `text`; `color(...)` and `width(px)` apply to the shapes that follow. A layer keeps its
+shapes until `clear()`. What a robot draws appears at its next `sleepSim()`, all at once, so the
+picture is always consistent. In the side panel, **Robot drawings** shows or hides them and
+**Drawings: selected robot only** keeps just the selected robot's. Remote clients draw in the
+same way (`draw` in the protocol); the [`BraitenbergVehicle`](algorithms/README.md#braitenberg-braitenbergvehicle)
+and the MATLAB example `gotogoal.m` show how.
+
+![Debug drawings: the MATLAB example gotogoal draws its route and an arrow to the current waypoint](docs/img/drawings.png)
 
 ---
 

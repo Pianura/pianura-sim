@@ -27,7 +27,7 @@ arrange the scene if you like, then press **Run** (or Space).
 | `remote` | Two robots driven from outside over UDP, waiting for a client from Python or MATLAB (see [`../clients`](../clients/README.md)) | remote | added 2026 |
 | `radio` | Fourteen robots exchanging radio beacons, with the connectivity window | `BeaconWanderer` | added 2026 |
 | `largemap` | A 300×200 building generated from a seed, explored by 60 robots: fly over it with the minimap | `BeaconWanderer` | added 2026 |
-| `braitenberg` | Five Braitenberg vehicles with trails on | `BraitenbergVehicle` | added 2026 |
+| `braitenberg` | Five Braitenberg vehicles with trails on; each draws an arrow with its intention | `BraitenbergVehicle` | added 2026 |
 
 | ![obstacles](../docs/img/obstacles.png) | ![braitenberg](../docs/img/braitenberg.png) |
 |---|---|
