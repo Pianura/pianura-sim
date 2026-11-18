@@ -22,6 +22,9 @@ import io.github.raffaelegrandi.pianura.utils.Const;
  * equal to the sensing range when nothing is within it; sensors are numbered clockwise from the heading,
  * 20 degrees apart. Give the robot a sensing range of about 4 cells, so it has time to react.
  *
+ * <p>Debug drawing (layer {@code "steer"}): an arrow from the body towards where the vehicle is
+ * heading half a second from now, longer when it goes faster; red while it turns on the spot after a contact.
+ *
  * <p>Added in 2026. First written for the historical edition of JUSE (as a {@code RobotDummy}
  * loop), then adapted to Pianura's {@link RobotController} API: it runs at a fixed period of
  * simulated time and commands linear and angular speed.
@@ -61,7 +64,9 @@ public class BraitenbergVehicle implements RobotController {
 		if (escaping > 0 || robot.hasCollision()) {     // touched something: turn away on the spot
 			if (escaping == 0) escaping = ESCAPE_TICKS;
 			escaping--;
-			robot.setRobotSpeed(0, lastSteer >= 0 ? -ESCAPE_SPEED : ESCAPE_SPEED);
+			double w = lastSteer >= 0 ? -ESCAPE_SPEED : ESCAPE_SPEED;
+			robot.setRobotSpeed(0, w);
+			drawIntent(robot, 0, w, ESCAPE_COLOR);
 			return;
 		}
 		double range = robot.getIrRange();              // cells
@@ -77,7 +82,21 @@ public class BraitenbergVehicle implements RobotController {
 		if (steer != 0) lastSteer = steer;
 
 		// obstacle on the right -> turn left (counter-clockwise, negative angular speed)
-		robot.setRobotSpeed(CRUISE * (1 - BRAKE_GAIN * brake), -STEER_GAIN * steer);
+		double v = CRUISE * (1 - BRAKE_GAIN * brake), w = -STEER_GAIN * steer;
+		robot.setRobotSpeed(v, w);
+		drawIntent(robot, v, w, INTENT_COLOR);
+	}
+
+	private static final java.awt.Color INTENT_COLOR = new java.awt.Color(40, 90, 220);
+	private static final java.awt.Color ESCAPE_COLOR = new java.awt.Color(220, 30, 30);
+
+	/** Arrow from the body's edge towards the heading in 0.5 s: half a cell + 1 cell per cell/s long. */
+	private static void drawIntent(RobotUnit robot, double v, double w, java.awt.Color color) {
+		var p = robot.getPosition();
+		double a = p.theta + 0.5 * w, r = robot.getBodyRadius(), len = 0.5 + v;
+		double cx = Math.cos(a), cy = Math.sin(a);
+		robot.viz("steer").clear().color(color).width(2)
+			.arrow(p.x + r * cx, p.y + r * cy, p.x + (r + len) * cx, p.y + (r + len) * cy);
 	}
 
 }
