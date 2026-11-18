@@ -97,12 +97,12 @@ public class MyRobot extends RobotDummy {
 
     @Override
     public void executeLoop() {
-        forward(500);                         // both wheels forward
+        forward(1.0);                         // 1 cell/s straight ahead
         while (isActive()) {
-            int[] ir = getAllSens();          // 18 IR readings: 0 = contact, 255 = clear
-            if (ir[0] < 30) {                 // obstacle ahead (sensor 0 = front)
+            double[] ir = getIr();            // 18 IR readings, cells from the body (getIrRange() = clear)
+            if (ir[0] < 1.5) {                // obstacle ahead (sensor 0 = front)
                 rotateBy(45, 50);             // turn 45° on the spot
-                forward(500);
+                forward(1.0);
             }
             sleepSim(0.2);                    // 0.2 s of simulated time
         }
@@ -119,7 +119,7 @@ scenario constructor (see below):
 ```java
 addRobot(new ControllerRobot(1, new Position(5, 5, 0), 2, 0.1,
         (robot, t) -> {
-            boolean blocked = robot.getOneSen(0) < 30;
+            boolean blocked = robot.getIr(0) < 1.5;                      // cells from the body
             robot.setRobotSpeed(blocked ? 0 : 1.0, blocked ? 1.5 : 0);   // cells/s, rad/s
         }));
 ```
@@ -128,16 +128,26 @@ Main methods available on a robot:
 
 | Method | Description |
 |--------|-------------|
-| `forward(speed)` / `backward(speed)` | Both wheels at the same speed |
-| `setMotorSpeed(left, right)` | Wheel speeds (differential drive) |
+| `forward(speed)` / `backward(speed)` | Straight on or back, cells/s |
+| `setWheelSpeeds(left, right)` | Wheel speeds, cells/s (differential drive) |
 | `setRobotSpeed(v, w)` | Linear (cells/s) and angular (rad/s) speed |
 | `rotateBy(angleDeg, stepMs)` | Turn on the spot, blocking |
-| `getAllSens()` / `getOneSen(i)` | IR readings, 0 (contact) to 255 (nothing in range) |
+| `getIr()` / `getIr(i)` | IR readings: cells from the body to the nearest obstacle, `getIrRange()` when nothing is in range |
 | `hasCollision()` | Whether the robot is touching an obstacle |
 | `getFloorGrays()` | Floor sensor readings, 0 = black, 255 = white |
 | `broadcast(data)` / `send(id, data)` / `receive()` | Radio messages |
 | `getPosition()` | Pose (x, y in cells, theta in radians) |
 | `sleepSim(seconds)` / `getSimTime()` | Simulated time |
+| `getMetersPerCell()` | Scale of the scenario, meters per cell |
+
+### Units
+
+Pianura measures lengths in **cells**, time in seconds and angles in radians. The robot is a
+disc of radius 1 cell with its two wheels 2 cells apart; speeds are in cells/s. Each scenario
+declares how big a cell is with `setMetersPerCell(m)` (default 0.05: the robot is 10 cm across,
+and 3 cells/s are 15 cm/s). The scale is shown in the side panel and sent to remote clients;
+the simulation itself stays in cells. The y axis grows downwards and positive angles turn
+clockwise, as on screen.
 
 ---
 

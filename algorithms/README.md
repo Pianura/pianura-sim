@@ -20,21 +20,23 @@ fixed period of simulated time. Both styles are described in the [main README](.
 *From JUSE.* Open-loop motion: the robot runs a fixed sequence of wheel speeds, each for a fixed
 time, then stops. No sensor is read.
 
-| Step | left / right wheel | duration |
+| Step | left / right wheel (cells/s) | duration |
 |---|---|---|
-| 1 | 1.5 / 1.5 | 2 s |
-| 2 | 1.5 / 6 | 2 s |
-| 3 | 2 / 6 | 1 s |
-| 4 | 2 / 2 | 4 s |
+| 1 | 0.75 / 0.75 | 2 s |
+| 2 | 0.75 / 3 | 2 s |
+| 3 | 1 / 3 | 1 s |
+| 4 | 1 / 1 | 4 s |
 
 In JUSE the durations were real time; here they are simulated time, so the result does not
-depend on the computer.
+depend on the computer. The wheel speeds keep JUSE's ratios (1.5 / 1.5, 1.5 / 6, 2 / 6, 2 / 2):
+in JUSE's motor units they were so low that the robot barely moved, so each unit is now half a
+cell per second.
 
 ## iravoidance: `IrAvoider`
 
 *From JUSE.* Reactive obstacle avoidance on the infrared sensors, every 0.2 s:
 
-- an obstacle closer than 25 px on sensors 0–4 (front right) makes the robot turn
+- an obstacle closer than 1.67 cells (25 px in JUSE) on sensors 0–4 (front right) makes the robot turn
   counter-clockwise, one on sensors 14–17 (front left) clockwise;
 - once a turn has started, it keeps the same direction until the way is clear, so it does not
   hesitate between left and right;
