@@ -5,7 +5,7 @@ classdef PianuraRobot < handle
     %   robot.connect();
     %   while true
     %       s = robot.sensors();                 % waits for the next control period
-    %       if min(s.ir([1 2 18])) < 20          % ir(1) is sensor 0, the front one
+    %       if min(s.ir([1 2 18])) < 1           % ir(1) is sensor 0, the front one; 1 cell from the body
     %           robot.drive(0, 1.5);             % obstacle ahead: turn on the spot
     %       else
     %           robot.drive(1, 0);               % straight on (cells/s, rad/s)
@@ -18,8 +18,11 @@ classdef PianuraRobot < handle
     % Indices: MATLAB starts at 1, Pianura's sensors at 0. s.ir(1) is sensor 0 (front),
     % s.ir(k+1) is sensor k, clockwise every 20 degrees.
     %
-    % Units: lengths in cells, time in seconds, angles in radians. The y axis grows downwards
-    % and positive angles turn clockwise on screen.
+    % Units (protocol version 3): lengths in cells, time in seconds, angles in radians. One cell
+    % is robot.Welcome.units.meters_per_cell meters (0.05 by default: the robot is 2 cells,
+    % 10 cm, across). robot.Welcome.body has the robot's geometry in cells (radius, wheel_base,
+    % wheel_radius, ir_count, ir_range). The y axis grows downwards and positive angles turn
+    % clockwise on screen.
     %
     % Errors (catch them with try/catch and look at err.identifier):
     %   Pianura:stopped   the simulation was stopped, or the robot was disabled
@@ -31,7 +34,7 @@ classdef PianuraRobot < handle
     % It also runs in GNU Octave (7 or later) with Java support.
 
     properties (Constant)
-        PROTOCOL_VERSION = 2
+        PROTOCOL_VERSION = 3
     end
 
     properties (SetAccess = private)
@@ -39,7 +42,7 @@ classdef PianuraRobot < handle
         Host             % address of the Pianura server
         Port             % UDP port of the Pianura server
         Timeout          % seconds to wait for a message before Pianura:timeout
-        Welcome = []     % the welcome message (mode, control period, units), after connect()
+        Welcome = []     % the welcome message (mode, period, units, body geometry), after connect()
     end
 
     properties (Access = private)
@@ -86,8 +89,9 @@ classdef PianuraRobot < handle
             % Wait for the next sensor reading of this robot. Returns a struct:
             %   t, seq            simulated time (s) and sequence number
             %   x, y, theta       true pose (cells, cells, radians clockwise on screen)
-            %   ir                1x18, distance in px from the body, 255 = nothing in range
-            %   bump              1x18, 0 = no contact
+            %   ir                1x18, distance in cells from the body to the nearest hit,
+            %                     Welcome.body.ir_range when nothing is in range
+            %   bump              1x18 logical, true = contact in that direction
             %   contact           true while the body is pushing against something
             %   floor             floor sensors, 0 = black .. 255 = white (1 = left, 2 = right)
             %   wheelLeft, wheelRight   distance travelled by each wheel (cells, signed)
@@ -107,7 +111,7 @@ classdef PianuraRobot < handle
                         s.y = msg.pose.y;
                         s.theta = msg.pose.theta;
                         s.ir = PianuraRobot.row(msg.ir);
-                        s.bump = PianuraRobot.row(msg.bump);
+                        s.bump = logical(PianuraRobot.row(msg.bump));
                         s.contact = logical(msg.contact);
                         s.floor = PianuraRobot.row(msg.floor);
                         s.wheelLeft = msg.wheels.left;
@@ -129,7 +133,7 @@ classdef PianuraRobot < handle
         end
 
         function wheels(obj, left, right)
-            % wheels(left, right): wheel speeds, same units as RobotUnit.setMotorSpeed (500, 500 = straight on).
+            % wheels(left, right): wheel speeds in cells/s; left faster than right turns clockwise (to the right).
             obj.command(struct('left', double(left), 'right', double(right)));
         end
 

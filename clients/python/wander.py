@@ -20,7 +20,7 @@ from pianura_client import PianuraRobot, RobotStopped
 FRONT = (0, 1, 2, 16, 17)          # IR sensors around the heading (index 0 = front, clockwise)
 LEFT_SIDE = (13, 14, 15, 16, 17)
 RIGHT_SIDE = (1, 2, 3, 4, 5)
-NEAR = 18                          # IR value (px from the body) under which an obstacle is "near"
+NEAR = 1.2                         # IR value (cells from the body) under which an obstacle is "near"
 BEACON_PERIOD = 1.0                # s between two radio beacons
 FORGET_AFTER = 2.5                 # s of silence after which a neighbour is forgotten
 

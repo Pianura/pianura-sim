@@ -8,7 +8,7 @@ Drive a Pianura robot from Python over UDP:
     with PianuraRobot(robot_id=1) as robot:       # default: 127.0.0.1:5555
         while True:
             s = robot.sensors()                   # blocks until the next control period
-            if min(s.ir[i] for i in (0, 1, 17)) < 20:
+            if min(s.ir[i] for i in (0, 1, 17)) < 1.0:  # obstacle less than 1 cell from the body
                 robot.drive(0.0, 1.5)             # obstacle ahead: turn in place
             else:
                 robot.drive(1.0, 0.0)             # go straight (cells/s, rad/s)
@@ -16,7 +16,7 @@ Drive a Pianura robot from Python over UDP:
 Every call to sensors() must be followed by exactly one drive() or wheels() call:
 in lockstep mode the simulation waits for that answer before going on.
 
-Radio messages (protocol version 2) go through Pianura's simulated network, with the same range,
+Radio messages (since protocol version 2) go through Pianura's simulated network, with the same range,
 losses and latency as Java robots:
 
     for m in s.inbox:                             # received since the previous reading
@@ -27,7 +27,8 @@ losses and latency as Java robots:
 
 Message data must be JSON data (dict, list, str, number, bool, None); numbers arrive as floats.
 
-Units: lengths in cells, time in seconds, angles in radians.
+Units (protocol version 3): lengths in cells, time in seconds, angles in radians. One cell is
+robot.meters_per_cell meters (0.05 by default: the robot is 2 cells, 10 cm, across).
 Screen convention: y grows downwards, positive angles turn clockwise on screen.
 """
 
@@ -36,7 +37,7 @@ import socket
 from dataclasses import dataclass, field
 from typing import Any, List, Optional
 
-PROTOCOL_VERSION = 2
+PROTOCOL_VERSION = 3
 
 
 class PianuraError(Exception):
@@ -62,8 +63,9 @@ class Sensors:
     x: float                    # pose: position in cells ...
     y: float
     theta: float                # ... and heading in radians (clockwise on screen)
-    ir: List[int]               # 18 IR sensors, 0 = touching, 255 = nothing in range (index 0 = front, clockwise)
-    bump: List[int]             # 18 bump sensors, 0 = no contact
+    ir: List[float]             # 18 IR sensors: cells from the body to the nearest hit, robot.ir_range if nothing
+                                # in range (index 0 = front, then clockwise every 20 degrees)
+    bump: List[bool]            # 18 bump sensors, True = contact in that direction
     contact: bool               # the body is pushing against something
     floor: List[int]            # floor sensors, 0 = black, 255 = white (0 = left, 1 = right)
     wheel_left: float           # distance travelled by each wheel (cells, signed)
@@ -99,6 +101,26 @@ class PianuraRobot:
                 self.welcome = msg
                 return msg
 
+    @property
+    def meters_per_cell(self) -> float:
+        """Scale of the scenario: meters per cell (after connect())."""
+        return float(self._welcome()["units"]["meters_per_cell"])
+
+    @property
+    def ir_range(self) -> float:
+        """Range of the IR sensors in cells: the value they read when nothing is in range."""
+        return float(self._welcome()["body"]["ir_range"])
+
+    @property
+    def wheel_base(self) -> float:
+        """Distance between the wheels in cells (for wheel speeds: w = (left - right) / wheel_base)."""
+        return float(self._welcome()["body"]["wheel_base"])
+
+    def _welcome(self) -> dict:
+        if self.welcome is None:
+            raise PianuraError("not connected: call connect() first (or use 'with PianuraRobot(...)')")
+        return self.welcome
+
     def close(self):
         try:
             self._send({"type": "bye", "robot": self.robot_id})
@@ -125,7 +147,7 @@ class PianuraRobot:
                 self._last_seq = int(msg["seq"])
                 pose, wheels = msg["pose"], msg["wheels"]
                 return Sensors(t=msg["t"], seq=self._last_seq, x=pose["x"], y=pose["y"], theta=pose["theta"],
-                               ir=[int(v) for v in msg["ir"]], bump=[int(v) for v in msg["bump"]],
+                               ir=[float(v) for v in msg["ir"]], bump=[bool(v) for v in msg["bump"]],
                                contact=bool(msg["contact"]), floor=[int(v) for v in msg["floor"]],
                                wheel_left=wheels["left"], wheel_right=wheels["right"],
                                active=bool(msg["active"]),
@@ -140,7 +162,7 @@ class PianuraRobot:
         self._command({"v": float(v), "w": float(w)})
 
     def wheels(self, left: float, right: float):
-        """Wheel speeds in the same units as RobotUnit.setMotorSpeed (e.g. 500, 500 = straight on)."""
+        """Wheel speeds in cells/s; left faster than right turns clockwise on screen (to the right)."""
         self._command({"left": float(left), "right": float(right)})
 
     def broadcast(self, data: Any):

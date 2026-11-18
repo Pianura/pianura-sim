@@ -36,10 +36,12 @@ By default the server listens on `127.0.0.1` only. To accept clients from other 
 A robot whose client has not said `hello` yet stands still, and the simulation is not blocked.
 Connect the client before pressing Run, otherwise it misses the first control periods.
 
-## Messages (protocol version 2)
+## Messages (protocol version 3)
 
 One JSON object per UDP datagram. Lengths are in **cells**, time in **seconds**, angles in
-**radians**. The y axis grows downwards and positive angles turn **clockwise** on screen.
+**radians**. The scenario declares how many meters a cell is (`meters_per_cell` in the welcome,
+0.05 by default: the robot is 2 cells, 10 cm, across). The y axis grows downwards and positive
+angles turn **clockwise** on screen.
 
 ### Client → Pianura
 
@@ -47,7 +49,7 @@ One JSON object per UDP datagram. Lengths are in **cells**, time in **seconds**,
 |---|---|
 | `{"type":"hello","robot":1}` | Start driving robot 1. Answered by `welcome`. |
 | `{"type":"cmd","robot":1,"seq":7,"v":1.0,"w":0.3}` | Linear speed `v` (cells/s), angular speed `w` (rad/s). `seq` echoes the sensor message being answered (required in lockstep mode). |
-| `{"type":"cmd","robot":1,"seq":7,"left":500,"right":500}` | Wheel speeds, same units as `RobotUnit.setMotorSpeed`. |
+| `{"type":"cmd","robot":1,"seq":7,"left":1.0,"right":0.5}` | Wheel speeds in cells/s (speed of each wheel on the ground). Equivalent to `v = (left + right) / 2`, `w = (left - right) / wheel_base`. |
 | `{"type":"cmd","robot":1,"seq":7,"v":1.0,"broadcast":{...},"send":[{"to":3,"data":"hi"}]}` | Optional radio messages, see [Radio messages](#radio-messages). A `cmd` with messages but no speeds keeps the previous speeds. |
 | `{"type":"bye","robot":1}` | Stop driving robot 1 (it keeps its last command). |
 
@@ -55,10 +57,18 @@ One JSON object per UDP datagram. Lengths are in **cells**, time in **seconds**,
 
 | Message | Meaning |
 |---|---|
-| `{"type":"welcome","protocol":2,"robot":1,"mode":"lockstep","period":0.1,"units":{...}}` | Connection accepted. |
+| `{"type":"welcome","protocol":3,"robot":1,"mode":"lockstep","period":0.1,"units":{...},"body":{...}}` | Connection accepted, see below. |
 | `{"type":"sensors", ...}` | One reading per control period, see below. |
 | `{"type":"stopped","robot":1}` | The simulation was stopped or the robot was disabled. |
 | `{"type":"error","message":"..."}` | Malformed JSON, unknown robot, invalid command, ... |
+
+`welcome` fields:
+
+| Field | Content |
+|---|---|
+| `mode`, `period` | `"lockstep"` or `"realtime"`; control period in seconds of simulated time |
+| `units` | `{"length":"cell","meters_per_cell":0.05,"time":"s","angle":"rad"}` |
+| `body` | The robot's geometry, in cells: `radius` (1), `wheel_base` (2), `wheel_radius` (0.25), `ir_count` (18), `ir_range` (the value IR sensors read when nothing is in range), `floor_count` |
 
 `sensors` fields:
 
@@ -66,8 +76,8 @@ One JSON object per UDP datagram. Lengths are in **cells**, time in **seconds**,
 |---|---|
 | `seq`, `t` | Sequence number (echo it in `cmd`) and simulated time |
 | `pose` | `{"x","y","theta"}`: true pose of the robot |
-| `ir` | 18 IR sensors, index 0 = front then clockwise every 20°: distance in px from the body, 255 = nothing in range |
-| `bump` | 18 bump sensors, 0 = no contact |
+| `ir` | 18 IR sensors, index 0 = front then clockwise every 20°: distance in cells from the body to the nearest obstacle or robot, `ir_range` when nothing is in range |
+| `bump` | 18 bump sensors, `true` = contact in that direction |
 | `contact` | `true` while the body is pushing against an obstacle or robot |
 | `floor` | Floor (line-following) sensors, 0 = black … 255 = white; index 0 = left, 1 = right |
 | `wheels` | `{"left","right"}`: distance travelled by each wheel (cells, signed; wheels keep turning when the body is blocked) |
@@ -93,5 +103,13 @@ The radio range is set in the scenario (`getCommSettings().setRange(cells)`, 6 c
 default) or per robot (`robot.setCommRange(cells)`). The **Connectivity window** in Pianura shows
 who hears whom while the simulation runs.
 
-Protocol version 1 clients are refused by version 2 servers (and vice versa): update the
-clients together with Pianura.
+## Versions
+
+Clients and server must speak the same protocol version, otherwise the client refuses the
+welcome: update the clients together with Pianura.
+
+| Version | Changes |
+|---|---|
+| 3 | Units in cells everywhere: `ir` in cells (was px, 255 = nothing), `bump` as booleans, wheel commands in cells/s (were JUSE's motor units); `meters_per_cell` and `body` in the welcome |
+| 2 | Radio messages: `inbox` in sensors, `broadcast` / `send` in cmd |
+| 1 | First version |
