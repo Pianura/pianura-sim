@@ -14,7 +14,6 @@ import io.github.raffaelegrandi.pianura.arena.ArenaObjectType;
 import io.github.raffaelegrandi.pianura.arena.Obstacle;
 import io.github.raffaelegrandi.pianura.gui.floor.FloorStyle;
 import io.github.raffaelegrandi.pianura.units.collisions.RectShape;
-import io.github.raffaelegrandi.pianura.utils.Const;
 import io.github.raffaelegrandi.pianura.utils.Position;
 
 class ObstacleBorderTest {
@@ -28,7 +27,11 @@ class ObstacleBorderTest {
 
     private static BufferedImage render(Obstacle o) {
         ArenaFloorPanel p = new ArenaFloorPanel(List.<ArenaObjectABS>of(o), FloorStyle.plain(FLOOR));
-        return Const.getPanelImage(p);
+        BufferedImage img = new BufferedImage(p.getWidth(), p.getHeight(), BufferedImage.TYPE_INT_RGB);
+        java.awt.Graphics2D g = img.createGraphics();
+        p.paint(g);
+        g.dispose();
+        return img;
     }
 
     private static Color px(BufferedImage img, int x, int y) { return new Color(img.getRGB(x, y)); }

@@ -4,18 +4,17 @@ import java.awt.geom.Point2D;
 
 import io.github.raffaelegrandi.pianura.arena.ArenaObjectABS;
 import io.github.raffaelegrandi.pianura.arena.ObjectID;
-import io.github.raffaelegrandi.pianura.units.collisions.*;
+import io.github.raffaelegrandi.pianura.units.collisions.SensorArray;
 import io.github.raffaelegrandi.pianura.utils.Const;
 import io.github.raffaelegrandi.pianura.utils.Position;
 
+/** Body of a robot in the arena: pose, sensors and wheel geometry. */
 public class UnitObject extends ArenaObjectABS {
 
-	private CollisionHandler collHand;
-	private SensorArray bumpSensors;
-	private SensorArray irSensors;
+	private final SensorArray bumpSensors;
+	private final SensorArray irSensors;
 	private final io.github.raffaelegrandi.pianura.units.sensors.FloorSensorArray floorSensors = new io.github.raffaelegrandi.pianura.units.sensors.FloorSensorArray();
-	private double sensorRange;
-	private Position oldPos;
+	private final double sensorRange;
 
 	double wheelRadius = 0.25; // cells
 	double wheelsDistance = 2; // cells: distance between the wheels (= robot diameter)
@@ -25,11 +24,7 @@ public class UnitObject extends ArenaObjectABS {
 		sensorRange = sensRange < Const.sensorsCheckingRangeMin ? Const.sensorsCheckingRangeMin : sensRange;
 		bumpSensors = new SensorArray();
 		irSensors = new SensorArray(sensorRange);   // a riposo = portata: nulla nel campo
-		collHand = new CollisionHandler(bumpSensors);
-		oldPos = this.getExactPos();
 	}
-
-	public ObjectID getObjID(){ return this.objectID;}
 
 	public int getIDnum(){return objectID.getIDnum();}
 
@@ -48,32 +43,5 @@ public class UnitObject extends ArenaObjectABS {
 	public void setLoc(Point2D newLoc){ objectID.setLoc(new Point2D.Double(newLoc.getX(),newLoc.getY())); }
 
 	public Position getExactPos(){return objectID.getPos();}
-
-	public Position getOldPos(){ return oldPos;}
-
-	public double getExactAngle(){return objectID.getAngle();}
-
-	/***********************************************************************************************************/
-
-	public boolean hasValidDisplacement(){
-		Position currPos = this.getExactPos();
-		if ((currPos.distance(oldPos) * Const.cellSize) >= 1) {
-			oldPos = currPos;
-			return true;
-		}
-		else return false;
-	}
-
-	public void resetToOldPosition(){setPos(oldPos);}
-
-	/***********************************************************************************************************/
-
-	public boolean detectCollisions(int dir){
-		boolean collisionDetect = false;
-		if (dir != 0){
-			collisionDetect = collHand.detectCollisions(dir);
-		}
-		return collisionDetect;
-	}
 
 }

@@ -363,40 +363,11 @@ public abstract class RobotUnit implements Runnable{
 
 	/***********************************************************************************************************/
 
-	public boolean evaluateRotation(){
-		return (vK == 0) && (wK != 0);
-	}
-
-	/***********************************************************************************************************/
-
-	public void stopUnit(){
-		System.out.println("Executing stopUnit");
-		setRobotSpeed(0, 0);
-	}
-
-	/** Muove il robot ignorando i contatti. */
-	public void moveUnit(double timeSample){
-		unitObj.setPos(computeNext(unitObj.getExactPos(), timeSample));
-	}
-
 	/** Posa successiva secondo la cinematica differenziale (vK, wK letti una sola volta). */
 	private Position computeNext(Position currPos, double timeSample){
 		double v = vK, w = wK;
 		if (Math.abs(w) < 0.001) return computeRungeKutta(currPos, v, 0, timeSample);
 		return computeExact(currPos, v, w, timeSample);
-	}
-
-	/***********************************************************************************************************/
-
-	public int getDirection(){
-		int dir = (int) Math.signum(vK);
-		return dir;
-	}
-
-	public boolean detectCollisions(){
-		int dir = this.getDirection();
-		if(Const.debugEnabled)System.out.println("Direction of unit #"+getIDnum()+" = "+dir);
-		return unitObj.detectCollisions(dir);
 	}
 
 	/************************************************************************************************/
