@@ -29,3 +29,30 @@ application {
 tasks.named<JavaExec>("run") {
     System.getProperty("pianura.laf")?.let { systemProperty("pianura.laf", it) }
 }
+
+// One runnable jar with Pianura, the algorithms, the examples and FlatLaf:
+//   ./gradlew :examples:runnableJar   -> build/pianura.jar
+//   java -jar build/pianura.jar             (a window to pick an example)
+//   java -jar build/pianura.jar planning    (one example directly; --list prints them)
+val runnableJar by tasks.registering(Jar::class) {
+    group = "distribution"
+    description = "Builds build/pianura.jar, runnable with java -jar."
+    archiveFileName.set("pianura.jar")
+    destinationDirectory.set(rootProject.layout.buildDirectory)
+    manifest {
+        attributes(
+            "Main-Class" to "io.github.raffaelegrandi.pianura.examples.Launcher",
+            "Implementation-Title" to "Pianura",
+            "Multi-Release" to "true")      // FlatLaf ships classes for newer JDKs
+    }
+    from(sourceSets.main.get().output)
+    dependsOn(configurations.runtimeClasspath)
+    from({ configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) } }) {
+        exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/MANIFEST.MF")
+        exclude("module-info.class", "META-INF/versions/*/module-info.class")
+        // FlatLaf's license and notice, kept apart from Pianura's
+        eachFile { if (path == "META-INF/LICENSE" || path == "META-INF/NOTICE") path = path.replace("META-INF/", "META-INF/flatlaf/") }
+    }
+    from(rootProject.file("LICENSE")) { into("META-INF") }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}

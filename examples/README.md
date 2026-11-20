@@ -13,7 +13,10 @@ From the repository root:
 ./gradlew run -Pexample=braitenberg # any other example, by name
 ```
 
-An unknown name stops the build with the list of the available ones. Examples open paused:
+An unknown name stops the build with the list of the available ones. The same examples are
+in the runnable jar: `./gradlew :examples:runnableJar`, then `java -jar build/pianura.jar`
+opens a window to pick one (`java -jar build/pianura.jar <name>` starts it directly). A new
+example needs its line in `Launcher.EXAMPLES` too; a test checks it. Examples open paused:
 arrange the scene if you like, then press **Run** (or Space). **Save…** (Ctrl+S) keeps the
 arrangement in a file and **Open…** (Ctrl+O) brings it back, also in a later run of the same
 example; see [Scene files](../README.md#scene-files).

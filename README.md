@@ -95,6 +95,17 @@ classic Swing look of JUSE:
 Pianura itself does not depend on FlatLaf: in your own project the window uses Swing's
 standard look unless you add `com.formdev:flatlaf` to the runtime classpath.
 
+**One runnable jar.** To try the examples on a machine with just Java, or to pass them on:
+
+```bash
+./gradlew :examples:runnableJar          # writes build/pianura.jar (about 1.3 MB)
+java -jar build/pianura.jar              # a small window to pick an example
+java -jar build/pianura.jar planning     # one example directly; --list prints them all
+```
+
+The jar holds Pianura, the algorithms, the examples and FlatLaf; `-Dpianura.laf=...` works
+here too (`java -Dpianura.laf=flat-dark -jar build/pianura.jar`).
+
 ---
 
 ## Programming a robot
