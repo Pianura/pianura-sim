@@ -34,7 +34,7 @@ public class RectShape implements CollidableShape {
     @Override
     public java.awt.Shape outline() {
         java.awt.geom.AffineTransform at = java.awt.geom.AffineTransform.getTranslateInstance(cx, cy);
-        at.rotate(angle);   // coordinate schermo: angolo positivo = orario, come i robot
+        at.rotate(angle);   // screen coordinates: positive angle = clockwise, as for the robots
         return at.createTransformedShape(new java.awt.geom.Rectangle2D.Double(-hw, -hh, 2 * hw, 2 * hh));
     }
 

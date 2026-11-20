@@ -79,7 +79,7 @@ public class OvalShape implements CollidableShape {
         // Both intersections are behind the origin
         if (t2 < 0) return -1;
 
-        // Origine dentro l'ellisse (t1 < 0 < t2): intersezione immediata
+        // Origin inside the ellipse (t1 < 0 < t2): immediate intersection
         if (t1 < 0) return 0;
 
         return (t1 <= maxDist) ? t1 : -1;

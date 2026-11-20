@@ -15,17 +15,17 @@ public abstract class RobotUnit implements Runnable{
 	private volatile SimClock clock;
 	private volatile io.github.raffaelegrandi.pianura.comm.CommNetwork network;
 	private final java.util.concurrent.ConcurrentLinkedQueue<io.github.raffaelegrandi.pianura.comm.Message> inbox = new java.util.concurrent.ConcurrentLinkedQueue<>();
-	private long messageSeq = 0;                       // solo thread del robot
-	private volatile double commRange = Double.NaN;    // NaN = raggio predefinito dello scenario
+	private long messageSeq = 0;                       // robot's thread only
+	private volatile double commRange = Double.NaN;    // NaN = the scenario's default range
 
 	private ObjectID unitID;
 	private UnitObject unitObj;
 	protected volatile boolean activeStatus = true;
-	// Scritti dal thread del robot, letti dal thread di simulazione
+	// Written by the robot's thread, read by the simulation thread
 	private volatile double vK = 0;
 	private volatile double wK = 0;
 	private volatile boolean collisionStatus = false;
-	// strada percorsa da ciascuna ruota (celle, con segno): scritta dal motore, letta dalla vista
+	// distance travelled by each wheel (cells, signed): written by the engine, read by the view
 	private volatile double leftWheelTravel = 0, rightWheelTravel = 0;
 	private volatile double metersPerCell = Const.DEFAULT_METERS_PER_CELL;
 	private volatile io.github.raffaelegrandi.pianura.viz.Viz viz;   // created on first use
@@ -39,12 +39,12 @@ public abstract class RobotUnit implements Runnable{
 	/***********************************************************************************************************/
 
 	/**
-	 * Attiva/disattiva il robot. Disattivato, il robot resta fermo come ostacolo e il
-	 * suo thread termina alla prossima sleepSim().
+	 * Activates/deactivates the robot. Deactivated, the robot stays still as an obstacle and
+	 * its thread ends at the next sleepSim().
 	 */
 	public void setActive(boolean status){
 		activeStatus = status;
-		if (!status && clock != null) clock.deregister(this);   // sveglia il thread se è in sleepSim
+		if (!status && clock != null) clock.deregister(this);   // wakes the thread if it is in sleepSim
 	}
 
 	public boolean hasCollision(){ return collisionStatus; }
@@ -94,25 +94,25 @@ public abstract class RobotUnit implements Runnable{
 	public void attachScale(double metersPerCell){ this.metersPerCell = metersPerCell; }
 
 	/***********************************************************************************************************/
-	/*  Sensori ottici di pavimento (line-following)                                                           */
+	/*  Floor sensors (line following)                                                                         */
 	/***********************************************************************************************************/
 
-	/** Numero di sensori ottici (predefinito 2: indice 0 = sinistra, 1 = destra). */
+	/** Number of floor sensors (2 by default: index 0 = left, 1 = right). */
 	public int getFloorSensorCount(){ return unitObj.getFloorSensors().count(); }
 
-	/** Luminosità del pavimento sotto il sensore i: 0 = nero, 255 = bianco. */
+	/** Brightness of the floor under sensor i: 0 = black, 255 = white. */
 	public int getFloorGray(int i){ return unitObj.getFloorSensors().getGray(i); }
 
-	/** Luminosità sotto tutti i sensori ottici. */
+	/** Brightness under all the floor sensors. */
 	public int[] getFloorGrays(){ return unitObj.getFloorSensors().getGrays(); }
 
-	/** Colore del pavimento sotto il sensore i (media sull'area sensibile). */
+	/** Color of the floor under sensor i (average over the sensitive area). */
 	public Color getFloorColor(int i){ return unitObj.getFloorSensors().getColor(i); }
 
 	/**
-	 * Configura i sensori ottici: distanza dal centro come frazione del raggio del robot,
-	 * raggio dell'area sensibile in celle, angoli in gradi rispetto alla direzione
-	 * di marcia (negativo = sinistra, positivo = destra). Esempio: {@code configureFloorSensors(0.97, 0.1, -20, 20)}.
+	 * Configures the floor sensors: distance from the centre as a fraction of the robot's
+	 * radius, radius of the sensitive area in cells, angles in degrees from the direction of
+	 * travel (negative = left, positive = right). Example: {@code configureFloorSensors(0.97, 0.1, -20, 20)}.
 	 */
 	public void configureFloorSensors(double radiusFraction, double footprintCells, double... anglesDeg){
 		unitObj.getFloorSensors().setLayout(new io.github.raffaelegrandi.pianura.units.sensors.FloorSensorArray.Layout(radiusFraction, footprintCells, anglesDeg));
@@ -139,20 +139,20 @@ public abstract class RobotUnit implements Runnable{
 
 	public boolean isActive(){ return activeStatus; }
 
-	/** Velocità lineare comandata (celle/s). */
+	/** Commanded linear speed (cells/s). */
 	public double getLinearSpeed(){ return vK; }
 
-	/** Velocità angolare comandata (rad/s, positiva = oraria sullo schermo). */
+	/** Commanded angular speed (rad/s, positive = clockwise on screen). */
 	public double getAngularSpeed(){ return wK; }
 
 	/**
-	 * Strada percorsa dalla ruota sinistra (celle, con segno) dall'inizio della simulazione.
-	 * Conta la rotazione della ruota: se il robot spinge contro un ostacolo la ruota gira
-	 * comunque (slittamento). Base per l'odometria.
+	 * Distance travelled by the left wheel (cells, signed) since the start of the simulation.
+	 * It counts the wheel's rotation: if the robot pushes against an obstacle the wheel turns
+	 * anyway (slipping). The basis for odometry.
 	 */
 	public double getLeftWheelTravel(){ return leftWheelTravel; }
 
-	/** Strada percorsa dalla ruota destra (celle, con segno). */
+	/** Distance travelled by the right wheel (cells, signed). */
 	public double getRightWheelTravel(){ return rightWheelTravel; }
 
 	/***********************************************************************************************************/
@@ -196,7 +196,7 @@ public abstract class RobotUnit implements Runnable{
 	}
 
 	/***********************************************************************************************************/
-	/*  Tempo simulato                                                                                         */
+	/*  Simulated time                                                                                         */
 	/***********************************************************************************************************/
 
 	/***********************************************************************************************************/
@@ -243,20 +243,19 @@ public abstract class RobotUnit implements Runnable{
 		return n;
 	}
 
-	/** Collega il robot all'orologio della simulazione (fatto da Simulator/SimEngine). */
+	/** Connects the robot to the simulation's clock (done by Simulator/SimEngine). */
 	public void attachClock(SimClock clock){ this.clock = clock; }
 
-	/** Tempo simulato corrente in secondi (0 se il robot non è in una simulazione). */
+	/** Current simulated time in seconds (0 if the robot is not in a simulation). */
 	public double getSimTime(){ return clock != null ? clock.now() : 0; }
 
 	/**
-	 * Attende {@code seconds} di tempo SIMULATO. Da usare al posto di Thread.sleep()
-	 * nel codice dei robot: così pausa, passo singolo e accelerazione funzionano,
-	 * e la simulazione è riproducibile.
+	 * Waits {@code seconds} of SIMULATED time. Use it instead of Thread.sleep() in robot code:
+	 * this way pause, single step and speed-up work, and the simulation is reproducible.
 	 */
 	public void sleepSim(double seconds){
 		publishDrawings();   // what was drawn since the last sleep becomes visible all at once
-		if (clock == null) {   // fuori da una simulazione (es. test): tempo reale
+		if (clock == null) {   // outside a simulation (e.g. tests): real time
 			try { Thread.sleep((long)(seconds * 1000)); }
 			catch (InterruptedException e) { Thread.currentThread().interrupt(); }
 			return;
@@ -277,7 +276,7 @@ public abstract class RobotUnit implements Runnable{
 		try {
 			while(activeStatus) executeLoop();
 		} catch (SimulationStoppedException e) {
-			// simulazione fermata o robot disattivato: uscita normale
+			// simulation stopped or robot deactivated: normal exit
 		} catch (RuntimeException e) {
 			System.err.println("Robot #" + getIDnum() + " terminated by an error: " + e);
 			e.printStackTrace();
@@ -293,9 +292,9 @@ public abstract class RobotUnit implements Runnable{
 	/**********************************	Moving Methods **********************************************************/
 
 	/**
-	 * Ruota sul posto di {@code angle} gradi (positivo = orario sullo schermo), a una velocità
-	 * di Const.angleStep gradi ogni {@code tms} millisecondi. La rotazione avviene in tempo
-	 * simulato tramite i motori, quindi rispetta fisica, pausa e accelerazione.
+	 * Turns on the spot by {@code angle} degrees (positive = clockwise on screen), at
+	 * Const.angleStep degrees every {@code tms} milliseconds. The rotation happens in simulated
+	 * time through the motors, so it respects physics, pause and speed-up.
 	 */
 	public void rotateBy(int angle, int tms){
 		if (angle == 0) return;
@@ -316,21 +315,19 @@ public abstract class RobotUnit implements Runnable{
 	/***********************************************************************************************************/
 
 	/**
-	 * Avanza il robot di un passo rispettando i contatti (risposta "a scivolamento").
+	 * Advances the robot by one step, respecting contacts ("sliding" response).
 	 *
-	 * Il corpo del robot è un disco, quindi la rotazione non può mai causare
-	 * compenetrazione ed è sempre consentita. Della traslazione del centro si
-	 * elimina solo la componente diretta verso ciascun contatto attivo (bump
-	 * sensor): il robot non entra nell'ostacolo ma può scivolarci lungo, e
-	 * può sempre allontanarsene. I motori NON vengono azzerati: come su un
-	 * robot reale, è la logica del robot a decidere come reagire al bump.
+	 * The robot's body is a disc, so rotation can never cause interpenetration and is always
+	 * allowed. Of the centre's translation, only the component towards each active contact
+	 * (bump sensor) is removed: the robot does not enter the obstacle but can slide along it,
+	 * and can always move away from it. The motors are NOT reset: as on a real robot, it is
+	 * the robot's logic that decides how to react to the bump.
 	 *
-	 * La regola precedente (fermo totale salvo rotazione pura sul posto)
-	 * causava un deadlock con le strategie che sterzano su una ruota:
-	 * la sterzata ha sempre una componente di avanzamento e veniva bloccata.
+	 * The previous rule (full stop except pure rotation on the spot) deadlocked the strategies
+	 * that steer on one wheel: such a turn always has a forward component, which was blocked.
 	 */
 	public void evaluateMovement(double timeSample){
-		// percorso delle ruote: girano secondo i comandi anche se il corpo è bloccato da un contatto (slittamento)
+		// wheel travel: the wheels turn as commanded even when a contact blocks the body (slipping)
 		double v = vK, w = wK, half = unitObj.wheelsDistance / 2;
 		leftWheelTravel  += (v + w * half) * timeSample;
 		rightWheelTravel += (v - w * half) * timeSample;
@@ -344,8 +341,8 @@ public abstract class RobotUnit implements Runnable{
 		SensorArray bump = unitObj.getBumpSensors();
 		if (!bump.isEmpty()) {
 			double[] contacts = bump.getSensors();
-			// Due passate: con più contatti (es. angolo tra due pareti) una sola
-			// proiezione può reintrodurre una componente verso il primo contatto.
+			// Two passes: with several contacts (e.g. a corner between two walls) a single
+			// projection can reintroduce a component towards the first contact.
 			for (int pass = 0; pass < 2; pass++) {
 				for (int i = 0; i < contacts.length; i++) {
 					if (contacts[i] == bump.getInitValue()) continue;
@@ -363,7 +360,7 @@ public abstract class RobotUnit implements Runnable{
 
 	/***********************************************************************************************************/
 
-	/** Posa successiva secondo la cinematica differenziale (vK, wK letti una sola volta). */
+	/** Next pose by differential kinematics (vK, wK read once). */
 	private Position computeNext(Position currPos, double timeSample){
 		double v = vK, w = wK;
 		if (Math.abs(w) < 0.001) return computeRungeKutta(currPos, v, 0, timeSample);

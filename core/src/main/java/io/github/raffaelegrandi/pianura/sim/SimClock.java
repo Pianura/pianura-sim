@@ -69,7 +69,7 @@ public final class SimClock {
     }
 
     // ------------------------------------------------------------------
-    //  Lato robot
+    //  Robot side
     // ------------------------------------------------------------------
 
     /** Registers a participant (call it before starting its thread). */
@@ -153,7 +153,7 @@ public final class SimClock {
         } finally { lock.unlock(); }
     }
 
-    /** Ferma la simulazione: tutti i robot in sleep ricevono SimulationStoppedException. */
+    /** Stops the simulation: every robot in sleep receives SimulationStoppedException. */
     public void stop() {
         lock.lock();
         try {

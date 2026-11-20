@@ -44,7 +44,7 @@ public final class SimEngine {
     private final ReentrantLock ctrlLock = new ReentrantLock();
     private final Condition ctrlChanged = ctrlLock.newCondition();
     private boolean paused = true;
-    private long stepsToRun = 0;          // passi residui richiesti con step() mentre in pausa
+    private long stepsToRun = 0;          // steps still to run, requested with step() while paused
     private double speed = 1.0;
     private boolean pacingReset = true;   // realign the real-time clock at the next iteration
 

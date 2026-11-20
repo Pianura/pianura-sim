@@ -6,19 +6,18 @@ import io.github.raffaelegrandi.pianura.utils.Const;
 import io.github.raffaelegrandi.pianura.utils.Position;
 
 /**
- * Base per i robot definiti dall'utente: implementare {@link #executeLoop()}.
+ * Base class for user-defined robots: implement {@link #executeLoop()}.
  *
- * Il guasto simulato ({@code faultTime}) è ora espresso in tempo SIMULATO:
- * al raggiungimento dell'istante il motore disattiva il robot, che resta
- * nell'arena come ostacolo fermo.
+ * The simulated fault ({@code faultTime}) is in SIMULATED time: when that instant comes
+ * the engine deactivates the robot, which stays in the arena as a still obstacle.
  */
 public abstract class RobotDummy extends RobotUnit {
 
-	/** Istante del guasto in secondi di tempo simulato, negativo = nessun guasto. */
+	/** Instant of the fault in seconds of simulated time, negative = no fault. */
 	private final double faultTimeSec;
 
 	/**
-	 * @param faultTime istante del guasto simulato in millisecondi (tempo simulato), negativo = nessuno
+	 * @param faultTime instant of the simulated fault in milliseconds (simulated time), negative = none
 	 */
 	public RobotDummy(int unitIDnum, Position unitPos, double sensRange, int faultTime, Color unitColor){
 		super(unitIDnum, unitPos, sensRange, unitColor);
@@ -29,7 +28,7 @@ public abstract class RobotDummy extends RobotUnit {
 		this(unitIDnum, unitPos, sensRange, -1, Const.unitColor);
 	}
 
-	/** Istante del guasto simulato in secondi, negativo se assente. */
+	/** Instant of the simulated fault in seconds, negative if none. */
 	public double getFaultTime(){ return faultTimeSec; }
 
 	public abstract void executeLoop();

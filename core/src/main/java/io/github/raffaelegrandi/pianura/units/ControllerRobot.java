@@ -6,8 +6,8 @@ import io.github.raffaelegrandi.pianura.utils.Const;
 import io.github.raffaelegrandi.pianura.utils.Position;
 
 /**
- * Robot guidato da un {@link RobotController} chiamato ogni {@code controlPeriod}
- * secondi di tempo simulato.
+ * Robot driven by a {@link RobotController}, called every {@code controlPeriod} seconds of
+ * simulated time.
  */
 public class ControllerRobot extends RobotDummy {
 

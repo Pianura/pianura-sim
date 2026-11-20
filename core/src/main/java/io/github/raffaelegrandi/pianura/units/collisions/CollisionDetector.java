@@ -163,7 +163,7 @@ public class CollisionDetector {
     }
 
     // ---------------------------------------------------------
-    //  Forme dinamiche (robot)
+    //  Dynamic shapes (robots)
     // ---------------------------------------------------------
 
     /**
@@ -274,7 +274,7 @@ public class CollisionDetector {
         public boolean isOk() { return messages.isEmpty(); }
     }
 
-    /** Ostacoli (compenetrazioni, fuori arena) e robot (sovrapposti a ostacoli, muri o altri robot). */
+    /** Obstacles (overlapping, outside the arena) and robots (overlapping obstacles, walls or other robots). */
     public Validation validate(List<UnitObject> units) {
         List<String> msgs = new ArrayList<>();
         java.util.Set<Integer> badObs = new java.util.TreeSet<>();
@@ -389,7 +389,7 @@ public class CollisionDetector {
     public double getArenaWidthPx()  { return arenaWidthPx; }
     public double getArenaHeightPx() { return arenaHeightPx; }
 
-    /** Sovrapposizione minima segnalata, in pixel² (sotto: contatto o arrotondamento). */
+    /** Smallest overlap reported, in pixels² (below: contact or rounding). */
     private static final double MIN_OVERLAP_PX2 = 1.0;
 
     /** Area of a region (sum of the areas of its sub-paths, curves approximated). */

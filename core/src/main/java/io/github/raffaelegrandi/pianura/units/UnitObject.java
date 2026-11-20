@@ -23,7 +23,7 @@ public class UnitObject extends ArenaObjectABS {
 		super(unitIDref);
 		sensorRange = sensRange < Const.sensorsCheckingRangeMin ? Const.sensorsCheckingRangeMin : sensRange;
 		bumpSensors = new SensorArray();
-		irSensors = new SensorArray(sensorRange);   // a riposo = portata: nulla nel campo
+		irSensors = new SensorArray(sensorRange);   // at rest = range: nothing in range
 	}
 
 	public int getIDnum(){return objectID.getIDnum();}
@@ -32,10 +32,10 @@ public class UnitObject extends ArenaObjectABS {
 
 	public SensorArray getIrSensors(){ return irSensors; }
 
-	/** Portata dei sensori IR in celle, misurata dalla superficie del robot. */
+	/** Range of the IR sensors in cells, measured from the robot's surface. */
 	public double getSensorRange(){ return sensorRange; }
 
-	/** Sensori ottici rivolti verso il pavimento. */
+	/** Optical sensors facing the floor. */
 	public io.github.raffaelegrandi.pianura.units.sensors.FloorSensorArray getFloorSensors(){ return floorSensors; }
 
 	public void setPos(Position newPos){ objectID.setPos(newPos);}
