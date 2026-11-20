@@ -49,7 +49,8 @@ written in 2008 and used for years at the University of Bologna; see [Origins](#
   or any image
 - **Scene editing**: before starting or while paused, drag, resize and rotate obstacles and
   robots with the mouse; save the scene to a file and open it again, or load it from code
-- No dependencies beyond the JDK
+- No dependencies beyond the JDK; with [FlatLaf](https://www.formdev.com/flatlaf/) on the
+  classpath the window takes a modern look (the examples include it)
 
 ---
 
@@ -81,6 +82,16 @@ The available examples are `timedmotion`, `obstacles`, `rooms`, `linefollowing`,
 `radio`, `largemap` and `braitenberg`. [`examples/README.md`](examples/README.md) says what
 each one shows, with screenshots; the controllers they use are described in
 [`algorithms/README.md`](algorithms/README.md).
+
+**Look of the window.** The examples use FlatLaf's light theme. For the dark theme, or for the
+classic Swing look of JUSE:
+
+```bash
+./gradlew run -Dpianura.laf=flat-dark     # or metal, or system (the operating system's look)
+```
+
+Pianura itself does not depend on FlatLaf: in your own project the window uses Swing's
+standard look unless you add `com.formdev:flatlaf` to the runtime classpath.
 
 ---
 

@@ -49,7 +49,7 @@ public class Simulator {
 		engine.setMetersPerCell(scenarioMngRef.getMetersPerCell());
 		scenarioMngRef.setUnitsManagerSet(true);
 
-		JFrame.setDefaultLookAndFeelDecorated(true);
+		io.github.raffaelegrandi.pianura.gui.LookAndFeelSetup.install();   // FlatLaf if present, else Metal
 		mainFrame = new MainFrame(Const.guiFrameTitle, frameLoc, logInitStr, scenarioMngRef, engine);
 		mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		engine.setLogger(msg -> printLogMsg(false, msg));

@@ -120,4 +120,10 @@ class ExamplesTest {
         }
     }
 
+
+    @Test
+    void theExamplesShipTheModernLook() {
+        assertTrue(io.github.raffaelegrandi.pianura.gui.LookAndFeelSetup.flatLafAvailable(),
+            "FlatLaf is a runtime dependency of the examples (optional for core)");
+    }
 }

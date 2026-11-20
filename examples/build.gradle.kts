@@ -6,6 +6,9 @@ plugins {
 dependencies {
     implementation(project(":core"))
     implementation(project(":algorithms"))
+    // Modern look for the window. Optional: Pianura (core) does not depend on it and falls
+    // back to Swing's standard look without it. Choose with -Dpianura.laf=flat|flat-dark|metal|system
+    runtimeOnly("com.formdev:flatlaf:3.7.1")
 }
 
 // Every folder in the examples package is one example, started by its Main class:
@@ -20,4 +23,9 @@ require(example in available) {
 
 application {
     mainClass.set("io.github.raffaelegrandi.pianura.examples.$example.Main")
+}
+
+// Pass -Dpianura.laf=... from the Gradle command line to the example
+tasks.named<JavaExec>("run") {
+    System.getProperty("pianura.laf")?.let { systemProperty("pianura.laf", it) }
 }

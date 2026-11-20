@@ -12,6 +12,7 @@ import java.io.File;
 import java.util.function.Consumer;
 
 import javax.swing.BorderFactory;
+import javax.swing.UIManager;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -103,7 +104,9 @@ public class ViewSidePanel extends JPanel {
         livelli.add(layer("Floor sensors", () -> options.floorSensors, v -> options.floorSensors = v));
         livelli.add(layer("Robot IDs", () -> options.ids, v -> options.ids = v));
         livelli.add(layer("Robot drawings", () -> options.drawings, v -> options.drawings = v));
-        livelli.add(layer("Drawings: selected robot only", () -> options.drawingsSelectedOnly, v -> options.drawingsSelectedOnly = v));
+        JCheckBox onlySelected = layer("Selected robot only", () -> options.drawingsSelectedOnly, v -> options.drawingsSelectedOnly = v);
+        onlySelected.setToolTipText("Show only the drawings of the selected robot");
+        livelli.add(onlySelected);
         // distanza dell'etichetta dal centro, in raggi del robot (0 = sopra il robot)
         JLabel distLabel = new JLabel();
         distLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -293,8 +296,17 @@ public class ViewSidePanel extends JPanel {
         JLabel l = new JLabel("<html>" + text + "</html>");
         l.setAlignmentX(Component.LEFT_ALIGNMENT);
         l.setFont(l.getFont().deriveFont(Font.PLAIN, 10.5f));
-        l.setForeground(Color.DARK_GRAY);
+        l.setForeground(hintColor());
         return l;
+    }
+
+    /** Text color for hints: the label color, a third of the way towards the background (any theme). */
+    private static Color hintColor() {
+        Color fg = UIManager.getColor("Label.foreground"), bg = UIManager.getColor("Panel.background");
+        if (fg == null || bg == null) return Color.DARK_GRAY;
+        double k = 0.35;
+        return new Color((int) (fg.getRed() * (1 - k) + bg.getRed() * k), (int) (fg.getGreen() * (1 - k) + bg.getGreen() * k),
+                         (int) (fg.getBlue() * (1 - k) + bg.getBlue() * k));
     }
 
     /** Replaces the arena text (e.g. after opening a scene). */

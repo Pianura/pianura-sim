@@ -32,9 +32,9 @@ public class SimControlBar extends JToolBar {
     private static final double[] SPEED_VALUES = { 0.25, 0.5, 1, 2, 5, 10, SimEngine.MAX_SPEED };
 
     private final SimEngine engine;
-    private final JButton runPause = new JButton("Run");
+    private final JButton runPause = new JButton("\u25B6 Run");
     private final JButton step = new JButton("Step");
-    private final JButton stop = new JButton("Stop");
+    private final JButton stop = new JButton("\u25A0 Stop");
     private Runnable stopAction;
     private boolean syncing;   // aggiornamento del menu velocità da codice: non rimandarlo al motore
     private final JComboBox<String> speed = new JComboBox<>(SPEED_LABELS);
@@ -121,7 +121,7 @@ public class SimControlBar extends JToolBar {
         boolean stopped = engine.isStopped();
         boolean started = engine.isRunning() || stopped;
         boolean paused = engine.isPaused();
-        runPause.setText(paused || stopped ? "Run" : "Pause");
+        runPause.setText(paused || stopped ? "\u25B6 Run" : "\u275A\u275A Pause");
         runPause.setEnabled(!stopped && started);
         step.setEnabled(paused && !stopped && started);
         stop.setEnabled(started && !stopped);
