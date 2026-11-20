@@ -18,13 +18,51 @@ public class ScenarioManager {
 	private double arenaWidthCells = Const.gridCellCount;
 	private double arenaHeightCells = Const.gridCellCount;
 	private double metersPerCell = Const.DEFAULT_METERS_PER_CELL;
+	private final java.util.Map<Integer, SceneFile.RobotPose> scenePoses = new java.util.HashMap<>();
 
 	public ScenarioManager(){
 		robots = new ArrayList<>();
 		obstacles = new ArrayList<>();
 	}
 
-	public void addRobot(RobotDummy robot){ robots.add(robot); }
+	public void addRobot(RobotDummy robot){
+		robots.add(robot);
+		SceneFile.RobotPose p = scenePoses.get(robot.getIDnum());
+		if (p != null) robot.getUnitObject().setPos(new io.github.raffaelegrandi.pianura.utils.Position(p.x(), p.y(), p.theta()));
+	}
+
+	/**
+	 * Loads a scene saved from the window (Save) or written by hand: arena size and scale,
+	 * obstacles (they replace the ones added so far) and the robots' positions, by id. Robots
+	 * added before or after this call are placed where the scene says; robots the scene does
+	 * not mention keep their own position. Call it in the scenario's constructor:
+	 * <pre>
+	 *   loadScene(Path.of("my-arena.json"));
+	 *   loadScene(getClass().getResourceAsStream("my-arena.json"));   // from the jar
+	 * </pre>
+	 */
+	public void loadScene(java.nio.file.Path file) throws java.io.IOException { applyScene(SceneFile.read(file)); }
+
+	/** @see #loadScene(java.nio.file.Path) */
+	public void loadScene(java.io.InputStream in) throws java.io.IOException { applyScene(SceneFile.read(in)); }
+
+	private void applyScene(SceneFile.Scene s){
+		setArenaSize(s.arenaWidth(), s.arenaHeight());
+		setMetersPerCell(s.metersPerCell());
+		obstacles.clear();
+		obstacles.addAll(s.obstacles());
+		scenePoses.clear();
+		for (SceneFile.RobotPose p : s.robots()) scenePoses.put(p.id(), p);
+		for (RobotDummy r : robots) {
+			SceneFile.RobotPose p = scenePoses.get(r.getIDnum());
+			if (p != null) r.getUnitObject().setPos(new io.github.raffaelegrandi.pianura.utils.Position(p.x(), p.y(), p.theta()));
+		}
+	}
+
+	/** Saves arena, obstacles and robot positions as they are now (the same file the window's Save writes). */
+	public void saveScene(java.nio.file.Path file) throws java.io.IOException {
+		SceneFile.write(file, arenaWidthCells, arenaHeightCells, metersPerCell, obstacles, robots);
+	}
 
 	public void addObstacle(Obstacle obstacle){ obstacles.add(obstacle);}
 

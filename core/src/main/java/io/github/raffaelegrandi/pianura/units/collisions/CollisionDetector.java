@@ -60,7 +60,7 @@ public class CollisionDetector {
 
     /** Sostituita in blocco da {@link #rebuild()}: chi legge vede sempre un insieme coerente. */
     private volatile Shapes shapes;
-    private final List<Obstacle> obstacles;
+    private volatile List<Obstacle> obstacles;
     private final double robotRadiusPx;
     private final double bumpRangePx;
     private final double cellSizePx;
@@ -94,6 +94,16 @@ public class CollisionDetector {
     }
 
     public List<Obstacle> getObstacles() { return obstacles; }
+
+    /**
+     * Sostituisce l'insieme degli ostacoli (es. scena aperta da file) e ricalcola le forme.
+     * Da chiamare con la simulazione ferma o in pausa (SimEngine.replaceScene lo fa sotto lock).
+     */
+    public void replaceObstacles(List<Obstacle> newObstacles) {
+        List<Obstacle> copy = List.copyOf(newObstacles);
+        shapes = buildShapes(copy);
+        obstacles = copy;
+    }
 
     /**
      * True if no obstacle (or arena wall) lies on the segment between the two points (pixels).

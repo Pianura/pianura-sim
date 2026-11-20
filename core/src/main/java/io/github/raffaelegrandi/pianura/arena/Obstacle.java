@@ -61,6 +61,9 @@ public class Obstacle extends ArenaObjectABS {
 
 	public double getBorderWidth(){ return borderWidth; }
 
+	/** Colore del bordo impostato con withBorder, o null se automatico. */
+	public Color getCustomBorderColor(){ return borderColor; }
+
 	/** Bordo automatico: il colore di riempimento scurito; per colori molto scuri, schiarito. */
 	public static Color autoBorder(Color fill){
 		if (fill == null) return Color.DARK_GRAY;

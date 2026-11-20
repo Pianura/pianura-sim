@@ -14,7 +14,9 @@ From the repository root:
 ```
 
 An unknown name stops the build with the list of the available ones. Examples open paused:
-arrange the scene if you like, then press **Run** (or Space).
+arrange the scene if you like, then press **Run** (or Space). **Save…** (Ctrl+S) keeps the
+arrangement in a file and **Open…** (Ctrl+O) brings it back, also in a later run of the same
+example; see [Scene files](../README.md#scene-files).
 
 ## The examples
 

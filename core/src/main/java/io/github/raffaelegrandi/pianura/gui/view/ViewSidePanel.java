@@ -42,6 +42,7 @@ public class ViewSidePanel extends JPanel {
     private final JLabel zoomLabel = new JLabel();
     private final JLabel robotInfo = new JLabel();
     private final JLabel commInfo = new JLabel();
+    private final JLabel arenaInfoLabel = new JLabel();
     private final io.github.raffaelegrandi.pianura.comm.CommNetwork network;
     private final JComboBox<String> floorBox = new JComboBox<>(FLOORS);
     private final FloorStyle scenarioFloor;
@@ -144,9 +145,9 @@ public class ViewSidePanel extends JPanel {
 
         // --- Arena ---
         JPanel arena = section("Arena");
-        JLabel info = new JLabel(arenaInfo);
-        info.setAlignmentX(Component.LEFT_ALIGNMENT);
-        arena.add(info);
+        arenaInfoLabel.setText(arenaInfo);
+        arenaInfoLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        arena.add(arenaInfoLabel);
         add(arena);
 
         // --- Robot selezionato ---
@@ -295,6 +296,9 @@ public class ViewSidePanel extends JPanel {
         l.setForeground(Color.DARK_GRAY);
         return l;
     }
+
+    /** Replaces the arena text (e.g. after opening a scene). */
+    public void setArenaInfo(String html) { arenaInfoLabel.setText(html); }
 
     /** Testo informativo sull'arena per il pannello, con la scala dello scenario. */
     public static String arenaInfo(double wCells, double hCells, double metersPerCell, int obstacles, int robots) {

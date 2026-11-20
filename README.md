@@ -47,8 +47,8 @@ written in 2008 and used for years at the University of Bologna; see [Origins](#
   move the view
 - **Floors**: checkerboard, grid, random tiles, Voronoi tiles, a line-following track,
   or any image
-- **Scene editing**: before starting, drag, resize and rotate obstacles and robots
-  with the mouse
+- **Scene editing**: before starting or while paused, drag, resize and rotate obstacles and
+  robots with the mouse; save the scene to a file and open it again, or load it from code
 - No dependencies beyond the JDK
 
 ---
@@ -224,6 +224,40 @@ public class Main {
     }
 }
 ```
+
+### Scene files
+
+A scene is the stage without the actors: arena size and scale, obstacles, and where each
+robot stands (by id). Arrange it with the mouse, then **Save…** in the toolbar (Ctrl+S)
+writes it to a JSON file; **Open…** (Ctrl+O) loads one back, before the start or while
+paused, replacing the obstacles and moving the robots it lists. The file is short and can be
+edited by hand:
+
+```json
+{
+  "pianura_scene": 1,
+  "arena": {"width": 40, "height": 40, "meters_per_cell": 0.05},
+  "obstacles": [
+    {"shape": "rect", "x": 20, "y": 8, "theta": 0, "width": 30, "height": 1, "color": "#505050"},
+    {"shape": "oval", "x": 20, "y": 20, "theta": 0.6, "width": 8, "height": 4, "color": "#3060d0"}
+  ],
+  "robots": [
+    {"id": 1, "x": 4, "y": 4, "theta": 0}
+  ]
+}
+```
+
+A scenario can start from a scene file: the robots' code stays in Java, the layout in the
+file. Handy for exercises, where the same robots face different arenas:
+
+```java
+public MyScenario() throws IOException {
+    addRobot(new MyRobot(1, new Position(0, 0, 0), 2));      // placed where the scene says
+    loadScene(Path.of("arena-1.json"));                       // or getClass().getResourceAsStream(...)
+}
+```
+
+The floor is not part of the scene: it comes from the scenario (`setFloor`) or the side panel.
 
 ---
 

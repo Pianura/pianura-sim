@@ -300,6 +300,27 @@ public final class SimEngine {
         } finally { stepLock.unlock(); }
     }
 
+    /**
+     * Replaces the obstacles and moves the robots listed in {@code poses} (id to pose), e.g. a
+     * scene opened from file. Only while editable (before the start or paused); the sensors are
+     * recomputed at once.
+     */
+    public void replaceScene(List<io.github.raffaelegrandi.pianura.arena.Obstacle> obstacles,
+                             java.util.Map<Integer, io.github.raffaelegrandi.pianura.utils.Position> poses) {
+        if (!isEditable()) throw new IllegalStateException("the scene can be replaced only before the start or while paused");
+        stepLock.lock();
+        try {
+            detector.replaceObstacles(obstacles);
+            for (RobotUnit r : robots) {
+                io.github.raffaelegrandi.pianura.utils.Position p = poses.get(r.getIDnum());
+                if (p != null) r.getUnitObject().setPos(new io.github.raffaelegrandi.pianura.utils.Position(p));
+            }
+            detector.rebuild();
+            sense();
+            network.updateGraph(clock.now());
+        } finally { stepLock.unlock(); }
+    }
+
     /** Validazione della scena corrente (ostacoli e posizioni dei robot). */
     public CollisionDetector.Validation validate() {
         return detector.validate(bodies);

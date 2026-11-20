@@ -245,6 +245,19 @@ public class ArenaView extends JPanel {
     //  Modifica della scena
     // ------------------------------------------------------------------
 
+    /**
+     * The obstacles list was replaced (scene opened from file): forget the selection and the
+     * trails, recompute the outlines. On the EDT.
+     */
+    public void obstaclesReplaced() {
+        selectedObstacle = -1;
+        badObstacles = Set.of();
+        badRobots = Set.of();
+        trails.clear();
+        refreshOutlines();
+        repaint();
+    }
+
     private void refreshOutlines() {
         List<Shape> list = new ArrayList<>(obstacles.size());
         for (Obstacle o : obstacles) list.add(ArenaFloorPanel.outlineOf(o));
