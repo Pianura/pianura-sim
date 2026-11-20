@@ -1,10 +1,9 @@
 package io.github.raffaelegrandi.pianura.sim;
 
 /**
- * Lanciata dentro il thread di un robot quando la simulazione viene fermata
- * mentre il robot è in attesa ({@code sleepSim}). Serve a far terminare in modo
- * pulito i cicli dei robot, anche quelli scritti come {@code while(true)}.
- * Viene intercettata da RobotUnit: il codice utente non deve gestirla.
+ * Thrown inside a robot's thread when the simulation is stopped while the robot is
+ * waiting ({@code sleepSim}). It ends the robots' loops cleanly, even those written as
+ * {@code while(true)}. RobotUnit catches it: user code does not need to handle it.
  */
 public class SimulationStoppedException extends RuntimeException {
     public SimulationStoppedException() {

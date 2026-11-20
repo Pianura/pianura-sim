@@ -9,29 +9,28 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Tempo simulato a passo fisso e sincronizzazione dei thread dei robot.
+ * Fixed-step simulated time, and synchronisation of the robots' threads.
  *
- * Il tempo avanza solo quando il motore chiama {@link #advance()}, a passi di
- * {@code dt} secondi. I thread dei robot non usano Thread.sleep ma
- * {@link #sleep(Object, double)}: si bloccano finché il tempo simulato non ha
- * raggiunto l'istante richiesto.
+ * Time advances only when the engine calls {@link #advance()}, in steps of
+ * {@code dt} seconds. Robot threads do not use Thread.sleep but
+ * {@link #sleep(Object, double)}: they block until simulated time has reached
+ * the requested instant.
  *
- * Barriera (modalità lockstep): prima di ogni passo il motore attende con
- * {@link #awaitParticipants(long)} che tutti i robot registrati siano bloccati
- * in sleep. In questo modo:
- *   - pausa, passo singolo e accelerazione funzionano senza toccare il codice dei robot;
- *   - una simulazione eseguita due volte con gli stessi dati dà lo stesso risultato,
- *     a qualsiasi velocità;
- *   - un controllore lento (es. remoto via rete) rallenta la simulazione invece di
- *     perdere comandi.
+ * Barrier (lockstep mode): before each step the engine waits, with
+ * {@link #awaitParticipants(long)}, until every registered robot is blocked in
+ * sleep. This way:
+ *   - pause, single step and speed-up work without touching the robots' code;
+ *   - a simulation run twice with the same data gives the same result, at any speed;
+ *   - a slow controller (e.g. remote, over the network) slows the simulation down
+ *     instead of losing commands.
  *
- * Robot non cooperativi: se un robot non chiama sleep entro il timeout (ad es. usa
- * Thread.sleep o un ciclo senza attese) viene segnalato e marcato UNSYNCED: il motore
- * smette di aspettarlo finché non torna a chiamare sleep.
+ * Non-cooperative robots: a robot that does not call sleep within the timeout (it uses
+ * Thread.sleep, or loops without waiting) is reported and marked UNSYNCED: the engine
+ * stops waiting for it until it calls sleep again.
  *
- * Si usano ReentrantLock/Condition e non synchronized/wait: su Java 21 un virtual
- * thread bloccato dentro synchronized occupa il carrier thread, e con molti robot
- * si rischierebbe di esaurirli.
+ * ReentrantLock/Condition rather than synchronized/wait: on Java 21 a virtual thread
+ * blocked inside synchronized pins its carrier thread, and with many robots the
+ * carriers could run out.
  */
 public final class SimClock {
 
@@ -58,7 +57,7 @@ public final class SimClock {
 
     public double getDt() { return dt; }
 
-    /** Tempo simulato corrente in secondi (calcolato dal numero di passi: niente errore cumulato). */
+    /** Current simulated time in seconds (computed from the number of steps: no accumulated error). */
     public double now() {
         lock.lock();
         try { return step * dt; } finally { lock.unlock(); }
@@ -73,7 +72,7 @@ public final class SimClock {
     //  Lato robot
     // ------------------------------------------------------------------
 
-    /** Registra un partecipante (da chiamare prima di avviarne il thread). */
+    /** Registers a participant (call it before starting its thread). */
     public void register(Object who, String name) {
         lock.lock();
         try {
@@ -82,7 +81,7 @@ public final class SimClock {
         } finally { lock.unlock(); }
     }
 
-    /** Rimuove un partecipante (thread terminato): il motore non lo aspetta più. */
+    /** Removes a participant (thread ended): the engine no longer waits for it. */
     public void deregister(Object who) {
         lock.lock();
         try {
@@ -92,8 +91,8 @@ public final class SimClock {
     }
 
     /**
-     * Blocca il chiamante per {@code seconds} di tempo simulato (almeno un passo).
-     * @throws SimulationStoppedException se la simulazione viene fermata durante l'attesa
+     * Blocks the caller for {@code seconds} of simulated time (at least one step).
+     * @throws SimulationStoppedException if the simulation is stopped while waiting
      */
     public void sleep(Object who, double seconds) {
         long steps = Math.max(1, Math.round(seconds / dt));
@@ -101,7 +100,7 @@ public final class SimClock {
         try {
             if (stopped) throw new SimulationStoppedException();
             Participant p = participants.get(who);
-            if (p == null) {            // non registrato: attende comunque in tempo simulato
+            if (p == null) {            // not registered: waits in simulated time all the same
                 long target = step + steps;
                 while (step < target && !stopped) changed.awaitUninterruptibly();
             } else {
@@ -122,8 +121,8 @@ public final class SimClock {
     // ------------------------------------------------------------------
 
     /**
-     * Attende che tutti i robot sincronizzati siano bloccati in sleep su un istante futuro.
-     * @return i nomi dei robot che hanno superato il timeout (marcati UNSYNCED)
+     * Waits until every synchronised robot is blocked in sleep on a future instant.
+     * @return the names of the robots that exceeded the timeout (marked UNSYNCED)
      */
     public List<String> awaitParticipants(long timeoutMs) {
         List<String> late = new ArrayList<>();
@@ -145,7 +144,7 @@ public final class SimClock {
         return late;
     }
 
-    /** Avanza di un passo e sveglia i robot il cui istante è arrivato. */
+    /** Advances one step and wakes the robots whose instant has come. */
     public void advance() {
         lock.lock();
         try {
@@ -173,7 +172,7 @@ public final class SimClock {
         return false;
     }
 
-    /** "In esecuzione" = sta calcolando, oppure il suo istante di risveglio è già arrivato. */
+    /** "Running" = it is computing, or its wake-up instant has already come. */
     private boolean isRunning(Participant p) {
         return p.state == State.RUNNING || (p.state == State.WAITING && p.wakeStep <= step);
     }
