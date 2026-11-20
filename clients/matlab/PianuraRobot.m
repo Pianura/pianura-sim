@@ -1,3 +1,6 @@
+% Copyright (c) 2008-2026 Raffaele Grandi
+% SPDX-License-Identifier: MIT
+
 classdef PianuraRobot < handle
     % PianuraRobot  Drive one Pianura robot from MATLAB (or GNU Octave) over UDP.
     %

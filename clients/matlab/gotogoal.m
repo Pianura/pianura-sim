@@ -1,3 +1,6 @@
+% Copyright (c) 2008-2026 Raffaele Grandi
+% SPDX-License-Identifier: MIT
+
 function rec = gotogoal(waypoints, robotId, host, port, doPlot)
 % GOTOGOAL  Drive a robot through a list of waypoints with a proportional controller,
 % then plot the trajectory and the errors.

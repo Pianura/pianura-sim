@@ -1,3 +1,6 @@
+% Copyright (c) 2008-2026 Raffaele Grandi
+% SPDX-License-Identifier: MIT
+
 function wander(ids, host, port)
 % WANDER  Robots that wander around and steer away from obstacles, driven from MATLAB.
 %

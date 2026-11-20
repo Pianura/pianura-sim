@@ -1,3 +1,6 @@
+# Copyright (c) 2008-2026 Raffaele Grandi
+# SPDX-License-Identifier: MIT
+
 """
 Pianura remote-control client (Python 3.8+, standard library only).
 

@@ -1,3 +1,6 @@
+# Copyright (c) 2008-2026 Raffaele Grandi
+# SPDX-License-Identifier: MIT
+
 """
 Example: robots that wander around and steer away from obstacles, driven from Python.
 

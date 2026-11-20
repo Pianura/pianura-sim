@@ -411,7 +411,17 @@ documentation, open an issue or a pull request.
 
 ## License
 
-Pianura is released under the [MIT License](LICENSE).
+Pianura is released under the [MIT License](LICENSE). Every source file carries the
+notice in two lines (`SPDX-License-Identifier: MIT`).
+
+Third-party software:
+
+| Component | Used by | License |
+|---|---|---|
+| [FlatLaf](https://www.formdev.com/flatlaf/) | `examples`, at run time, for the modern look (optional for `core`) | Apache License 2.0 |
+| [JUnit 5](https://junit.org/junit5/) | tests only, not distributed | Eclipse Public License 2.0 |
+
+`core` and `algorithms` depend on the JDK only.
 
 ---
 
