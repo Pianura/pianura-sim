@@ -1,32 +1,32 @@
 package io.github.raffaelegrandi.pianura.units.collisions;
 
 /**
- * Ellisse per il rilevamento collisioni geometrico, eventualmente ruotata.
- * La posizione è il centro dell'ellisse (in pixel); l'angolo segue la convenzione
- * dei robot (coordinate schermo, positivo = orario).
+ * Ellipse for geometric collision detection, possibly rotated. The position is the
+ * ellipse's centre (pixels); the angle follows the robots' convention (screen
+ * coordinates, positive = clockwise).
  *
- * Il raggio viene portato nel sistema di riferimento dell'ellisse (rotazione inversa),
- * dove l'ellisse è allineata agli assi; poi si sostituisce l'equazione parametrica
- * del raggio nell'equazione dell'ellisse e si risolve la quadratica:
+ * The ray is brought into the ellipse's frame (inverse rotation), where the ellipse is
+ * axis-aligned; then the ray's parametric equation is substituted into the ellipse's
+ * equation and the quadratic is solved:
  *
- * Con origine (ox, oy) e direzione unitaria (dx, dy), nel riferimento locale:
+ * With origin (ox, oy) and unit direction (dx, dy), in the local frame:
  *   A·t² + B·t + C = 0
- * dove:
+ * where:
  *   A = dx²/a² + dy²/b²
  *   B = 2·(rx·dx/a² + ry·dy/b²)    rx = ox - cx
  *   C = rx²/a² + ry²/b² - 1        ry = oy - cy
  *
- * Il parametro t corrisponde alla distanza euclidea reale
- * poiché (dx, dy) è un vettore unitario (la rotazione conserva le lunghezze).
+ * The parameter t is the real Euclidean distance, since (dx, dy) is a unit vector
+ * (rotation preserves lengths).
  */
 public class OvalShape implements CollidableShape {
 
     private final double cx, cy;      // centro in pixel
     private final double a, b;        // semi-assi in pixel
     private final double angle;
-    private final double cosA, sinA;  // cos(-angle), sin(-angle) per la trasformazione inversa
+    private final double cosA, sinA;  // cos(-angle), sin(-angle) for the inverse transformation
 
-    /** Ellisse allineata agli assi. */
+    /** Axis-aligned ellipse. */
     public OvalShape(double cx, double cy, double width, double height) {
         this(cx, cy, width, height, 0);
     }
@@ -76,7 +76,7 @@ public class OvalShape implements CollidableShape {
         double t1 = (-B - sqrtDisc) / (2.0 * A);
         double t2 = (-B + sqrtDisc) / (2.0 * A);
 
-        // Entrambe le intersezioni sono dietro all'origine
+        // Both intersections are behind the origin
         if (t2 < 0) return -1;
 
         // Origine dentro l'ellisse (t1 < 0 < t2): intersezione immediata

@@ -16,38 +16,37 @@ import io.github.raffaelegrandi.pianura.utils.Const;
 import io.github.raffaelegrandi.pianura.utils.Position;
 
 /**
- * Rilevamento collisioni basato su ray casting geometrico.
+ * Collision detection by geometric ray casting.
  *
- * Per ogni robot vengono lanciati 18 raggi (uno per sensore) dal centro
- * del robot nella direzione assoluta del sensore. Per ogni raggio si cerca
- * l'intersezione più vicina con:
- *   - gli ostacoli statici dello scenario e i bordi dell'arena (forme costruite una volta);
- *   - i corpi degli altri robot (cerchi ricostruiti a ogni passo da SimEngine).
- * Il valore di un sensore IR è la distanza in celle dalla superficie del robot al primo
- * oggetto colpito; se nel campo non c'è nulla vale la portata del sensore (saturazione,
- * come un sensore reale). I bump valgono 1 se c'è contatto, 0 altrimenti.
- * Internamente il detector lavora in pixel di mondo (celle x Const.cellSize); verso
- * l'esterno pubblica solo celle.
+ * For every robot, 18 rays (one per sensor) are cast from the robot's centre in the
+ * sensor's absolute direction. For every ray the nearest intersection is searched among:
+ *   - the scenario's static obstacles and the arena borders (shapes built once);
+ *   - the bodies of the other robots (circles rebuilt at every step by SimEngine).
+ * An IR sensor reads the distance in cells from the robot's surface to the first object
+ * hit; with nothing in range it reads the sensor's range (saturation, like a real
+ * sensor). Bump sensors read 1 on contact, 0 otherwise.
+ * Internally the detector works in world pixels (cells x Const.cellSize); to the
+ * outside it publishes only cells.
  *
- * Il detector è privo di stato mutabile condiviso: può essere invocato
- * per robot diversi senza sincronizzazione.
+ * The detector has no shared mutable state: it can be called for different robots
+ * without synchronisation.
  */
 public class CollisionDetector {
 
     /**
-     * Forme statiche: tutte (muri + ostacoli), solo ostacoli (parallela a {@code obstacles}),
-     * i quattro muri e la griglia che indicizza gli ostacoli per posizione.
+     * Static shapes: all of them (walls + obstacles), obstacles only (parallel to {@code obstacles}),
+     * the four walls, and the grid that indexes the obstacles by position.
      */
     private record Shapes(List<CollidableShape> all, List<CollidableShape> perObstacle,
                           List<CollidableShape> walls, ShapeGrid grid) {}
 
-    /** Lato di una casella della griglia degli ostacoli, in pixel di mondo (4 celle). */
+    /** Side of a cell of the obstacle grid, in world pixels (4 cells). */
     static final double GRID_BUCKET_PX = 4 * Const.cellSize;
 
-    /** Solo per i test: ignora la griglia e prova tutte le forme (il risultato deve essere identico). */
+    /** Tests only: skips the grid and tries every shape (the result must be identical). */
     static volatile boolean bruteForceForTests = false;
 
-    /** Indici (crescenti) degli ostacoli il cui ingombro tocca il rettangolo dato. */
+    /** Indices (ascending) of the obstacles whose bounds touch the given rectangle. */
     private static int[] near(Shapes sh, double ax, double ay, double bx, double by) {
         if (bruteForceForTests) {
             int[] all = new int[sh.perObstacle().size()];
@@ -58,7 +57,7 @@ public class CollisionDetector {
         return sh.grid().query(ax, ay, bx, by);
     }
 
-    /** Sostituita in blocco da {@link #rebuild()}: chi legge vede sempre un insieme coerente. */
+    /** Replaced as a whole by {@link #rebuild()}: readers always see a consistent set. */
     private volatile Shapes shapes;
     private volatile List<Obstacle> obstacles;
     private final double robotRadiusPx;
@@ -72,8 +71,8 @@ public class CollisionDetector {
     }
 
     /**
-     * @param arenaWidthPx  larghezza dell'arena in pixel di mondo (celle x Const.cellSize)
-     * @param arenaHeightPx altezza dell'arena in pixel di mondo
+     * @param arenaWidthPx  arena width in world pixels (cells x Const.cellSize)
+     * @param arenaHeightPx arena height in world pixels
      */
     public CollisionDetector(List<Obstacle> obstacles, double arenaWidthPx, double arenaHeightPx) {
         this.arenaWidthPx  = arenaWidthPx;
@@ -86,8 +85,8 @@ public class CollisionDetector {
     }
 
     /**
-     * Ricalcola le forme dopo che ostacoli sono stati spostati o ruotati
-     * (le posizioni sono lette dagli stessi oggetti Obstacle passati al costruttore).
+     * Recomputes the shapes after obstacles were moved or rotated (the positions are read
+     * from the same Obstacle objects passed to the constructor).
      */
     public void rebuild() {
         shapes = buildShapes(obstacles);
@@ -96,8 +95,8 @@ public class CollisionDetector {
     public List<Obstacle> getObstacles() { return obstacles; }
 
     /**
-     * Sostituisce l'insieme degli ostacoli (es. scena aperta da file) e ricalcola le forme.
-     * Da chiamare con la simulazione ferma o in pausa (SimEngine.replaceScene lo fa sotto lock).
+     * Replaces the set of obstacles (e.g. a scene opened from file) and recomputes the shapes.
+     * Call it with the simulation stopped or paused (SimEngine.replaceScene does it under lock).
      */
     public void replaceObstacles(List<Obstacle> newObstacles) {
         List<Obstacle> copy = List.copyOf(newObstacles);
@@ -135,7 +134,7 @@ public class CollisionDetector {
         List<CollidableShape> perObstacle = new ArrayList<>();
         List<CollidableShape> walls = new ArrayList<>();
 
-        // muri dell'arena: fuori dal pavimento, con la faccia interna esattamente sul bordo
+        // arena walls: outside the floor, with their inner face exactly on the border
         double aw = arenaWidthPx, ah = arenaHeightPx, t = WALL_THICKNESS_PX;
         result.add(new RectShape(-t / 2,     ah / 2,     t,          ah + 2 * t, 0));  // sinistro
         result.add(new RectShape(aw + t / 2, ah / 2,     t,          ah + 2 * t, 0));  // destro
@@ -168,10 +167,9 @@ public class CollisionDetector {
     // ---------------------------------------------------------
 
     /**
-     * Costruisce lo snapshot dei corpi dei robot nella posizione corrente.
-     * Da chiamare una volta per tick, prima di aggiornare i sensori:
-     * così tutti i robot "vedono" lo stesso istante, indipendentemente
-     * dall'ordine in cui vengono processati.
+     * Builds the snapshot of the robots' bodies at their current positions.
+     * Call it once per tick, before updating the sensors: this way every robot "sees" the
+     * same instant, whatever the order in which they are processed.
      */
     public List<CircleShape> snapshotRobots(List<UnitObject> units) {
         List<CircleShape> list = new ArrayList<>(units.size());
@@ -186,14 +184,14 @@ public class CollisionDetector {
     //  Aggiornamento sensori
     // ---------------------------------------------------------
 
-    /** Solo ostacoli statici (compatibilità). */
+    /** Static obstacles only (compatibility). */
     public void testUnitForCollisions(UnitObject testUnit) {
         testUnitForCollisions(testUnit, List.of());
     }
 
     /**
-     * Calcola i sensori del robot considerando ostacoli statici e altri robot.
-     * @param robots snapshot dei corpi robot (il robot stesso viene escluso)
+     * Computes the robot's sensors against the static obstacles and the other robots.
+     * @param robots snapshot of the robots' bodies (the robot itself is skipped)
      */
     public void testUnitForCollisions(UnitObject testUnit, List<CircleShape> robots) {
         SensorArray bumpSensors = testUnit.getBumpSensors();
@@ -214,7 +212,7 @@ public class CollisionDetector {
         double cy      = pos.y * cellSizePx;
         double heading = pos.theta;
 
-        // solo gli ostacoli e i robot che i raggi possono raggiungere
+        // only the obstacles and robots the rays can reach
         Shapes sh = shapes;
         int[] nearIdx = near(sh, cx - maxRayDist, cy - maxRayDist, cx + maxRayDist, cy + maxRayDist);
         List<CollidableShape> candidates = new ArrayList<>(sh.walls().size() + nearIdx.length + 4);
@@ -233,7 +231,7 @@ public class CollisionDetector {
             double dy = Math.sin(a);
 
             double d = findNearestHit(candidates, cx, cy, dx, dy, maxRayDist);
-            if (d < 0) continue;  // niente nel campo: restano i valori di riposo
+            if (d < 0) continue;  // nothing in range: the rest values stay
 
             double surfacePx = Math.max(0, d - robotRadiusPx);
             Point2D hit = new Point2D.Double((cx + d * dx) / cellSizePx, (cy + d * dy) / cellSizePx);
@@ -249,7 +247,7 @@ public class CollisionDetector {
             }
         }
 
-        // Pubblicazione atomica: il thread del robot non vede mai stati intermedi
+        // Atomic publication: the robot's thread never sees intermediate states
         irSensors.publish(irVal, irPts);
         bumpSensors.publish(bumpVal, bumpPts);
     }
@@ -269,8 +267,8 @@ public class CollisionDetector {
     // ---------------------------------------------------------
 
     /**
-     * Esito della validazione: i messaggi e gli elementi coinvolti
-     * (indici degli ostacoli nell'ordine dello scenario, robot), per evidenziarli nella vista.
+     * Result of the validation: the messages and the elements involved (obstacle indices in
+     * the scenario's order, robots), to highlight them in the view.
      */
     public record Validation(List<String> messages, java.util.Set<Integer> badObstacles, java.util.Set<UnitObject> badRobots) {
         public boolean isOk() { return messages.isEmpty(); }
@@ -287,8 +285,8 @@ public class CollisionDetector {
     }
 
     /**
-     * Controlla che nessun robot parta sovrapposto a un ostacolo, ai bordi
-     * o a un altro robot. Restituisce un messaggio per ogni problema trovato.
+     * Checks that no robot starts overlapping an obstacle, the borders or another robot.
+     * Returns a message for every problem found.
      */
     public List<String> validatePlacement(List<UnitObject> units) {
         List<String> msgs = new ArrayList<>();
@@ -297,11 +295,10 @@ public class CollisionDetector {
     }
 
     /**
-     * Controlla che gli ostacoli non si compenetrino tra loro e non escano dall'arena.
-     * È un avviso, non un errore: due ostacoli sovrapposti possono essere voluti
-     * (es. un muro a L fatto con due rettangoli), ma due oggetti fisici distinti
-     * non possono occupare lo stesso spazio.
-     * Le sovrapposizioni sotto {@code MIN_OVERLAP_PX2} (contatto, arrotondamenti) sono ignorate.
+     * Checks that obstacles do not overlap each other and do not stick out of the arena.
+     * It is a warning, not an error: two overlapping obstacles may be intended (e.g. an L-shaped
+     * wall made of two rectangles), but two distinct physical objects cannot occupy the same space.
+     * Overlaps below {@code MIN_OVERLAP_PX2} (contact, rounding) are ignored.
      */
     public List<String> validateObstacles() {
         List<String> msgs = new ArrayList<>();
@@ -311,7 +308,7 @@ public class CollisionDetector {
 
     private void checkPlacement(List<UnitObject> units, List<String> problems, java.util.Set<UnitObject> bad) {
         Shapes sh = shapes;
-        int probes = 72; // un raggio ogni 5 gradi
+        int probes = 72; // one ray every 5 degrees
         for (UnitObject u : units) {
             Position p = u.getExactPos();
             double cx = p.x * cellSizePx, cy = p.y * cellSizePx;
@@ -355,9 +352,9 @@ public class CollisionDetector {
         for (int i = 0; i < areas.size(); i++) {
             if (areas.get(i) == null) continue;
             Rectangle2D bi = sh.grid().bounds(i);
-            for (int j : near(sh, bi.getMinX(), bi.getMinY(), bi.getMaxX(), bi.getMaxY())) {   // solo i vicini, in ordine
+            for (int j : near(sh, bi.getMinX(), bi.getMinY(), bi.getMaxX(), bi.getMaxY())) {   // neighbours only, in order
                 if (j <= i || areas.get(j) == null) continue;
-                // scarto rapido: rettangoli di ingombro disgiunti
+                // quick rejection: disjoint bounding rectangles
                 if (!areas.get(i).getBounds2D().intersects(areas.get(j).getBounds2D())) continue;
                 Area inter = new Area(areas.get(i));
                 inter.intersect(areas.get(j));
@@ -386,7 +383,7 @@ public class CollisionDetector {
         }
     }
 
-    /** Spessore dei muri dell'arena in pixel di mondo (anche quello disegnato). */
+    /** Thickness of the arena walls in world pixels (also the drawn one). */
     public static final double WALL_THICKNESS_PX = 6;
 
     public double getArenaWidthPx()  { return arenaWidthPx; }
@@ -395,7 +392,7 @@ public class CollisionDetector {
     /** Sovrapposizione minima segnalata, in pixel² (sotto: contatto o arrotondamento). */
     private static final double MIN_OVERLAP_PX2 = 1.0;
 
-    /** Area di una regione (somma delle aree dei sotto-percorsi, curve approssimate). */
+    /** Area of a region (sum of the areas of its sub-paths, curves approximated). */
     private static double areaOf(Area area) {
         if (area.isEmpty()) return 0;
         double total = 0, sub = 0;

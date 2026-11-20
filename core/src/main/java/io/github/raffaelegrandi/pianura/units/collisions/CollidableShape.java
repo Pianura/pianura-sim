@@ -1,30 +1,29 @@
 package io.github.raffaelegrandi.pianura.units.collisions;
 
 /**
- * Interfaccia per le forme geometriche usate nel rilevamento collisioni.
- * Il ray casting sostituisce il precedente campionamento pixel-based,
- * eliminando la dipendenza dalla GUI nel loop fisico.
+ * Geometric shapes used for collision detection. Ray casting replaced JUSE's pixel
+ * sampling, which removed the GUI from the physics loop.
  */
 public interface CollidableShape {
 
     /**
-     * Calcola l'intersezione di un raggio con questa forma.
+     * Intersection of a ray with this shape.
      *
-     * @param ox    coordinata X dell'origine del raggio (pixel)
-     * @param oy    coordinata Y dell'origine del raggio (pixel)
-     * @param dx    componente X della direzione (vettore unitario)
-     * @param dy    componente Y della direzione (vettore unitario)
-     * @param maxDist distanza massima di rilevamento (pixel)
-     * @return distanza in pixel dall'origine al punto di intersezione,
-     *         0 se l'origine è già dentro la forma,
-     *         -1 se nessuna intersezione entro maxDist
+     * @param ox    X of the ray's origin (pixels)
+     * @param oy    Y of the ray's origin (pixels)
+     * @param dx    X component of the direction (unit vector)
+     * @param dy    Y component of the direction (unit vector)
+     * @param maxDist maximum detection distance (pixels)
+     * @return distance in pixels from the origin to the intersection,
+     *         0 if the origin is already inside the shape,
+     *         -1 if there is no intersection within maxDist
      */
     double rayIntersect(double ox, double oy, double dx, double dy, double maxDist);
 
     /**
-     * Contorno della forma in pixel, nelle stesse coordinate usate per il ray casting.
-     * Serve per i test tra forme (es. ostacoli che si compenetrano) e, in prospettiva,
-     * per disegnare esattamente ciò che il simulatore usa per le collisioni.
+     * Outline of the shape in pixels, in the same coordinates used for ray casting. Used for
+     * shape-against-shape tests (e.g. overlapping obstacles) and to draw exactly what the
+     * simulator uses for collisions.
      */
     java.awt.Shape outline();
 

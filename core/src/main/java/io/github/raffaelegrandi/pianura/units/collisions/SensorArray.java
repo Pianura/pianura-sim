@@ -6,14 +6,12 @@ import java.util.Arrays;
 import io.github.raffaelegrandi.pianura.utils.Const;
 
 /**
- * Array di sensori radiali di un robot.
+ * Array of radial sensors of a robot.
  *
- * Thread-safety: i valori vengono scritti dal thread di simulazione
- * (SimEngine) e letti dal thread del robot. Per evitare che il robot
- * legga uno stato a metà aggiornamento (es. tutti i valori appena resettati),
- * i valori sono contenuti in uno snapshot immutabile pubblicato con un
- * singolo assegnamento volatile: chi legge vede sempre una lettura completa
- * e coerente dell'ultimo ciclo.
+ * Thread-safety: the values are written by the simulation thread (SimEngine) and read
+ * by the robot's thread. So that the robot never reads a half-updated state (e.g. all
+ * values just reset), the values live in an immutable snapshot published with a single
+ * volatile assignment: readers always see a complete, consistent reading of the last cycle.
  */
 public class SensorArray {
 
@@ -38,13 +36,12 @@ public class SensorArray {
 
 	/***********************************************************************************************/
 
-	/** Valore "a riposo" del sensore: 0 per i bump, la portata (celle) per gli IR. */
+	/** Rest value of the sensor: 0 for bump sensors, the range (cells) for IR sensors. */
 	public double getInitValue(){ return initSensValue; }
 
 	/**
-	 * Pubblica atomicamente un nuovo set di letture.
-	 * Gli array vengono copiati: il chiamante può riusarli.
-	 * Un sensore è considerato attivo se il suo valore differisce dal valore di riposo.
+	 * Atomically publishes a new set of readings. The arrays are copied: the caller may reuse
+	 * them. A sensor counts as active if its value differs from the rest value.
 	 */
 	public void publish(double[] values, Point2D[] points){
 		double[] v = Arrays.copyOf(values, arrayLength);
@@ -60,8 +57,8 @@ public class SensorArray {
 		snapshot = new Snapshot(v, new Point2D[arrayLength], 0);
 	}
 
-	/* Modifiche puntuali (copy-on-write sullo snapshot). Il simulatore usa publish();
-	 * questi metodi restano per test e per codice esistente. */
+	/* Single-value changes (copy-on-write on the snapshot). The simulator uses publish();
+	 * these methods remain for tests and existing code. */
 
 	public synchronized void setSensorValue(int sensNum, double sensValue){
 		Snapshot s = snapshot;
@@ -83,7 +80,7 @@ public class SensorArray {
 
 	public double getSensorValue(int sensNum){ return snapshot.values()[sensNum]; }
 
-	/** Restituisce una copia delle letture correnti. */
+	/** Returns a copy of the current readings. */
 	public double[] getSensors(){ return snapshot.values().clone(); }
 
 	public double getSensorAngle(int sensNum){ return sensorAngleArray[sensNum]; }
