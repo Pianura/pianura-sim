@@ -66,7 +66,7 @@ public class ScenarioManager {
 
 	public void addObstacle(Obstacle obstacle){ obstacles.add(obstacle);}
 
-	/** Aspetto del pavimento (solo grafico). Predefinito: scacchiera originale. */
+	/** Look of the floor (also read by the floor sensors). Default: the original checkerboard. */
 	public void setFloor(FloorStyle floorStyle){ this.floor = floorStyle != null ? floorStyle : FloorStyle.checkerboard(); }
 
 	public FloorStyle getFloor(){ return floor; }
@@ -78,8 +78,8 @@ public class ScenarioManager {
 	public io.github.raffaelegrandi.pianura.comm.CommSettings getCommSettings(){ return commSettings; }
 
 	/**
-	 * Dimensioni dell'arena in celle (predefinito 40 x 40). Da chiamare nel costruttore
-	 * dello scenario, prima di avviare la simulazione.
+	 * Size of the arena in cells (default 40 x 40). Call it in the scenario's constructor,
+	 * before starting the simulation.
 	 */
 	public void setArenaSize(double widthCells, double heightCells){
 		if (!(widthCells > 0 && heightCells > 0)) throw new IllegalArgumentException("invalid arena size");
@@ -103,10 +103,10 @@ public class ScenarioManager {
 
 	public double getArenaHeight(){ return arenaHeightCells; }
 
-	/** Larghezza dell'arena in pixel di mondo (celle x Const.cellSize). */
+	/** Arena width in world pixels (cells x Const.cellSize). */
 	public double getArenaWidthPx(){ return arenaWidthCells * Const.cellSize; }
 
-	/** Altezza dell'arena in pixel di mondo (celle x Const.cellSize). */
+	/** Arena height in world pixels (cells x Const.cellSize). */
 	public double getArenaHeightPx(){ return arenaHeightCells * Const.cellSize; }
 
 	public List<RobotDummy> getRobots(){ return robots; }
@@ -123,7 +123,7 @@ public class ScenarioManager {
 
 	public void enableRobots(){
 		if (unitsManagerSet){
-			// i guasti simulati sono gestiti dal motore in tempo simulato
+			// simulated faults are handled by the engine, in simulated time
 			for (RobotDummy r : robots) r.start();
 		}
 		else { System.err.println("ERROR: unable to start robots - unitsManager not set");}

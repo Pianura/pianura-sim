@@ -32,7 +32,7 @@ public class Const {
 	public static final double DEFAULT_METERS_PER_CELL = 0.05;
 
 	public static boolean debugEnabled = false;
-	/** Passo della fisica in secondi di tempo simulato (100 Hz). */
+	/** Physics step in seconds of simulated time (100 Hz). */
 	public static final double physicsStep = 0.01;
 
 }

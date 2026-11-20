@@ -52,7 +52,7 @@ public final class CommNetwork {
     private Random random = new Random(1);
 
     private final ConcurrentLinkedQueue<Outgoing> outbox = new ConcurrentLinkedQueue<>();
-    private final List<Pending> pending = new ArrayList<>();      // solo thread del motore
+    private final List<Pending> pending = new ArrayList<>();      // engine's thread only
     private long pendingOrder = 0;
     private volatile ConnectivityGraph graph = ConnectivityGraph.empty();
     private final Deque<LinkEvent> events = new ArrayDeque<>();
@@ -135,7 +135,7 @@ public final class CommNetwork {
             if (!m.isBroadcast() && (g.indexOf(m.to()) < 0 || !g.reaches(si, g.indexOf(m.to())))) unreachable++;
         }
 
-        // consegna dei messaggi arrivati entro l'istante corrente
+        // delivery of the messages arrived by the current instant
         pending.sort(Comparator.comparingDouble(Pending::deliverAt).thenComparingLong(Pending::order));
         while (!pending.isEmpty() && pending.get(0).deliverAt() <= time + 1e-9) {
             Pending p = pending.remove(0);
@@ -184,7 +184,7 @@ public final class CommNetwork {
     }
 
     private void recordEvents(ConnectivityGraph a, ConnectivityGraph b, double time) {
-        // indice nel grafo vecchio di ogni nodo del nuovo (una volta sola: niente ricerche nel doppio ciclo)
+        // index in the old graph of every node of the new one (once: no searches in the double loop)
         java.util.Map<Integer, Integer> oldIndex = new java.util.HashMap<>(a.size() * 2);
         for (int i = 0; i < a.size(); i++) oldIndex.put(a.id(i), i);
         int[] toOld = new int[b.size()];
@@ -201,7 +201,7 @@ public final class CommNetwork {
                     if (before != now) add(new LinkEvent(time, b.id(i), b.id(j), now));
                 }
             }
-            // collegamenti spariti perché un robot non è più attivo
+            // links gone because a robot is no longer active
             for (int i = 0; i < a.size(); i++) {
                 boolean iGone = !stillActive(a.id(i));
                 for (int j = 0; j < a.size(); j++) {
@@ -212,7 +212,7 @@ public final class CommNetwork {
         }
     }
 
-    /** Id dei robot del grafo nuovo (solo thread del motore). */
+    /** Ids of the robots of the new graph (engine's thread only). */
     private final java.util.Set<Integer> activeIds = new java.util.HashSet<>();
 
     private boolean stillActive(int id) { return activeIds.contains(id); }
