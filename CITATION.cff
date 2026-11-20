@@ -13,6 +13,8 @@ abstract: >-
 authors:
   - family-names: Grandi
     given-names: Raffaele
+version: 0.1.0
+date-released: "2026-11-20"
 repository-code: "https://github.com/Pianura/pianura-sim"
 license: MIT
 keywords:

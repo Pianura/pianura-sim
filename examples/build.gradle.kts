@@ -43,6 +43,7 @@ val runnableJar by tasks.registering(Jar::class) {
         attributes(
             "Main-Class" to "io.github.raffaelegrandi.pianura.examples.Launcher",
             "Implementation-Title" to "Pianura",
+            "Implementation-Version" to project.version,
             "Multi-Release" to "true")      // FlatLaf ships classes for newer JDKs
     }
     from(sourceSets.main.get().output)

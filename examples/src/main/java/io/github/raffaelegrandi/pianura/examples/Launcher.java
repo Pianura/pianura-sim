@@ -28,7 +28,7 @@ import io.github.raffaelegrandi.pianura.gui.LookAndFeelSetup;
 /**
  * Entry point of the runnable jar: {@code java -jar pianura.jar} opens a small window to pick
  * an example, {@code java -jar pianura.jar planning} starts one directly, and
- * {@code java -jar pianura.jar --list} prints them.
+ * {@code java -jar pianura.jar --list} prints them ({@code --version} the version).
  */
 public final class Launcher {
 
@@ -57,6 +57,10 @@ public final class Launcher {
     public static void main(String[] args) throws Exception {
         if (args.length > 0) {
             String a = args[0].toLowerCase(Locale.ROOT);
+            if (a.equals("--version") || a.equals("-v")) {
+                System.out.println("Pianura " + version());
+                return;
+            }
             if (a.equals("--list") || a.equals("-l") || a.equals("--help") || a.equals("-h")) {
                 printList();
                 return;
@@ -82,8 +86,14 @@ public final class Launcher {
         return null;
     }
 
+    /** Version from the jar's manifest; "dev" when running from the build folders. */
+    static String version() {
+        String v = Launcher.class.getPackage().getImplementationVersion();
+        return v != null ? v : "dev";
+    }
+
     private static void printList() {
-        System.out.println("Usage: java -jar pianura.jar [example]\n\nExamples:");
+        System.out.println("Pianura " + version() + "\n\nUsage: java -jar pianura.jar [example | --list | --version]\n\nExamples:");
         for (Example e : EXAMPLES) System.out.printf(Locale.ROOT, "  %-14s %s%n", e.name(), e.description());
     }
 
@@ -94,7 +104,7 @@ public final class Launcher {
 
     private static void showChooser() {
         LookAndFeelSetup.install();
-        JFrame f = new JFrame("Pianura - examples");
+        JFrame f = new JFrame("Pianura " + version() + " - examples");
         f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         JList<Example> list = new JList<>(EXAMPLES.toArray(new Example[0]));

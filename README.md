@@ -95,7 +95,9 @@ classic Swing look of JUSE:
 Pianura itself does not depend on FlatLaf: in your own project the window uses Swing's
 standard look unless you add `com.formdev:flatlaf` to the runtime classpath.
 
-**One runnable jar.** To try the examples on a machine with just Java, or to pass them on:
+**One runnable jar.** Each [release](https://github.com/Pianura/pianura-sim/releases) has the
+examples in a single jar: download `pianura-<version>.jar` and run `java -jar
+pianura-<version>.jar` (Java 21 or later, nothing else). To build it yourself:
 
 ```bash
 ./gradlew :examples:runnableJar          # writes build/pianura.jar (about 1.3 MB)
@@ -350,6 +352,7 @@ algorithms/    reference robot controllers, one package each        → algorith
 examples/      example scenarios, run with ./gradlew run -Pexample=  → examples/README.md
 clients/       Python and MATLAB clients for remote control over UDP
 docs/img/      screenshots
+CHANGELOG.md   what changed in each version
 docs/brand/    logo and avatar of the Pianura organization
 CITATION.cff   how to cite Pianura (GitHub's "Cite this repository")
 ```
