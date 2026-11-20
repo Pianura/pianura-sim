@@ -19,7 +19,8 @@ public class ObstaclesScenario extends ScenarioManager {
 	private void buildRobotsVector(){
 		addRobot(new IrAvoider(1,new Position(7,17,Math.toRadians(90)),2));
 		addRobot(new IrAvoider(2,new Position(10,20,0),2));
-		addRobot(new IrAvoider(3,new Position(11,12,0),2));
+		// was (11,12): with the yellow square turned by 30 degrees its corner reaches y = 11.8
+		addRobot(new IrAvoider(3,new Position(11,13,0),2));
 		addRobot(new IrAvoider(4,new Position(5,15,0),2));
 		addRobot(new IrAvoider(5,new Position(17,19,0),2));
 		addRobot(new IrAvoider(6,new Position(21,30,0),2));
@@ -31,7 +32,7 @@ public class ObstaclesScenario extends ScenarioManager {
 
 	private void buildObstaclesVector(){
 		// Rectangles: the position was already the centre, unchanged
-		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_RECT,Color.YELLOW,new Position(10,5,30),new Dimension(10,10)));
+		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_RECT,Color.YELLOW,new Position(10,5,Math.toRadians(30)),new Dimension(10,10)));
 
 		// Ovals: position moved to the centre (old top-left + dim/2)
 		// ex (30,5) dim(3,3)  → centre (31.5, 6.5)
@@ -46,9 +47,9 @@ public class ObstaclesScenario extends ScenarioManager {
 		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_OVAL,Color.WHITE,new Position(31.5,6.5,0),new Dimension(3,3)));
 
 		// Rectangles: unchanged
-		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_RECT,Color.WHITE,new Position(20,35,20),new Dimension(5,8)));
-		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_RECT,Color.RED,new Position(30,37,30),new Dimension(2,15)));
-		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_RECT,Color.BLUE,new Position(30,25,10),new Dimension(7,7)));
+		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_RECT,Color.WHITE,new Position(20,35,Math.toRadians(20)),new Dimension(5,8)));
+		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_RECT,Color.RED,new Position(30,37,Math.toRadians(30)),new Dimension(2,15)));
+		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_RECT,Color.BLUE,new Position(30,25,Math.toRadians(10)),new Dimension(7,7)));
 
 		// ex (8,28) dim(6,3)  → centre (11.0, 29.5)
 		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_OVAL,Color.WHITE,new Position(11.0,29.5,0),new Dimension(6,3)));

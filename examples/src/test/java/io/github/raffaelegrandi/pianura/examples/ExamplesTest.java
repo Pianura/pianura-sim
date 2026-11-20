@@ -43,9 +43,9 @@ class ExamplesTest {
 
     private static List<Obstacle> someObstacles() {
         List<Obstacle> obs = new ArrayList<>();
-        obs.add(new Obstacle(ArenaObjectType.OBSTACLE_RECT, Color.BLUE, new Position(30, 25, 10), new Dimension(7, 7)));
+        obs.add(new Obstacle(ArenaObjectType.OBSTACLE_RECT, Color.BLUE, new Position(30, 25, Math.toRadians(10)), new Dimension(7, 7)));
         obs.add(new Obstacle(ArenaObjectType.OBSTACLE_OVAL, Color.WHITE, new Position(22, 17, 0), new Dimension(4, 4)));
-        obs.add(new Obstacle(ArenaObjectType.OBSTACLE_RECT, Color.RED, new Position(30, 37, 30), new Dimension(2, 15)));
+        obs.add(new Obstacle(ArenaObjectType.OBSTACLE_RECT, Color.RED, new Position(30, 37, Math.toRadians(30)), new Dimension(2, 15)));
         return obs;
     }
 
@@ -82,8 +82,9 @@ class ExamplesTest {
     void scenarioTest04OverlapsAreFound() {
         List<String> p = new CollisionDetector(new ObstaclesScenario().getObstacles()).validateObstacles();
         p.forEach(System.out::println);
-        assertTrue(p.stream().anyMatch(s -> s.contains("white rectangle") && s.contains("red rectangle")
-            && s.contains("overlap")), p.toString());
+        // the scenario keeps its original mistakes on purpose, to show the warnings
+        assertTrue(p.stream().anyMatch(s -> s.contains("white oval") && s.contains("overlap")), p.toString());
+        assertTrue(p.stream().anyMatch(s -> s.contains("yellow rectangle") && s.contains("outside the arena")), p.toString());
     }
 
     @Test
