@@ -126,4 +126,34 @@ class ExamplesTest {
         assertTrue(io.github.raffaelegrandi.pianura.gui.LookAndFeelSetup.flatLafAvailable(),
             "FlatLaf is a runtime dependency of the examples (optional for core)");
     }
+
+    @Test
+    @Timeout(60)
+    void theRrtPlannerFindsAPathAndReachesTheGoalWithoutContacts() {
+        io.github.raffaelegrandi.pianura.examples.planning.PlanningScenario sc = new io.github.raffaelegrandi.pianura.examples.planning.PlanningScenario();
+        SimClock clock = new SimClock(Const.physicsStep);
+        SimEngine e = new SimEngine(clock, new CollisionDetector(sc.getObstacles(), sc.getArenaWidthPx(), sc.getArenaHeightPx()), sc.getRobots());
+        e.setLogger(m -> {});
+        RobotDummy r = sc.getRobots().get(0);
+        r.attachClock(clock);
+        r.start();
+        int contacts = 0;
+        double t = 0;
+        while (!sc.getPlanner().arrived() && t < 90) {
+            t += 0.1;
+            e.runUntil(t);
+            if (r.hasCollision()) contacts++;
+        }
+        e.stop();
+        assertTrue(sc.getPlanner().arrived(), "goal not reached in 90 s");
+        assertEquals(0, contacts, "the planned path keeps clear of the obstacles");
+        assertEquals(io.github.raffaelegrandi.pianura.examples.planning.PlanningScenario.GOAL_X, r.getPosition().x, 0.35);
+        assertEquals(io.github.raffaelegrandi.pianura.examples.planning.PlanningScenario.GOAL_Y, r.getPosition().y, 0.35);
+        var snap = r.inspector().snapshot();
+        assertEquals("arrived", snap.state());
+        assertTrue(snap.log().stream().anyMatch(en -> en.text().startsWith("path found after")));
+        assertTrue(snap.series().stream().anyMatch(se -> se.name().equals("heading error (rad)")));
+        assertFalse(r.getDrawings().get("tree").isEmpty());
+        assertEquals(1, r.getDrawings().get("path").size());
+    }
 }
