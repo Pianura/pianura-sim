@@ -191,6 +191,30 @@ public class ArenaView extends JPanel {
 
     public void setSelectionListener(Consumer<RobotUnit> l) { selectionListener = l != null ? l : r -> {}; }
 
+    private Consumer<RobotUnit> inspectHandler;
+
+    /** What "Inspect" in a robot's right-click menu does (null = no such entry). */
+    public void setInspectHandler(Consumer<RobotUnit> h) { inspectHandler = h; }
+
+    /** Right click on a robot: a small menu to inspect or follow it. */
+    private boolean robotMenu(MouseEvent e) {
+        if (!e.isPopupTrigger()) return false;
+        RobotUnit r = robotAt(vt.toWorld(e.getX(), e.getY()));
+        if (r == null) return false;
+        select(r);
+        javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+        if (inspectHandler != null) {
+            javax.swing.JMenuItem inspect = new javax.swing.JMenuItem("Inspect robot #" + r.getIDnum());
+            inspect.addActionListener(ev -> inspectHandler.accept(r));
+            menu.add(inspect);
+        }
+        javax.swing.JMenuItem fol = new javax.swing.JMenuItem((followed == r ? "Stop following" : "Follow") + " robot #" + r.getIDnum());
+        fol.addActionListener(ev -> follow(followed == r ? null : r));
+        menu.add(fol);
+        menu.show(this, e.getX(), e.getY());
+        return true;
+    }
+
     /** Called when zoom or panning change (to refresh the panel). */
     public void setViewListener(Runnable l) { viewListener = l != null ? l : () -> {}; }
 
@@ -421,6 +445,7 @@ public class ArenaView extends JPanel {
 
             @Override public void mousePressed(MouseEvent e) {
                 edgePointer = null;
+                if (robotMenu(e)) { last = null; return; }
                 if (e.getButton() == MouseEvent.BUTTON1 && overMinimap(e.getX(), e.getY())) {
                     minimapDrag = true;
                     centerFromMinimap(e.getX(), e.getY());
@@ -476,6 +501,7 @@ public class ArenaView extends JPanel {
 
             @Override public void mouseReleased(MouseEvent e) {
                 if (minimapDrag) { minimapDrag = false; return; }
+                if (robotMenu(e)) { last = null; dragTarget = null; resizing = null; return; }
                 if (dragged && (dragTarget != null || resizing != null)) notifyChanged(true);
                 if (!dragged && resizing == null && e.getButton() == MouseEvent.BUTTON1) {
                     Point2D w = vt.toWorld(e.getX(), e.getY());

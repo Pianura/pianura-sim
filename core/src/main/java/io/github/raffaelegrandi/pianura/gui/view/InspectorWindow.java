@@ -35,10 +35,11 @@ import io.github.raffaelegrandi.pianura.inspect.Inspector;
 import io.github.raffaelegrandi.pianura.units.RobotUnit;
 
 /**
- * The inspector: a separate window that shows what one robot's algorithm says about itself
- * (see {@link Inspector}): its state, watched values, time plots drawn by Pianura, and the log
- * of decisions with their simulated time. It follows the robot selected in the arena, or the
- * one chosen in its own menu.
+ * The inspector: a separate window about one robot. On the left its body as Pianura sees it
+ * (sensors, wheels, speeds: nothing to write for it); on the right what its algorithm says
+ * about itself (see {@link Inspector}): state, views of its insides (bars, heat maps, networks),
+ * time plots drawn by Pianura, watched values and the log of decisions with their simulated
+ * time. It follows the robot selected in the arena, or the one chosen in its own menu.
  */
 @SuppressWarnings("serial")
 public class InspectorWindow extends JFrame {
@@ -55,6 +56,8 @@ public class InspectorWindow extends JFrame {
     private final JLabel stateLabel = new JLabel(" ");
     private final JLabel sinceLabel = new JLabel(" ");
     private final JPanel plots = new JPanel();
+    private final JPanel views = new JPanel();
+    private final BodyView body = new BodyView();
     private final DefaultTableModel values = new DefaultTableModel(new Object[] { "Name", "Value" }, 0) {
         @Override public boolean isCellEditable(int r, int c) { return false; }
     };
@@ -113,10 +116,15 @@ public class InspectorWindow extends JFrame {
         north.add(state, BorderLayout.CENTER);
 
         plots.setLayout(new BoxLayout(plots, BoxLayout.Y_AXIS));
-        JScrollPane plotScroll = new JScrollPane(plots, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+        views.setLayout(new BoxLayout(views, BoxLayout.Y_AXIS));
+        JPanel stack = new JPanel();
+        stack.setLayout(new BoxLayout(stack, BoxLayout.Y_AXIS));
+        stack.add(views);
+        stack.add(plots);
+        JScrollPane plotScroll = new JScrollPane(stack, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
             ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         plotScroll.getVerticalScrollBar().setUnitIncrement(16);
-        plotScroll.setBorder(BorderFactory.createTitledBorder("Plots"));
+        plotScroll.setBorder(BorderFactory.createTitledBorder("Views and plots"));
         plotScroll.setPreferredSize(new Dimension(600, 400));
 
         JTable table = new JTable(values);
@@ -140,11 +148,17 @@ public class InspectorWindow extends JFrame {
         JSplitPane main = new JSplitPane(JSplitPane.VERTICAL_SPLIT, plotScroll, bottom);
         main.setResizeWeight(0.62);
 
+        JPanel bodyPanel = new JPanel(new BorderLayout());
+        bodyPanel.setBorder(BorderFactory.createTitledBorder("Body"));
+        bodyPanel.add(body, BorderLayout.NORTH);
+        bodyPanel.setToolTipText("What Pianura knows about the robot: IR rays (heading up), contacts, floor sensors, wheels");
+
         getContentPane().setLayout(new BorderLayout());
         getContentPane().add(north, BorderLayout.NORTH);
+        getContentPane().add(bodyPanel, BorderLayout.WEST);
         getContentPane().add(main, BorderLayout.CENTER);
-        setSize(620, 780);
-        setMinimumSize(new Dimension(380, 420));
+        setSize(900, 800);
+        setMinimumSize(new Dimension(560, 440));
         setDefaultCloseOperation(HIDE_ON_CLOSE);
 
         timer = new Timer(100, e -> refresh());
@@ -180,6 +194,7 @@ public class InspectorWindow extends JFrame {
     /** Reads the robot's inspector and updates what changed. */
     public void refresh() {
         RobotUnit r = shown;
+        body.set(r);                        // the body changes at every step: always redrawn
         if (r == null) return;
         double window = WINDOW_S[Math.max(0, windowBox.getSelectedIndex())];
         double now = simTime.getAsDouble();
@@ -189,6 +204,7 @@ public class InspectorWindow extends JFrame {
                 + "<tt>inspector().state(...)</tt>, <tt>.watch(...)</tt>, <tt>.plot(...)</tt>, <tt>.log(...)</tt>; "
                 + "from Python and MATLAB see clients/README.md.</html>");
             if (plots.getComponentCount() > 0) { plots.removeAll(); plots.revalidate(); plots.repaint(); }
+            if (views.getComponentCount() > 0) { views.removeAll(); views.revalidate(); views.repaint(); }
             values.setRowCount(0);
             return;
         }
@@ -206,6 +222,15 @@ public class InspectorWindow extends JFrame {
 
         stateLabel.setText(s.state().isEmpty() ? "—" : s.state());
         sinceLabel.setText(s.state().isEmpty() ? " " : String.format(Locale.ROOT, "since t = %.2f s", s.stateSince()));
+
+        // views of the insides: one per name, in order of first use
+        List<Inspector.View> vs = s.views();
+        if (views.getComponentCount() != vs.size()) {
+            views.removeAll();
+            for (int i = 0; i < vs.size(); i++) views.add(new InsideView());
+            views.revalidate();
+        }
+        for (int i = 0; i < vs.size(); i++) ((InsideView) views.getComponent(i)).set(vs.get(i));
 
         // plots: one per series, in order of first use
         List<Inspector.Series> series = s.series();

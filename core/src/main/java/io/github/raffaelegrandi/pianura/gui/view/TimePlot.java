@@ -142,7 +142,7 @@ public class TimePlot extends JComponent {
 
     private static Color orDefault(Color c, Color d) { return c != null ? c : d; }
 
-    private static Color mix(Color a, Color b, double k) {
+    static Color mix(Color a, Color b, double k) {
         return new Color((int) (a.getRed() * (1 - k) + b.getRed() * k), (int) (a.getGreen() * (1 - k) + b.getGreen() * k),
                          (int) (a.getBlue() * (1 - k) + b.getBlue() * k));
     }

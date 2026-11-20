@@ -12,7 +12,8 @@ import java.util.function.DoubleSupplier;
 
 /**
  * What a robot's algorithm shows about itself in the inspector window: its current state,
- * a few watched values, time plots and a log of decisions. Everything is stamped with the
+ * a few watched values, time plots, a log of decisions, and views of its insides (bars for a
+ * vector, a heat map for a matrix, a neural network with its activations). Times are the
  * simulated time.
  *
  * <pre>
@@ -21,6 +22,9 @@ import java.util.function.DoubleSupplier;
  *   in.watch("nodes", tree.size());
  *   in.plot("distance to goal", d);
  *   in.log("path found, length " + len);
+ *   in.bars("action values", q);                       // one bar per element
+ *   in.matrix("weights 1", w1);                        // rows x columns, as a heat map
+ *   in.network("policy", activations, weights);        // layers of neurons that light up
  * </pre>
  *
  * The robot's code writes, the window reads copies: all methods are thread-safe. Memory is
@@ -45,9 +49,35 @@ public final class Inspector {
         public double last() { return v.length == 0 ? Double.NaN : v[v.length - 1]; }
     }
 
+    /** A view of the robot's insides, replaced at every update. */
+    public sealed interface View permits Bars, Matrix, Network {
+        String name();
+    }
+
+    /** A vector, one bar per element; {@code labels} may be null or shorter than the values. */
+    public record Bars(String name, double[] values, String[] labels) implements View {}
+
+    /** A matrix shown as a heat map: {@code values[row][column]}. */
+    public record Matrix(String name, double[][] values) implements View {}
+
+    /**
+     * A layered network. {@code activations[l]} are the outputs of the neurons of layer l (layer 0
+     * = the inputs). {@code weights} may be null; otherwise {@code weights[l][j][i]} is the weight
+     * from neuron i of layer l to neuron j of layer l + 1 (out x in, as PyTorch stores a Linear
+     * layer). {@code labels} may be null; otherwise {@code labels[l]} names the neurons of layer l
+     * (each may be null, e.g. only the inputs and the outputs named).
+     */
+    public record Network(String name, double[][] activations, double[][][] weights, String[][] labels) implements View {}
+
     /** A consistent copy of everything, for the window. */
     public record Snapshot(long version, String state, double stateSince, Map<String, String> watched,
-                           List<Series> series, List<Entry> log) {}
+                           List<Series> series, List<Entry> log, List<View> views) {
+        /** Without views (kept for code written before the views). */
+        public Snapshot(long version, String state, double stateSince, Map<String, String> watched,
+                        List<Series> series, List<Entry> log) {
+            this(version, state, stateSince, watched, series, log, List.of());
+        }
+    }
 
     private final DoubleSupplier clock;
     private String state = "";
@@ -55,6 +85,7 @@ public final class Inspector {
     private final Map<String, String> watched = new LinkedHashMap<>();
     private final Map<String, Ring> series = new LinkedHashMap<>();
     private final ArrayDeque<Entry> log = new ArrayDeque<>();
+    private final Map<String, View> views = new LinkedHashMap<>();
     private long version = 0;
 
     /** @param clock current simulated time in seconds */
@@ -101,6 +132,61 @@ public final class Inspector {
         return this;
     }
 
+    /** Shows a vector as bars (the latest values replace the previous ones). */
+    public Inspector bars(String name, double... values) { return bars(name, null, values); }
+
+    /** Shows a vector as bars, each with its label (e.g. "left", "right"). */
+    public synchronized Inspector bars(String name, String[] labels, double... values) {
+        if (name == null || values == null) return this;
+        return putView(new Bars(name, values.clone(), labels == null ? null : labels.clone()));
+    }
+
+    /** Shows a matrix as a heat map, {@code values[row][column]} (rows may differ in length). */
+    public synchronized Inspector matrix(String name, double[][] values) {
+        if (name == null || values == null) return this;
+        return putView(new Matrix(name, copy(values)));
+    }
+
+    /** Shows a network: neurons coloured by their activation, no connections drawn. */
+    public Inspector network(String name, double[][] activations) { return network(name, activations, null, null); }
+
+    /** Shows a network: neurons coloured by their activation, connections by their weight. */
+    public Inspector network(String name, double[][] activations, double[][][] weights) {
+        return network(name, activations, weights, null);
+    }
+
+    /**
+     * Shows a network; see {@link Network} for the shapes. Weights whose shape does not match the
+     * activations are not drawn.
+     */
+    public synchronized Inspector network(String name, double[][] activations, double[][][] weights, String[][] labels) {
+        if (name == null || activations == null) return this;
+        double[][][] w = null;
+        if (weights != null) {
+            w = new double[weights.length][][];
+            for (int l = 0; l < weights.length; l++) w[l] = weights[l] == null ? null : copy(weights[l]);
+        }
+        String[][] lb = null;
+        if (labels != null) {
+            lb = new String[labels.length][];
+            for (int l = 0; l < labels.length; l++) lb[l] = labels[l] == null ? null : labels[l].clone();
+        }
+        return putView(new Network(name, copy(activations), w, lb));
+    }
+
+    private Inspector putView(View v) {
+        if (!views.containsKey(v.name()) && views.size() >= MAX_NAMES) return this;
+        views.put(v.name(), v);
+        version++;
+        return this;
+    }
+
+    private static double[][] copy(double[][] m) {
+        double[][] c = new double[m.length][];
+        for (int i = 0; i < m.length; i++) c[i] = m[i] == null ? new double[0] : m[i].clone();
+        return c;
+    }
+
     /** Adds a line to the log, stamped with the simulated time. */
     public synchronized Inspector log(String message) {
         addLog(clock.getAsDouble(), message == null ? "null" : message);
@@ -108,9 +194,10 @@ public final class Inspector {
         return this;
     }
 
-    /** Forgets plots, watched values and log; keeps the state. */
+    /** Forgets plots, watched values, views and log; keeps the state. */
     public synchronized void clear() {
         watched.clear();
+        views.clear();
         series.clear();
         log.clear();
         version++;
@@ -123,7 +210,7 @@ public final class Inspector {
         List<Series> s = new ArrayList<>(series.size());
         for (Map.Entry<String, Ring> e : series.entrySet()) s.add(e.getValue().toSeries(e.getKey()));
         return new Snapshot(version, state, stateSince, java.util.Collections.unmodifiableMap(new LinkedHashMap<>(watched)),
-            List.copyOf(s), List.copyOf(log));
+            List.copyOf(s), List.copyOf(log), List.copyOf(views.values()));
     }
 
     private void addLog(double t, String text) {

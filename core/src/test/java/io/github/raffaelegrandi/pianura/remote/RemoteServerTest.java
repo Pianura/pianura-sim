@@ -13,6 +13,7 @@ import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -281,6 +282,52 @@ class RemoteServerTest {
             assertTrue(snap.log().stream().anyMatch(e -> e.text().equals("state: warming up")));
             assertTrue(snap.log().stream().anyMatch(e -> e.text().startsWith("tick 0.1")));
         }
+    }
+
+    @Test
+    @Timeout(20)
+    void clientShowsItsInsides() throws Exception {
+        Sim sim = new Sim(RemoteServer.Mode.LOCKSTEP, 1000);
+        try (Client c = new Client(sim.server.getPort())) {
+            c.send(Client.msg("type", "hello", "robot", 1));
+            c.receive();
+            sim.runAsync(0.1);
+            while (true) {
+                Map<String, Object> s = c.receive();
+                if (!"sensors".equals(s.get("type"))) continue;
+                double t = (Double) s.get("t");
+                c.send(Client.msg("type", "cmd", "robot", 1, "seq", s.get("seq"), "v", 1.0,
+                    "bars", Client.msg("q", List.of(0.1, t, -0.5), "out", Client.msg("values", List.of(1.0, 2.0), "labels", List.of("left", "right"))),
+                    "matrix", Client.msg("w", List.of(List.of(1.0, -1.0), List.of(0.5, 0.0))),
+                    "network", Client.msg("net", Client.msg(
+                        "activations", List.of(List.of(1.0, 0.0), List.of(0.3)),
+                        "weights", List.of(List.of(List.of(0.7, -0.2))),
+                        "labels", Arrays.asList(List.of("a", "b"), null)))));
+                if (t >= 0.1 - 1e-9) break;
+            }
+            sim.finish();
+            var views = sim.robot.inspector().snapshot().views();
+            assertEquals(List.of("q", "out", "w", "net"), views.stream().map(v -> v.name()).toList());
+            var q = (io.github.raffaelegrandi.pianura.inspect.Inspector.Bars) views.get(0);
+            assertEquals(0.1, q.values()[1], 1e-9, "the latest values replace the previous ones");
+            assertArrayEquals(new String[] { "left", "right" }, ((io.github.raffaelegrandi.pianura.inspect.Inspector.Bars) views.get(1)).labels());
+            var net = (io.github.raffaelegrandi.pianura.inspect.Inspector.Network) views.get(3);
+            assertEquals(-0.2, net.weights()[0][0][1], 1e-9);
+            assertNull(net.labels()[1]);
+            assertEquals(1, sim.robot.getLinearSpeed(), 1e-9, "views do not change the motion");
+        }
+    }
+
+    @Test
+    @Timeout(20)
+    void malformedViewsAreRejected() throws Exception {
+        Sim sim = new Sim(RemoteServer.Mode.LOCKSTEP, 1000);
+        try (Client c = new Client(sim.server.getPort())) {
+            c.send(Client.msg("type", "cmd", "robot", 1, "bars", Client.msg("q", List.of(1.0, "x"))));
+            assertTrue(((String) c.receive().get("message")).contains("\"bars\": \"q\" must be a list of numbers"));
+            c.send(Client.msg("type", "cmd", "robot", 1, "network", Client.msg("n", Client.msg("weights", List.of()))));
+            assertTrue(((String) c.receive().get("message")).contains("must be an object with \"activations\""));
+        } finally { sim.engine.stop(); sim.server.close(); }
     }
 
     @Test

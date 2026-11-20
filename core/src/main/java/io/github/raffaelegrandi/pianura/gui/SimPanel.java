@@ -91,6 +91,7 @@ public class SimPanel extends JPanel implements ActionListener{
 			if (inspector != null) inspector.arenaSelectionChanged(r);
 		});
 		arena.setViewListener(sidePanel::refresh);
+		arena.setInspectHandler(this::inspect);
 
 		if (engine != null) {
 			controlBar = new SimControlBar(engine);
@@ -281,6 +282,12 @@ public class SimPanel extends JPanel implements ActionListener{
 		inspector.setVisible(visible);
 		if (visible) inspector.toFront();
 		if (inspectorToggle != null) inspectorToggle.setSelected(visible);
+	}
+
+	/** Opens the inspector on this robot (from the robot's right-click menu). */
+	public void inspect(RobotUnit r) {
+		setInspectorVisible(true);
+		if (inspector != null && r != null) inspector.show(r);
 	}
 
 	/** The inspector window, or null if it was never opened. */

@@ -349,6 +349,81 @@ public final class RemoteController implements RobotController {
                 ops.add(in -> in.plot(name, v));
             }
         }
+        if (msg.containsKey("bars")) {
+            if (!(msg.get("bars") instanceof Map<?, ?> m)) throw new IllegalArgumentException("\"bars\" must be an object {name: [numbers]}");
+            for (Map.Entry<?, ?> e : m.entrySet()) {
+                String name = String.valueOf(e.getKey()), where = "\"bars\": \"" + name + "\"";
+                Object val = e.getValue();
+                double[] values;
+                String[] labels = null;
+                if (val instanceof Map<?, ?> o) {
+                    values = vector(o.get("values"), where + ".values");
+                    if (o.get("labels") != null) labels = strings(o.get("labels"), where + ".labels");
+                } else values = vector(val, where);
+                String[] lb = labels;
+                ops.add(in -> in.bars(name, lb, values));
+            }
+        }
+        if (msg.containsKey("matrix")) {
+            if (!(msg.get("matrix") instanceof Map<?, ?> m)) throw new IllegalArgumentException("\"matrix\" must be an object {name: [[numbers]]}");
+            for (Map.Entry<?, ?> e : m.entrySet()) {
+                String name = String.valueOf(e.getKey());
+                double[][] values = matrix(e.getValue(), "\"matrix\": \"" + name + "\"");
+                ops.add(in -> in.matrix(name, values));
+            }
+        }
+        if (msg.containsKey("network")) {
+            if (!(msg.get("network") instanceof Map<?, ?> m))
+                throw new IllegalArgumentException("\"network\" must be an object {name: {\"activations\": [[...]], \"weights\": [[[...]]]}}");
+            for (Map.Entry<?, ?> e : m.entrySet()) {
+                String name = String.valueOf(e.getKey()), where = "\"network\": \"" + name + "\"";
+                if (!(e.getValue() instanceof Map<?, ?> o) || o.get("activations") == null)
+                    throw new IllegalArgumentException(where + " must be an object with \"activations\"");
+                double[][] act = matrix(o.get("activations"), where + ".activations");
+                double[][][] w = null;
+                if (o.get("weights") != null) {
+                    if (!(o.get("weights") instanceof List<?> wl)) throw new IllegalArgumentException(where + ".weights must be a list of matrices");
+                    w = new double[wl.size()][][];
+                    for (int l = 0; l < wl.size(); l++) w[l] = wl.get(l) == null ? null : matrix(wl.get(l), where + ".weights[" + l + "]");
+                }
+                String[][] lb = null;
+                if (o.get("labels") != null) {
+                    if (!(o.get("labels") instanceof List<?> ll)) throw new IllegalArgumentException(where + ".labels must be a list of lists of strings");
+                    lb = new String[ll.size()][];
+                    for (int l = 0; l < ll.size(); l++) lb[l] = ll.get(l) == null ? null : strings(ll.get(l), where + ".labels[" + l + "]");
+                }
+                double[][][] ww = w;
+                String[][] lbl = lb;
+                ops.add(in -> in.network(name, act, ww, lbl));
+            }
+        }
         return ops;
+    }
+
+    /** A list of numbers (null = NaN, a gap). */
+    private static double[] vector(Object o, String where) {
+        if (!(o instanceof List<?> l)) throw new IllegalArgumentException(where + " must be a list of numbers");
+        double[] v = new double[l.size()];
+        for (int i = 0; i < v.length; i++) {
+            Object x = l.get(i);
+            if (x == null) v[i] = Double.NaN;
+            else if (x instanceof Number n) v[i] = n.doubleValue();
+            else throw new IllegalArgumentException(where + " must be a list of numbers");
+        }
+        return v;
+    }
+
+    private static double[][] matrix(Object o, String where) {
+        if (!(o instanceof List<?> l)) throw new IllegalArgumentException(where + " must be a list of lists of numbers");
+        double[][] m = new double[l.size()][];
+        for (int i = 0; i < m.length; i++) m[i] = vector(l.get(i), where);
+        return m;
+    }
+
+    private static String[] strings(Object o, String where) {
+        if (!(o instanceof List<?> l)) throw new IllegalArgumentException(where + " must be a list of strings");
+        String[] s = new String[l.size()];
+        for (int i = 0; i < s.length; i++) s[i] = l.get(i) == null ? null : String.valueOf(l.get(i));
+        return s;
     }
 }

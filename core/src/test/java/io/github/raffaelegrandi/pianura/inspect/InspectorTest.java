@@ -73,6 +73,28 @@ class InspectorTest {
     }
 
     @Test
+    void viewsAreCopiesKeptInOrderAndReplaced() {
+        Inspector in = new Inspector(() -> now);
+        double[] q = { 1, 2, 3 };
+        in.bars("q", q).matrix("w", new double[][] { { 1, -1 } });
+        q[0] = 99;                                       // the robot's array changes afterwards
+        in.network("net", new double[][] { { 1, 0 }, { 0.5 } }, new double[][][] { { { 0.3, -0.3 } } },
+            new String[][] { { "a", "b" }, null });
+        in.bars("q", new String[] { "x", "y" }, 4, 5);
+        var views = in.snapshot().views();
+        assertEquals(List.of("q", "w", "net"), views.stream().map(Inspector.View::name).toList());
+        var bars = (Inspector.Bars) views.get(0);
+        assertArrayEquals(new double[] { 4, 5 }, bars.values());
+        assertArrayEquals(new String[] { "x", "y" }, bars.labels());
+        Inspector fresh = new Inspector(() -> now);
+        fresh.bars("q", q);
+        q[1] = -7;
+        assertEquals(2, ((Inspector.Bars) fresh.snapshot().views().get(0)).values()[1], "copied when shown");
+        in.clear();
+        assertTrue(in.snapshot().views().isEmpty());
+    }
+
+    @Test
     void theVersionMovesAtEveryWrite() {
         Inspector in = new Inspector(() -> now);
         long v0 = in.version();
