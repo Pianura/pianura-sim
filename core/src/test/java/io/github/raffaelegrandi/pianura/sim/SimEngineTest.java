@@ -16,10 +16,10 @@ import io.github.raffaelegrandi.pianura.units.collisions.CollisionDetector;
 import io.github.raffaelegrandi.pianura.utils.Const;
 import io.github.raffaelegrandi.pianura.utils.Position;
 
-/** Test del motore senza GUI. */
+/** Engine tests without GUI. */
 class SimEngineTest {
 
-    /** Crea clock+motore, collega e avvia i robot (motore non ancora avviato). */
+    /** Creates clock + engine, connects and starts the robots (engine not started yet). */
     private static SimEngine setup(List<RobotDummy> robots, List<Obstacle> obstacles) {
         SimClock clock = new SimClock(Const.physicsStep);
         SimEngine engine = new SimEngine(clock, new CollisionDetector(obstacles), robots);
@@ -42,7 +42,7 @@ class SimEngineTest {
         startRobots(robots);
         engine.runUntil(1.0);
         engine.stop();
-        // chiamate a t = 0.0, 0.1, ..., 1.0: runUntil ritorna dopo che i robot hanno reagito all'istante finale
+        // calls at t = 0.0, 0.1, ..., 1.0: runUntil returns after the robots reacted to the final instant
         assertEquals(11, calls.size(), "chiamate: " + calls);
         for (int i = 0; i < calls.size(); i++) assertEquals(i * 0.1, calls.get(i), 1e-9);
     }
@@ -63,7 +63,7 @@ class SimEngineTest {
     @Test
     @Timeout(20)
     void robotNeverEntersWall() {
-        // parte a 3 celle dal bordo sinistro e spinge contro il muro per 10 s
+        // starts 3 cells from the left edge and pushes against the wall for 10 s
         List<RobotDummy> robots = List.of(new ControllerRobot(1, new Position(3, 20, Math.PI), 2, 0.1,
             (r, t) -> r.setRobotSpeed(2.0, 0)));
         SimEngine engine = setup(robots, List.of());
@@ -72,13 +72,13 @@ class SimEngineTest {
         engine.stop();
         double surfaceToWallPx = robots.get(0).getPosition().x * Const.cellSize - Const.unitRadius;
         assertTrue(surfaceToWallPx >= 0, "compenetrazione: " + surfaceToWallPx + " px");
-        assertTrue(surfaceToWallPx < Const.sensorsCheckingRange0 + 1, "si è fermato troppo lontano: " + surfaceToWallPx);
+        assertTrue(surfaceToWallPx < Const.sensorsCheckingRange0 + 1, "it stopped too far: " + surfaceToWallPx);
     }
 
     @Test
     @Timeout(20)
     void largeArenaWallsAreAtTheConfiguredSize() {
-        // arena 80 x 50 celle: il robot spinge verso destra e verso il basso, oltre i 40 celle dell'arena standard
+        // 80 x 50 arena: the robot pushes right and down, beyond the 40 cells of the standard arena
         double w = 80 * Const.cellSize, h = 50 * Const.cellSize;
         List<RobotDummy> robots = List.of(new ControllerRobot(1, new Position(70, 45, Math.atan2(1, 2)), 2, 0.1,
             (r, t) -> r.setRobotSpeed(2.0, 0)));
@@ -92,9 +92,9 @@ class SimEngineTest {
         Position p = robots.get(0).getPosition();
         double rightGap = w - (p.x * Const.cellSize + Const.unitRadius);
         double bottomGap = h - (p.y * Const.cellSize + Const.unitRadius);
-        assertTrue(p.x > 60 && p.y > 40, "il robot deve trovarsi oltre l'arena standard: " + p);
+        assertTrue(p.x > 60 && p.y > 40, "the robot must be beyond the standard arena: " + p);
         assertTrue(rightGap >= 0 && bottomGap >= 0, "compenetrazione: " + rightGap + ", " + bottomGap);
-        assertTrue(Math.min(rightGap, bottomGap) < Const.sensorsCheckingRange0 + 1, "non ha raggiunto il muro: " + p);
+        assertTrue(Math.min(rightGap, bottomGap) < Const.sensorsCheckingRange0 + 1, "it did not reach the wall: " + p);
     }
 
     @Test
@@ -108,7 +108,7 @@ class SimEngineTest {
         engine.runUntil(2.0);
         engine.stop();
         assertFalse(r.isActive());
-        assertEquals(10.5, r.getPosition().x, 0.02);   // si è mosso solo fino a t = 0.5
+        assertEquals(10.5, r.getPosition().x, 0.02);   // it moved only until t = 0.5
     }
 
     @Test
@@ -120,12 +120,12 @@ class SimEngineTest {
         engine.start();                // parte in pausa
         startRobots(robots);
         Thread.sleep(200);
-        assertEquals(0, engine.getClock().getStep(), "in pausa il tempo non deve avanzare");
+        assertEquals(0, engine.getClock().getStep(), "while paused, time must not advance");
 
         engine.step(25);
         waitFor(() -> engine.getClock().getStep() == 25);
         Thread.sleep(100);
-        assertEquals(25, engine.getClock().getStep(), "dopo i passi richiesti deve tornare in pausa");
+        assertEquals(25, engine.getClock().getStep(), "after the requested steps it must pause again");
 
         engine.setSpeed(SimEngine.MAX_SPEED);
         engine.resume();
@@ -159,7 +159,7 @@ class SimEngineTest {
         List<String> log = new CopyOnWriteArrayList<>();
         RobotDummy busy = new RobotDummy(1, new Position(10, 10, 0), 2) {
             @Override public void executeLoop() {
-                while (isActive()) Thread.onSpinWait();   // non chiama mai sleepSim()
+                while (isActive()) Thread.onSpinWait();   // never calls sleepSim()
             }
         };
         List<RobotDummy> robots = List.of(busy);
@@ -170,14 +170,14 @@ class SimEngineTest {
         busy.setActive(false);
         engine.stop();
         assertEquals(1.0, engine.getClock().now(), 1e-9);
-        assertEquals(1, log.size(), "atteso un solo avviso: " + log);
+        assertEquals(1, log.size(), "expected a single warning: " + log);
         assertTrue(log.get(0).contains("Robot #1"));
     }
 
     private static void waitFor(Supplier<Boolean> cond) throws InterruptedException {
         long deadline = System.currentTimeMillis() + 10_000;
         while (!cond.get()) {
-            if (System.currentTimeMillis() > deadline) fail("condizione non raggiunta");
+            if (System.currentTimeMillis() > deadline) fail("condition not reached");
             Thread.sleep(5);
         }
     }

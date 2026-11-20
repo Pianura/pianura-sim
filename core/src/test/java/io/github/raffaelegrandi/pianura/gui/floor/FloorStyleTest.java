@@ -33,10 +33,10 @@ class FloorStyleTest {
     void defaultCheckerboardMatchesOriginalPattern() {
         BufferedImage img = render(FloorStyle.checkerboard());
         int c = Const.cellSize;
-        // algoritmo originale: cella (riga i, colonna j) = colore2 se i+j pari, altrimenti colore1
+        // original algorithm: cell (row i, column j) = color2 if i+j is even, color1 otherwise
         for (int i = 0; i < Const.gridCellCount; i++) {
             for (int j = 0; j < Const.gridCellCount; j++) {
-                if (i == Const.gridCellCount - 2 && j >= 35) continue;   // celle con le lettere del marchio
+                if (i == Const.gridCellCount - 2 && j >= 35) continue;   // cells with the letters of the mark
                 Color expected = ((i + j) % 2 == 0) ? Const.arenaFloorColor2 : Const.arenaFloorColor1;
                 assertEquals(expected, px(img, j * c + 1, i * c + 1), "cella " + i + "," + j);
                 assertEquals(expected, px(img, j * c + c - 2, i * c + c - 2), "cella " + i + "," + j);
@@ -46,7 +46,7 @@ class FloorStyleTest {
 
     @Test
     void customCheckerboardSquareSize() {
-        BufferedImage img = render(FloorStyle.checkerboard(Color.WHITE, Color.BLACK, 2));   // quadrati da 30 px
+        BufferedImage img = render(FloorStyle.checkerboard(Color.WHITE, Color.BLACK, 2));   // 30 px squares
         assertEquals(Color.BLACK, px(img, 5, 5));
         assertEquals(Color.BLACK, px(img, 25, 25));
         assertEquals(Color.WHITE, px(img, 35, 5));
@@ -54,7 +54,7 @@ class FloorStyleTest {
 
     @Test
     void gridDrawsLinesOnBackground() {
-        BufferedImage img = render(FloorStyle.grid(Color.WHITE, Color.GRAY, 2));   // linee ogni 30 px
+        BufferedImage img = render(FloorStyle.grid(Color.WHITE, Color.GRAY, 2));   // lines every 30 px
         assertEquals(Color.WHITE, px(img, 10, 10));
         assertEquals(Color.GRAY, px(img, 30, 10));
         assertEquals(Color.GRAY, px(img, 10, 60));
@@ -86,7 +86,7 @@ class FloorStyleTest {
 
     @Test
     void imageFitKeepsAspectWithBands() {
-        BufferedImage wide = new BufferedImage(200, 100, BufferedImage.TYPE_INT_RGB);   // 2:1 → bande sopra e sotto
+        BufferedImage wide = new BufferedImage(200, 100, BufferedImage.TYPE_INT_RGB);   // 2:1 → bands above and below
         Graphics2D g = wide.createGraphics(); g.setColor(Color.RED); g.fillRect(0, 0, 200, 100); g.dispose();
         BufferedImage img = render(new ImageFloor(wide, ImageFloor.Mode.FIT).withBackground(Color.BLACK));
         assertEquals(Color.BLACK, px(img, W / 2, 10));        // banda superiore
@@ -126,7 +126,7 @@ class FloorStyleTest {
 
     @Test
     void randomTilesHaveGroutOnTileBorders() {
-        BufferedImage img = render(FloorStyle.randomTiles());   // piastrelle da 3 celle = 45 px
+        BufferedImage img = render(FloorStyle.randomTiles());   // 3-cell tiles = 45 px
         Color grout = RandomTilesFloor.shade(new Color(180, 176, 168), -60);
         assertEquals(grout, px(img, 45, 20));
         assertEquals(grout, px(img, 20, 90));
@@ -145,7 +145,7 @@ class FloorStyleTest {
         }
         double groutFraction = groutPx / (double) ((W / 3) * (H / 3));
         assertTrue(groutFraction > 0.03 && groutFraction < 0.25, "frazione fughe " + groutFraction);
-        assertTrue(colors.size() > 20, "poche tonalità: " + colors.size());
+        assertTrue(colors.size() > 20, "too few tones: " + colors.size());
     }
 
     @Test

@@ -20,7 +20,7 @@ class ViewTransformTest {
         Point2D w = vt.toWorld(s.getX(), s.getY());
         assertEquals(123.4, w.getX(), EPS);
         assertEquals(56.7, w.getY(), EPS);
-        // asAffine coincide con toScreen
+        // asAffine matches toScreen
         Point2D a = vt.asAffine().transform(new Point2D.Double(123.4, 56.7), null);
         assertEquals(s.getX(), a.getX(), EPS);
         assertEquals(s.getY(), a.getY(), EPS);
@@ -29,9 +29,9 @@ class ViewTransformTest {
     @Test
     void fitCentersWorldAndRespectsPadding() {
         ViewTransform vt = new ViewTransform();
-        // mondo 1200x750 (80x50 celle) in una vista 800x600 con margine 10
+        // 1200x750 world (80x50 cells) in an 800x600 view with a margin of 10
         vt.fit(new Rectangle2D.Double(0, 0, 1200, 750), 800, 600, 10);
-        assertEquals(780.0 / 1200, vt.getScale(), EPS);           // limita la larghezza
+        assertEquals(780.0 / 1200, vt.getScale(), EPS);           // the width is the limit
         Point2D tl = vt.toScreen(0, 0), br = vt.toScreen(1200, 750);
         assertEquals(10, tl.getX(), EPS);
         assertEquals(790, br.getX(), EPS);

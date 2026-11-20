@@ -19,9 +19,9 @@ import io.github.raffaelegrandi.pianura.utils.Position;
 
 class FloorSensorTest {
 
-    /** Pavimento bianco con una striscia nera verticale da x = 292 a x = 308 px di mondo (larga 16 px ≈ 1 cella). */
+    /** White floor with a black vertical stripe from x = 292 to x = 308 world px (16 px wide ≈ 1 cell). */
     private static final FloorStyle LINE = (g, w, h, cell) -> {
-        double k = cell / Const.cellSize;               // pixel di immagine per pixel di mondo
+        double k = cell / Const.cellSize;               // image pixels per world pixel
         g.setColor(Color.WHITE);
         g.fillRect(0, 0, w, h);
         g.setColor(Color.BLACK);
@@ -34,7 +34,7 @@ class FloorSensorTest {
         };
     }
 
-    /** Un passo di percezione senza muovere nulla. */
+    /** One sensing step without moving anything. */
     private static SimEngine sense(RobotDummy r, FloorStyle floor) {
         SimEngine e = new SimEngine(new SimClock(Const.physicsStep), new CollisionDetector(List.of()), List.of(r));
         e.setLogger(m -> {});
@@ -55,8 +55,8 @@ class FloorSensorTest {
 
     @Test
     void lineUnderLeftSensorOnly() {
-        // robot rivolto verso l'alto (θ = −90°) con il centro sul bordo destro della linea:
-        // sensore sinistro (−20°) a x ≈ 303 → sulla linea; destro (+20°) a x ≈ 313 → bianco
+        // robot facing up (θ = −90°) with its centre on the right edge of the line:
+        // left sensor (−20°) at x ≈ 303 → on the line; right (+20°) at x ≈ 313 → white
         RobotDummy r = robot(308, 300, -Math.PI / 2);
         sense(r, LINE);
         assertTrue(r.getFloorGray(0) < 20, "sinistro dovrebbe vedere nero: " + r.getFloorGray(0));
@@ -69,23 +69,23 @@ class FloorSensorTest {
     void sensorsAreSymmetricOnCenteredLine() {
         RobotDummy r = robot(300, 300, -Math.PI / 2);
         sense(r, LINE);
-        assertEquals(r.getFloorGray(0), r.getFloorGray(1));   // entrambi sulla linea
+        assertEquals(r.getFloorGray(0), r.getFloorGray(1));   // both on the line
         assertTrue(r.getFloorGray(0) < 20);
     }
 
     @Test
     void footprintGivesGradualSignalOnTheEdge() {
-        // sensore singolo esattamente sul bordo della linea (x = 308): metà nero, metà bianco
+        // single sensor exactly on the line's edge (x = 308): half black, half white
         RobotDummy r = robot(300, 300, 0);
-        r.configureFloorSensors(8.0 / 15, 0.2, 0);           // 8 px davanti al centro, verso destra (θ = 0); impronta 0.2 celle = 3 px
+        r.configureFloorSensors(8.0 / 15, 0.2, 0);           // 8 px ahead of the centre, to the right (θ = 0); footprint 0.2 cells = 3 px
         sense(r, LINE);
         int g = r.getFloorGray(0);
-        assertTrue(g > 90 && g < 165, "valore sul bordo dovrebbe essere intermedio: " + g);
-        // impronta puntiforme: legge un solo pixel, quindi nero o bianco
+        assertTrue(g > 90 && g < 165, "the value on the edge should be in between: " + g);
+        // point footprint: reads a single pixel, so black or white
         r.configureFloorSensors(8.0 / 15, 0, 0);
         sense(r, LINE);
         int p = r.getFloorGray(0);
-        assertTrue(p == 0 || p == 255, "impronta nulla: un solo pixel, letto " + p);
+        assertTrue(p == 0 || p == 255, "zero footprint: a single pixel, read " + p);
     }
 
     @Test
@@ -96,7 +96,7 @@ class FloorSensorTest {
         assertEquals(3, r.getFloorSensorCount());
         Point2D left = r.getUnitObject().getFloorSensors().getPosition(0);
         assertEquals(300, left.getX() * Const.cellSize, 1e-6);
-        assertEquals(300 - 7.5, left.getY() * Const.cellSize, 1e-6);   // −90° = sinistra di chi guarda verso +x
+        assertEquals(300 - 7.5, left.getY() * Const.cellSize, 1e-6);   // −90° = the left of someone facing +x
     }
 
     @Test

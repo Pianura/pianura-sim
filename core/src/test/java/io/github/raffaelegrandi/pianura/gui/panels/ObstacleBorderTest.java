@@ -20,7 +20,7 @@ class ObstacleBorderTest {
 
     private static final Color FLOOR = new Color(30, 160, 60);
 
-    /** Quadrato 4x4 celle centrato in (20,20): in pixel da 270 a 330. */
+    /** 4x4-cell square centred at (20,20): in pixels from 270 to 330. */
     private static Obstacle square(Color fill) {
         return new Obstacle(ArenaObjectType.OBSTACLE_RECT, fill, new Position(20, 20, 0), new Dimension(4, 4));
     }
@@ -42,7 +42,7 @@ class ObstacleBorderTest {
         assertEquals(Color.WHITE, px(img, 300, 300), "centro");
         assertEquals(Color.BLACK, px(img, 271, 300), "bordo interno sinistro");
         assertEquals(Color.BLACK, px(img, 300, 328), "bordo interno inferiore");
-        assertEquals(FLOOR, px(img, 267, 300), "fuori dalla forma: il bordo non deve sporgere");
+        assertEquals(FLOOR, px(img, 267, 300), "outside the shape: the border must not stick out");
     }
 
     @Test
@@ -55,9 +55,9 @@ class ObstacleBorderTest {
     void defaultBorderIsDarkerShadeOfFill() {
         Obstacle o = square(Color.WHITE);
         assertEquals(new Color(140, 140, 140), o.getBorderColor());
-        // spessore predefinito 1.5 px: il pixel 270 è interamente nel bordo (il 271 è sfumato dall'antialiasing)
+        // default width 1.5 px: pixel 270 is entirely in the border (271 is blended by antialiasing)
         assertEquals(o.getBorderColor(), px(render(o), 300, 270));
-        // su colori molto scuri il bordo automatico è più chiaro, per restare visibile
+        // on very dark colors the automatic border is lighter, to stay visible
         Color dark = Obstacle.autoBorder(Color.BLACK);
         assertTrue(dark.getRed() > 0);
     }

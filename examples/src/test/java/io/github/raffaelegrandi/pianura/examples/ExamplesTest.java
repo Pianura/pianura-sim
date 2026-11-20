@@ -74,7 +74,7 @@ class ExamplesTest {
         List<double[]> a = runSwarm(30);
         List<double[]> b = runSwarm(30);
         for (int i = 0; i < a.size(); i++) {
-            assertArrayEquals(a.get(i), b.get(i), 0.0, "robot " + (i + 1) + " diverso tra due esecuzioni");
+            assertArrayEquals(a.get(i), b.get(i), 0.0, "robot " + (i + 1) + " differs between two runs");
         }
     }
 

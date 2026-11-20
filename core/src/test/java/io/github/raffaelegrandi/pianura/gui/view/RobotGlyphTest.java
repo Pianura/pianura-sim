@@ -20,12 +20,12 @@ class RobotGlyphTest {
 
     @Test
     void labelSitsUpLeftAt45DegreesAtTheGivenDistance() {
-        double k = 30 / Math.sqrt(2);                                        // 2 raggi da 15 px lungo la diagonale
+        double k = 30 / Math.sqrt(2);                                        // 2 radii of 15 px along the diagonal
         Point2D a = RobotGlyph.labelCenter(100, 100, 15, 2);
         assertEquals(100 - k, a.getX(), 1e-9);                               // a sinistra
-        assertEquals(100 - k, a.getY(), 1e-9);                               // in alto (y cresce verso il basso)
+        assertEquals(100 - k, a.getY(), 1e-9);                               // up (y grows downwards)
         assertEquals(30, a.distance(100, 100), 1e-9);
-        Point2D c = RobotGlyph.labelCenter(100, 100, 15, 0);                 // 0 = sopra il centro
+        Point2D c = RobotGlyph.labelCenter(100, 100, 15, 0);                 // 0 = over the centre
         assertEquals(100, c.getX(), 1e-9);
         assertEquals(100, c.getY(), 1e-9);
         Point2D d = RobotGlyph.labelCenter(100, 100, 15, -3);                // negativo trattato come 0
@@ -51,7 +51,7 @@ class RobotGlyphTest {
         assertEquals(2.0, straight.getLeftWheelTravel(), 0.02);
         assertEquals(2.0, straight.getRightWheelTravel(), 0.02);
 
-        RobotDummy spin = run(0, 1.0, 1.0, 20);   // rotazione oraria sul posto: sinistra avanti, destra indietro
+        RobotDummy spin = run(0, 1.0, 1.0, 20);   // clockwise turn on the spot: left forward, right backward
         assertEquals(1.0, spin.getLeftWheelTravel(), 0.02);
         assertEquals(-1.0, spin.getRightWheelTravel(), 0.02);
     }
@@ -59,9 +59,9 @@ class RobotGlyphTest {
     @Test
     @Timeout(20)
     void wheelsKeepTurningWhenPushingAgainstAWall() {
-        // parte a 1.5 celle dal bordo destro (40) e spinge per 3 s: il corpo si ferma, le ruote no
+        // starts 1.5 cells from the right edge (40) and pushes for 3 s: the body stops, the wheels do not
         RobotDummy r = run(1.0, 0, 3.0, 38.5);
-        assertTrue(r.getPosition().x < 39.01, "il corpo non deve attraversare il muro: " + r.getPosition().x);
+        assertTrue(r.getPosition().x < 39.01, "the body must not go through the wall: " + r.getPosition().x);
         assertEquals(3.0, r.getLeftWheelTravel(), 0.03, "le ruote slittano ma girano");
     }
 

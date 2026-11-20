@@ -24,7 +24,7 @@ import io.github.raffaelegrandi.pianura.utils.Position;
 
 class CommNetworkTest {
 
-    /** Ricevuto: istante di lettura, destinatario, mittente, contenuto. */
+    /** Received: reading instant, receiver, sender, content. */
     record Got(double t, int at, int from, Object payload) {}
 
     private static RobotDummy robot(int id, double x, double y, RobotController c) {
@@ -42,7 +42,7 @@ class CommNetworkTest {
         return e;
     }
 
-    /** Controllore che annota ciò che riceve. */
+    /** Controller that records what it receives. */
     private static RobotController recorder(List<Got> log, RobotController then) {
         return (r, t) -> {
             for (Message m : r.receive()) log.add(new Got(t, r.getIDnum(), m.from(), m.payload()));
@@ -54,7 +54,7 @@ class CommNetworkTest {
     @Timeout(20)
     void threeInARowNeedARelayToReachTheLastOne() {
         List<Got> log = new CopyOnWriteArrayList<>();
-        // A(1) — 5 celle — B(2) — 5 celle — C(3), raggio 6: A sente B, B sente C, A non sente C
+        // A(1) — 5 cells — B(2) — 5 cells — C(3), range 6: A hears B, B hears C, A does not hear C
         RobotDummy a = robot(1, 10, 20, recorder(log, (r, t) -> { if (t == 0) r.broadcast("hello from A"); }));
         RobotDummy b = robot(2, 15, 20, (r, t) -> {
             for (Message m : r.receive()) {
@@ -67,10 +67,10 @@ class CommNetworkTest {
 
         List<Got> atC = log.stream().filter(g -> g.at() == 3).toList();
         assertEquals(1, atC.size(), log.toString());
-        assertEquals(2, atC.get(0).from(), "C riceve solo da B");
+        assertEquals(2, atC.get(0).from(), "C receives only from B");
         assertEquals(Map.of("relay", "hello from A"), atC.get(0).payload());
         assertTrue(log.stream().anyMatch(g -> g.at() == 2 && g.from() == 1), "B riceve A");
-        assertTrue(log.stream().anyMatch(g -> g.at() == 1 && g.from() == 2), "anche A sente la ritrasmissione di B");
+        assertTrue(log.stream().anyMatch(g -> g.at() == 1 && g.from() == 2), "A also hears B's retransmission");
         ConnectivityGraph g = e.getNetwork().getGraph();
         assertEquals(2, g.links().size());
         assertEquals(1, g.componentCount());
@@ -90,7 +90,7 @@ class CommNetworkTest {
         ConnectivityGraph g = e.getNetwork().getGraph();
         assertTrue(g.reaches(g.indexOf(1), g.indexOf(2)));
         assertFalse(g.reaches(g.indexOf(2), g.indexOf(1)));
-        // incidenza: +1 sul trasmettitore, -1 sul ricevitore
+        // incidence: +1 on the transmitter, -1 on the receiver
         int[][] inc = g.incidence();
         assertEquals(1, inc[g.indexOf(1)][0]);
         assertEquals(-1, inc[g.indexOf(2)][0]);
@@ -163,12 +163,12 @@ class CommNetworkTest {
             if (t != 0) return;
             List<Object> mutable = new ArrayList<>(List.of(1, 2));
             r.broadcast(Map.of("n", 7, "list", mutable));
-            mutable.add(3);                                     // non deve toccare il messaggio già inviato
+            mutable.add(3);                                     // must not touch the message already sent
             try { r.broadcast(new Object()); } catch (IllegalArgumentException ex) { errors.add(ex); }
         });
         RobotDummy b = robot(2, 13, 20, recorder(log, null));
         run(List.of(a, b), List.of(), new CommSettings(), 0.5);
-        assertEquals(1, errors.size(), "un oggetto qualsiasi non è un contenuto valido");
+        assertEquals(1, errors.size(), "an arbitrary object is not valid content");
         @SuppressWarnings("unchecked") Map<String, Object> m = (Map<String, Object>) log.get(0).payload();
         assertEquals(7.0, m.get("n"), "i numeri arrivano come Double, come in JSON");
         assertEquals(List.of(1.0, 2.0), m.get("list"));
@@ -181,7 +181,7 @@ class CommNetworkTest {
         RobotDummy a = robot(1, 10, 20, (r, t) -> r.broadcast(t));
         RobotDummy b = new ControllerRobot(2, new Position(13, 20, 0), 2, 0.1, recorder(log, null), Const.unitColor, 500);
         SimEngine e = run(List.of(a, b), List.of(), new CommSettings(), 2.0);
-        assertTrue(log.stream().allMatch(g -> g.t() < 0.5 + 1e-9), "dopo il guasto (0.5 s) niente più messaggi");
+        assertTrue(log.stream().allMatch(g -> g.t() < 0.5 + 1e-9), "after the fault (0.5 s) no more messages");
         assertEquals(0, e.getNetwork().getGraph().links().size());
         assertTrue(e.getNetwork().getLinkEvents().stream().anyMatch(ev -> !ev.up()), "evento di collegamento rotto");
     }
@@ -192,7 +192,7 @@ class CommNetworkTest {
         assertEquals(chatter(), chatter());
     }
 
-    /** Cinque robot in movimento che si scambiano messaggi: sequenza ricevuta da tutti. */
+    /** Five moving robots exchanging messages: sequence received by all. */
     private static List<String> chatter() {
         List<String> got = new CopyOnWriteArrayList<>();
         List<RobotDummy> rs = new ArrayList<>();
@@ -206,7 +206,7 @@ class CommNetworkTest {
         }
         run(rs, List.of(), new CommSettings().setRange(5).setLossProbability(0.2).setSeed(3), 8.0);
         List<String> sorted = new ArrayList<>(got);
-        // l'ordine tra robot diversi nello stesso istante dipende dai thread: confronto per contenuto
+        // the order between robots at the same instant depends on the threads: compare by content
         sorted.sort(null);
         return sorted;
     }
