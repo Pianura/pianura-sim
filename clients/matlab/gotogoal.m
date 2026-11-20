@@ -22,7 +22,8 @@ function rec = gotogoal(waypoints, robotId, host, port, doPlot)
 % Try changing the gains, or replace the controller with your own.
 %
 % In Pianura the robot draws the route (layer 'route') and, at every step, an arrow to the
-% current waypoint and the heading error (layer 'aim'): View -> Robot drawings.
+% current waypoint and the heading error (layer 'aim'): View -> Robot drawings. The Inspector
+% (button on the toolbar) shows its state, the commands, and distance and heading error over time.
 
 if nargin < 1 || isempty(waypoints), waypoints = [20 4; 33 4; 35 14]; end
 if nargin < 2 || isempty(robotId), robotId = 1; end
@@ -59,6 +60,7 @@ try
         dist = hypot(dx, dy);
         if dist < TOL
             fprintf('t=%5.1f s  waypoint %d reached\n', s.t, k);
+            robot.inspectLog(sprintf('waypoint %d reached', k));
             k = k + 1;
             robot.drive(0, 0);
             continue;
@@ -69,6 +71,11 @@ try
         robot.drawClear('aim');              % redrawn at every step
         robot.drawArrow('aim', s.x, s.y, waypoints(k, 1), waypoints(k, 2), 'b');
         robot.drawText('aim', s.x + 1.2, s.y + 1.8, sprintf('e = %+.2f rad', e), 'b');
+        robot.inspectState(sprintf('to waypoint %d', k));   % Pianura's Inspector window
+        robot.inspectPlot('distance (cells)', dist);
+        robot.inspectPlot('heading error (rad)', e);
+        robot.inspectWatch('v (cells/s)', cmdV);
+        robot.inspectWatch('w (rad/s)', cmdW);
         robot.drive(cmdV, cmdW);
 
         n = n + 1;

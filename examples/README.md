@@ -30,6 +30,7 @@ example; see [Scene files](../README.md#scene-files).
 | `radio` | Fourteen robots exchanging radio beacons, with the connectivity window | `BeaconWanderer` | added 2026 |
 | `largemap` | A 300×200 building generated from a seed, explored by 60 robots: fly over it with the minimap | `BeaconWanderer` | added 2026 |
 | `braitenberg` | Five Braitenberg vehicles with trails on; each draws an arrow with its intention | `BraitenbergVehicle` | added 2026 |
+| `planning` | An RRT grows under your eyes, the simulation pauses when the path is found, then the robot follows it; the inspector opens by itself | `RrtPlanner` | added 2026 |
 
 | ![obstacles](../docs/img/obstacles.png) | ![braitenberg](../docs/img/braitenberg.png) |
 |---|---|

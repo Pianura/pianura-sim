@@ -44,5 +44,12 @@ Debug drawings over the arena, in named layers (coordinates in cells; colors by 
 Shapes: `point`, `line`, `arrow`, `circle`, `disc`, `rect`, `polyline`, `polygon`, `text`;
 `robot.clear_drawings()` clears every layer.
 
+Pianura's **Inspector** window shows the algorithm's state, values, time plots and log:
+
+```python
+        robot.inspect.state("searching").watch("nodes", n).plot("error", e).log("goal seen")
+```
+
 `wander.py` sends a beacon every second with its position, prints which robots it can hear and
-draws a line to where it believes each neighbour is (layer `radio`).
+draws a line to where it believes each neighbour is (layer `radio`); in the Inspector it shows
+whether it is cruising or turning away, its front IR reading and how many neighbours it hears.

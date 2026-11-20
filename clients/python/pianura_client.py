@@ -35,6 +35,11 @@ what the algorithm thinks: a path, a target, an estimated map. Coordinates are i
 
 A layer keeps its shapes until clear(): redraw it at every step, or let it grow (a trail, a map).
 
+The Inspector window (button on Pianura's toolbar) shows the algorithm's state, watched values,
+time plots and a log, all stamped with the simulated time:
+
+    robot.inspect.state("searching").watch("nodes", n).plot("error", e).log("goal seen")
+
 Units (protocol version 3): lengths in cells, time in seconds, angles in radians. One cell is
 robot.meters_per_cell meters (0.05 by default: the robot is 2 cells, 10 cm, across).
 Screen convention: y grows downwards, positive angles turn clockwise on screen.
@@ -160,6 +165,36 @@ class Layer:
         return self._op("text", color, None, x=float(x), y=float(y), text=str(text))
 
 
+class Inspect:
+    """What the robot shows in Pianura's Inspector window. Every method returns this object.
+    Like drawings, the updates leave with the next drive()/wheels()."""
+
+    def __init__(self, robot: "PianuraRobot"):
+        self._robot = robot
+
+    def state(self, text: str) -> "Inspect":
+        """The algorithm's current state, e.g. "searching". Changes are also logged."""
+        self._robot._insp["state"] = str(text)
+        return self
+
+    def log(self, text: str) -> "Inspect":
+        """A line in the log, stamped with the simulated time."""
+        self._robot._insp.setdefault("log", []).append(str(text))
+        return self
+
+    def watch(self, name: str, value) -> "Inspect":
+        """Shows a named value (numbers, text, booleans; anything else as text)."""
+        if not isinstance(value, (int, float, str, bool)) and value is not None:
+            value = str(value)
+        self._robot._insp.setdefault("watch", {})[str(name)] = value
+        return self
+
+    def plot(self, name: str, value: float) -> "Inspect":
+        """Adds a point at the current simulated time to the plot `name`."""
+        self._robot._insp.setdefault("plot", {})[str(name)] = float(value)
+        return self
+
+
 class PianuraRobot:
     """One remote robot. Use one instance (and one socket) per robot."""
 
@@ -173,6 +208,8 @@ class PianuraRobot:
         self._broadcast: List[Any] = []
         self._send_to: List[dict] = []
         self._draw: List[dict] = []
+        self._insp: dict = {}
+        self.inspect = Inspect(self)
         self._layers = {}
 
     # -- connection -------------------------------------------------------------------
@@ -284,7 +321,8 @@ class PianuraRobot:
             msg["send"] = sends
         if self._draw:
             msg["draw"] = self._draw
-        self._broadcast, self._send_to, self._draw = [], [], []
+        msg.update(self._insp)
+        self._broadcast, self._send_to, self._draw, self._insp = [], [], [], {}
         self._send(msg)
 
     def _send(self, msg: dict):

@@ -10,6 +10,7 @@ Reference robot controllers, one package each under
 | [`iravoidance`](src/main/java/io/github/raffaelegrandi/pianura/algorithms/iravoidance) | `IrAvoider` | control loop | JUSE, 2008–2011 (was `TestDummy04`) | `obstacles`, `rooms` |
 | [`beaconwanderer`](src/main/java/io/github/raffaelegrandi/pianura/algorithms/beaconwanderer) | `BeaconWanderer` | periodic controller | added 2026 | `radio`, `largemap` |
 | [`braitenberg`](src/main/java/io/github/raffaelegrandi/pianura/algorithms/braitenberg) | `BraitenbergVehicle` | periodic controller | added 2026 | `braitenberg` |
+| [`planning`](src/main/java/io/github/raffaelegrandi/pianura/algorithms/planning) | `RrtPlanner`, `FreeSpace` | periodic controller | added 2026 | `planning` |
 
 *Control loop*: a `RobotDummy` subclass whose `executeLoop()` runs in its own thread and waits
 with `sleepSim()`. *Periodic controller*: a `RobotController` called by a `ControllerRobot` at a
@@ -73,6 +74,27 @@ the behaviour follows the wiring.
 
 First written for the historical edition of [JUSE](https://github.com/raffaeleGrandi/JUSE)
 and then adapted to Pianura's periodic controller API.
+
+## planning: `RrtPlanner`
+
+*Added in 2026.* Path planning with an RRT (Rapidly-exploring Random Tree, LaValle 1998) on a
+known map, then path following.
+
+- **Map**: `FreeSpace` holds the obstacles in cells with a clearance (robot radius plus a
+  margin); a segment is free if every point along it, a quarter cell apart, is free. It is built
+  when the planner starts, so obstacles moved with the mouse before Run count.
+- **Search**: a few iterations per control step, so the tree grows on screen (layer `tree`,
+  the last random sample in `sample`). One iteration: a random point (the goal with
+  probability `goalBias`), the nearest node, a step of `stepCells` towards the point, a new
+  node if the segment is free. When a node sees the goal, the path is read back through the
+  parents and shortened greedily (layer `path`); with `pauseWhenFound` the simulation pauses.
+- **Drive**: a proportional controller on heading and remaining path length, waypoint by
+  waypoint (layer `aim`).
+- **Inspector**: state (searching, following the path, arrived), iterations, nodes, closest node
+  to the goal, path length, waypoint, speed; plots of the tree's size, the closest distance, the
+  heading error and the remaining path; a log of the decisions.
+
+The sensors are not used: the planner knows the map. Same seed, same tree.
 
 ## Adding an algorithm
 

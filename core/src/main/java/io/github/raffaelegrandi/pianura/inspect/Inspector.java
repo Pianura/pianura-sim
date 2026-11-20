@@ -133,8 +133,8 @@ public final class Inspector {
             double d = ((Number) v).doubleValue();
             if (Double.isNaN(d) || Double.isInfinite(d)) return String.valueOf(d);
             if (d == Math.rint(d) && Math.abs(d) < 1e15) return String.valueOf((long) d);
-            String s = String.format(java.util.Locale.ROOT, "%.4f", d);
-            return s.replaceAll("0+$", "");
+            String s = String.format(java.util.Locale.ROOT, "%.4f", d).replaceAll("0+$", "").replaceAll("\\.$", "");
+            return s.equals("-0") ? "0" : s;
         }
         return String.valueOf(v);
     }

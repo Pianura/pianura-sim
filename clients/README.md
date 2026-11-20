@@ -139,6 +139,30 @@ what changes. A malformed operation rejects the whole command with an `error`.
 
 In Pianura, **Robot drawings** in the side panel shows or hides the drawings.
 
+## Inspector
+
+What the client sends here appears in Pianura's **Inspector** window (button on the toolbar),
+stamped with the simulated time of the command:
+
+```json
+{"type": "cmd", "robot": 1, "seq": 7, "v": 1.0,
+ "state": "to waypoint 2",
+ "watch": {"v": 1.0, "mode": "fast"},
+ "plot": {"distance": 3.2, "heading error": 0.12},
+ "log": ["waypoint 1 reached"]}
+```
+
+| Field | Content |
+|---|---|
+| `state` | The algorithm's current state, a string; a change is also logged |
+| `watch` | Named values to show, `{name: number or string}` |
+| `plot` | Points for the time plots, `{name: number}`: one plot per name |
+| `log` | A line, or a list of lines, for the log |
+
+The Python client sends them with `robot.inspect.state(...)`, `.watch(...)`, `.plot(...)`,
+`.log(...)`, MATLAB with `robot.inspectState`, `inspectWatch`, `inspectPlot`, `inspectLog`: they
+leave with the next `drive`/`wheels`. A `cmd` with only inspector fields keeps the previous speeds.
+
 ## Versions
 
 Clients and server must speak the same protocol version, otherwise the client refuses the
@@ -146,6 +170,6 @@ welcome: update the clients together with Pianura.
 
 | Version | Changes |
 |---|---|
-| 3 | Units in cells everywhere: `ir` in cells (was px, 255 = nothing), `bump` as booleans, wheel commands in cells/s (were JUSE's motor units); `meters_per_cell` and `body` in the welcome; debug drawings (`draw` in cmd) |
+| 3 | Units in cells everywhere: `ir` in cells (was px, 255 = nothing), `bump` as booleans, wheel commands in cells/s (were JUSE's motor units); `meters_per_cell` and `body` in the welcome; debug drawings (`draw` in cmd); inspector (`state`, `watch`, `plot`, `log` in cmd) |
 | 2 | Radio messages: `inbox` in sensors, `broadcast` / `send` in cmd |
 | 1 | First version |

@@ -36,9 +36,11 @@ written in 2008 and used for years at the University of Bologna; see [Origins](#
 - **Two ways to program a robot**: a sequential control loop, or a controller called
   at a fixed period
 - **Reference algorithms and examples** to start from: obstacle avoidance, a Braitenberg
-  vehicle, radio beacons, line following, remote control
+  vehicle, radio beacons, line following, RRT path planning, remote control
 - **Debug drawings**: a robot's code draws what its algorithm thinks (paths, targets, trees,
   estimated maps) in named layers over the arena, from Java, Python or MATLAB
+- **Inspector**: a separate window with a robot's state, watched values, time plots and log of
+  decisions; a robot can pause the simulation on a decision
 - **Radio between robots**: range, losses and latency, plus a live connectivity window
   (graph, adjacency and incidence matrices)
 - **Remote control over UDP + JSON**, with ready-made Python and MATLAB clients; lockstep
@@ -79,7 +81,7 @@ To run another example, pass its name:
 ```
 
 The available examples are `timedmotion`, `obstacles`, `rooms`, `linefollowing`, `remote`,
-`radio`, `largemap` and `braitenberg`. [`examples/README.md`](examples/README.md) says what
+`radio`, `largemap`, `braitenberg` and `planning`. [`examples/README.md`](examples/README.md) says what
 each one shows, with screenshots; the controllers they use are described in
 [`algorithms/README.md`](algorithms/README.md).
 
@@ -186,11 +188,35 @@ Shapes: `point`, `line`, `arrow`, `circle`, `disc`, `rect` (filled, for map cell
 `polygon`, `text`; `color(...)` and `width(px)` apply to the shapes that follow. A layer keeps its
 shapes until `clear()`. What a robot draws appears at its next `sleepSim()`, all at once, so the
 picture is always consistent. In the side panel, **Robot drawings** shows or hides them and
-**Drawings: selected robot only** keeps just the selected robot's. Remote clients draw in the
+**Selected robot only** keeps just the selected robot's. Remote clients draw in the
 same way (`draw` in the protocol); the [`BraitenbergVehicle`](algorithms/README.md#braitenberg-braitenbergvehicle)
 and the MATLAB example `gotogoal.m` show how.
 
 ![Debug drawings: the MATLAB example gotogoal draws its route and an arrow to the current waypoint](docs/img/drawings.png)
+
+### The inspector
+
+The **Inspector** button on the toolbar opens a separate window about the selected robot: what
+its algorithm is doing (state), a few values it watches, time plots, and a log of its decisions,
+all stamped with the simulated time. The robot's code fills it:
+
+```java
+Inspector in = robot.inspector();
+in.state("searching");                       // a change of state is also logged
+in.watch("nodes", tree.size());
+in.plot("distance to goal", d);              // one plot per name, against simulated time
+in.log("path found, length " + len);
+robot.pauseSimulation("path found");         // pauses everything, as the Pause button does
+```
+
+Plots show the last 10, 30 or 60 seconds or the whole run. Nothing of this affects the
+simulation, and memory is bounded. From Python and MATLAB the same goes through
+`robot.inspect.state(...)` / `robot.inspectState(...)` and friends (see
+[`clients/README.md`](clients/README.md#inspector)). The example `planning` shows it at work:
+an RRT grows under your eyes, the simulation pauses when the path is found, and the inspector
+follows the search and the drive.
+
+![The planning example: the RRT tree, the path found, and the inspector](docs/img/planning.png)
 
 ---
 
@@ -330,8 +356,9 @@ Inside `core`, under `src/main/java/io/github/raffaelegrandi/pianura/`:
 ├── comm/              radio network between robots
 ├── remote/            UDP + JSON remote control
 ├── viz/               debug drawings of the robots (named layers)
+├── inspect/           what a robot shows in the inspector window (state, values, plots, log)
 ├── gui/               Swing user interface
-│   ├── view/          arena view, minimap, side panel, connectivity window
+│   ├── view/          arena view, minimap, side panel, connectivity and inspector windows
 │   └── floor/         floor styles
 └── utils/             constants, Position, log
 ```

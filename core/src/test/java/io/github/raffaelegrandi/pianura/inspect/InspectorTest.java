@@ -35,13 +35,14 @@ class InspectorTest {
     @Test
     void watchedValuesKeepTheirOrderAndAreFormatted() {
         Inspector in = new Inspector(() -> now);
-        in.watch("nodes", 12).watch("error", 0.123456789).watch("ratio", 2.0).watch("mode", "fast");
+        in.watch("nodes", 12).watch("error", 0.123456789).watch("ratio", 2.0).watch("mode", "fast").watch("almost", 1.99999);
         in.watch("nodes", 13);
         var w = in.snapshot().watched();
-        assertEquals(List.of("nodes", "error", "ratio", "mode"), List.copyOf(w.keySet()));
+        assertEquals(List.of("nodes", "error", "ratio", "mode", "almost"), List.copyOf(w.keySet()));
         assertEquals("13", w.get("nodes"));
         assertEquals("0.1235", w.get("error"));
         assertEquals("2", w.get("ratio"));
+        assertEquals("2", w.get("almost"), "rounded to 4 decimals, no trailing point");
     }
 
     @Test

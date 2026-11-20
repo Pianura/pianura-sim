@@ -70,7 +70,7 @@ public class TimePlot extends JComponent {
 
         double[] t = series.t(), v = series.v();
         double t1 = Math.max(now, t.length > 0 ? t[t.length - 1] : 0);
-        double t0 = window > 0 ? t1 - window : (t.length > 0 ? t[0] : 0);
+        double t0 = window > 0 ? Math.max(0, t1 - window) : (t.length > 0 ? Math.min(t[0], 0) : 0);   // simulated time starts at 0
         if (t1 - t0 < 1e-9) t0 = t1 - 1;
         int first = 0;
         while (first < t.length && t[first] < t0) first++;

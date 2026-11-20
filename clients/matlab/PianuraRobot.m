@@ -31,6 +31,10 @@ classdef PianuraRobot < handle
     %   robot.drawDisc('plan', gx, gy, 0.3, [1 0 0]);
     % A layer keeps its shapes until drawClear: redraw it at every step, or let it grow.
     %
+    % The Inspector window (button on Pianura's toolbar) shows what you send with
+    % inspectState(txt), inspectWatch(name, value), inspectPlot(name, value), inspectLog(txt);
+    % like drawings, they leave with the next drive()/wheels().
+    %
     % Errors (catch them with try/catch and look at err.identifier):
     %   Pianura:stopped   the simulation was stopped, or the robot was disabled
     %   Pianura:timeout   no message from Pianura within the timeout
@@ -59,6 +63,10 @@ classdef PianuraRobot < handle
         Broadcasts = {}
         Sends = {}
         Draws = {}
+        InspState = []
+        InspLog = {}
+        InspWatch = {}
+        InspPlot = {}
     end
 
     methods
@@ -155,6 +163,28 @@ classdef PianuraRobot < handle
             % send(to, data): radio message to robot `to` (delivered only if in range); leaves with the next drive()/wheels().
             jsonencode(data);
             obj.Sends{end + 1} = struct('to', double(to), 'data', {data});
+        end
+
+        % ---- inspector (Pianura's Inspector window: state, values, plots, log) ----
+
+        function inspectState(obj, txt)
+            % inspectState(txt): the algorithm's current state, e.g. 'searching'. Changes are logged.
+            obj.InspState = char(txt);
+        end
+
+        function inspectLog(obj, txt)
+            % inspectLog(txt): a line in the inspector's log, stamped with the simulated time.
+            obj.InspLog{end + 1} = char(txt);
+        end
+
+        function inspectWatch(obj, name, value)
+            % inspectWatch(name, value): shows a named value (number or text).
+            obj.InspWatch{end + 1} = [jsonencode(char(name)), ':', jsonencode(value)];
+        end
+
+        function inspectPlot(obj, name, value)
+            % inspectPlot(name, value): adds a point at the current simulated time to the plot 'name'.
+            obj.InspPlot{end + 1} = [jsonencode(char(name)), ':', jsonencode(double(value))];
         end
 
         % ---- debug drawings (layer = name of the layer, e.g. 'plan'; color is optional) ----
@@ -257,10 +287,19 @@ classdef PianuraRobot < handle
             if ~isempty(obj.Draws)
                 msg.draw = obj.Draws;
             end
+            if ~isempty(obj.InspState), msg.state = obj.InspState; end
+            if ~isempty(obj.InspLog), msg.log = obj.InspLog; end
+            extra = '';                          % "watch" and "plot": objects with free names, written by hand
+            if ~isempty(obj.InspWatch), extra = [extra, ',"watch":{', strjoin(obj.InspWatch, ','), '}']; end
+            if ~isempty(obj.InspPlot), extra = [extra, ',"plot":{', strjoin(obj.InspPlot, ','), '}']; end
             obj.Broadcasts = {};
             obj.Sends = {};
             obj.Draws = {};
-            obj.sendJson(msg);
+            obj.InspState = [];
+            obj.InspLog = {};
+            obj.InspWatch = {};
+            obj.InspPlot = {};
+            obj.sendJson(msg, extra);
         end
 
         function addDraw(obj, layer, op, color, fields)
@@ -275,8 +314,12 @@ classdef PianuraRobot < handle
             obj.Draws{end + 1} = d;
         end
 
-        function sendJson(obj, msg)
-            text = javaObject('java.lang.String', jsonencode(msg));
+        function sendJson(obj, msg, extra)
+            json = jsonencode(msg);
+            if nargin > 2 && ~isempty(extra)
+                json = [json(1:end-1), extra, '}'];
+            end
+            text = javaObject('java.lang.String', json);
             bytes = text.getBytes('UTF-8');
             packet = javaObject('java.net.DatagramPacket', bytes, numel(bytes), obj.Address, obj.Port);
             obj.Socket.send(packet);

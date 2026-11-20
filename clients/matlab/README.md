@@ -20,7 +20,8 @@ files also run in **GNU Octave** 7 or later, if Octave can use Java.
 3. Press **Run** (or Space) in Pianura. Robot 1 drives through three waypoints, and at the end
    a figure shows its trajectory and how the distance and heading errors went to zero. While it
    runs, Pianura shows the route and an arrow to the current waypoint with the heading error,
-   drawn by `gotogoal.m` itself (debug drawings, see the API below).
+   drawn by `gotogoal.m` itself (debug drawings, see the API below). Press **Inspector** on
+   Pianura's toolbar to follow its state, the commands, and distance and heading error over time.
 
 For the radio example, restart the scenario and run `wander([1 2])` instead: two robots wander
 around and print which robots they can hear.
@@ -63,6 +64,8 @@ other in the same loop, as `wander.m` does.
 | `robot.send(to, data)` | Radio message to robot `to`, delivered only if it is in range |
 | `robot.drawClear(layer)` / `robot.drawClearAll()` | Empties a debug drawing layer / all of them |
 | `robot.drawPoint(layer, x, y, color)` | Debug drawings over the arena, in cells; they leave with the next `drive`/`wheels`. Also `drawLine` / `drawArrow(layer, x1, y1, x2, y2, color)`, `drawCircle` / `drawDisc(layer, x, y, r, color)`, `drawRect(layer, x, y, w, h, color)` (filled, top-left corner), `drawPolyline` / `drawPolygon(layer, xs, ys, color)`, `drawText(layer, x, y, txt, color)`. `color` is optional: `[r g b]` in 0..1, `'r'`, `'b'`, ... or `'#rrggbb'` |
+| `robot.inspectState(txt)` / `robot.inspectLog(txt)` | Pianura's Inspector window: the current state (changes are logged), a line in the log |
+| `robot.inspectWatch(name, value)` / `robot.inspectPlot(name, value)` | A named value to show, a point for the time plot `name`; all leave with the next `drive`/`wheels` |
 | `robot.close()` | Stops driving the robot (it keeps its last command) and releases the socket |
 
 The reading `s` is a struct:

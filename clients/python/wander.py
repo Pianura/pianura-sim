@@ -59,6 +59,7 @@ def wander(robot_id: int, host: str = "127.0.0.1", port: int = 5555, seed: int =
                 if s.t >= next_beacon - 1e-9:
                     robot.broadcast({"beacon": robot_id, "x": round(s.x, 2), "y": round(s.y, 2)})
                     next_beacon += BEACON_PERIOD
+                robot.inspect.plot("front IR (cells)", min(s.ir[i] for i in FRONT)).watch("neighbours", len(heard))
                 if turning > 0:
                     turning -= 1
                     robot.drive(0.0, 2.0 * turn_dir)
@@ -68,8 +69,10 @@ def wander(robot_id: int, host: str = "127.0.0.1", port: int = 5555, seed: int =
                     right = sum(s.ir[i] for i in RIGHT_SIDE)
                     turn_dir = -1.0 if left > right else 1.0     # negative = counter-clockwise = to the left
                     turning = rnd.randint(4, 10)
+                    robot.inspect.state("turning away").log(f"obstacle ahead, turning {'left' if turn_dir < 0 else 'right'}")
                     robot.drive(0.0, 2.0 * turn_dir)
                 else:
+                    robot.inspect.state("cruising")
                     robot.drive(1.2, rnd.uniform(-0.3, 0.3))
         except RobotStopped:
             print(f"robot {robot_id}: simulation stopped at t={t:.2f} s")
