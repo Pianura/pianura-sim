@@ -24,8 +24,8 @@ import io.github.raffaelegrandi.pianura.units.collisions.CollisionDetector;
 import io.github.raffaelegrandi.pianura.utils.LogArea;
 
 /**
- * Pannello principale: barra dei controlli (in alto), vista dell'arena (al centro),
- * pannello laterale di visualizzazione (a destra, richiudibile), log (in basso).
+ * Main panel: toolbar (top), arena view (centre), view side panel (right, can be hidden),
+ * log (bottom).
  */
 @SuppressWarnings("serial")
 public class SimPanel extends JPanel implements ActionListener{
@@ -54,7 +54,7 @@ public class SimPanel extends JPanel implements ActionListener{
 		repainter = new Timer(Const.repaintTime, this);
 		setLayout(new BorderLayout());
 
-		// con il motore la vista mostra lo stesso pavimento letto dai sensori ottici
+		// with the engine, the view shows the same floor the floor sensors read
 		FloorMap floorMap = engine != null ? engine.getFloorMap() : newFloorMap(scenario.getFloor());
 		arena = new ArenaView(floorMap, arenaWpx, arenaHpx, scenario.getObstacles(), scenario.getRobots(), options);
 		add(arena, BorderLayout.CENTER);
@@ -115,10 +115,10 @@ public class SimPanel extends JPanel implements ActionListener{
 		add(logScroll, BorderLayout.SOUTH);
 	}
 
-	/** Cambia il pavimento: vista e sensori ottici. */
+	/** Changes the floor: view and floor sensors. */
 	private void changeFloor(FloorStyle style){
 		if (engine != null) {
-			engine.setFloor(style);   // cambia anche ciò che leggono i sensori ottici
+			engine.setFloor(style);   // also changes what the floor sensors read
 			arena.setFloor(engine.getFloorMap());
 		} else {
 			FloorMap old = arena.getFloor();
@@ -207,7 +207,7 @@ public class SimPanel extends JPanel implements ActionListener{
 
 	private static String fmt(double v) { return v == Math.rint(v) ? String.valueOf((long) v) : String.valueOf(v); }
 
-	/** Esito della validazione dopo una modifica della scena, nel log. */
+	/** Result of the validation after a scene change, in the log. */
 	private void reportValidation(CollisionDetector.Validation v){
 		if (v.isOk()) {
 			showMSG(false, "Scenario valid: no overlaps");
@@ -217,18 +217,18 @@ public class SimPanel extends JPanel implements ActionListener{
 		}
 	}
 
-	/** Sostituisce robot e ostacoli visualizzati (pavimento predefinito). */
+	/** Replaces the robots and obstacles shown (default floor). */
 	public void configureGUI(List<RobotDummy> dummyVec, List<? extends Obstacle> obstVec){
 		if (obstVec == null || dummyVec == null) {
 			showMSG(true, "Unable to initialize Arena: robots or obstacles list is null");
 			return;
 		}
-		// nota: gli ostacoli della vista restano quelli dello scenario iniziale
+		// note: the view's obstacles stay those of the initial scenario
 		changeFloor(FloorStyle.checkerboard());
 		arena.setRobots(dummyVec);
 	}
 
-	/** Da chiamare sull'EDT (Simulator.printLogMsg se ne occupa). */
+	/** Call it on the EDT (Simulator.printLogMsg does). */
 	public void showMSG(boolean setClear, String msg){
 		if (setClear)logArea.setClear(true);
 		logArea.addMSG(msg);
@@ -248,10 +248,10 @@ public class SimPanel extends JPanel implements ActionListener{
 		connectivity.toFront();
 	}
 
-	/** Opzioni di visualizzazione (livelli, distanza delle etichette, ...). */
+	/** View options (layers, label distance, ...). */
 	public ViewOptions getViewOptions(){ return options; }
 
-	/** Barra dei controlli (null se il pannello è stato creato senza motore). */
+	/** Toolbar (null if the panel was created without an engine). */
 	public SimControlBar getControlBar(){ return controlBar; }
 
 	public void startRefresh(){repainter.start();}

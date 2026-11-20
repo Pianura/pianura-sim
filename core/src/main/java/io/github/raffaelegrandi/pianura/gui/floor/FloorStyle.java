@@ -6,39 +6,38 @@ import java.awt.Graphics2D;
 import io.github.raffaelegrandi.pianura.utils.Const;
 
 /**
- * Aspetto del pavimento dell'arena. È puramente grafico: i sensori dei robot
- * lavorano sulla geometria degli ostacoli e non vedono il pavimento.
+ * Look of the arena's floor. The IR sensors work on the obstacles' geometry and do not see
+ * it; the floor sensors (line following) read its color.
  *
- * Il pavimento viene disegnato a riquadri, quando servono (vedi {@link #paintRegion}),
- * e i riquadri sono conservati: anche un'arena molto grande non pesa sul frame rate.
+ * The floor is drawn in tiles, when needed (see {@link #paintRegion}), and the tiles are
+ * kept: even a very large arena does not weigh on the frame rate.
  *
- * Uso in uno scenario:
+ * In a scenario:
  * <pre>
- *   setFloor(FloorStyle.checkerboard());                          // predefinito
- *   setFloor(FloorStyle.grid(Color.WHITE, Color.LIGHT_GRAY, 1));  // griglia a 1 cella
+ *   setFloor(FloorStyle.checkerboard());                          // default
+ *   setFloor(FloorStyle.grid(Color.WHITE, Color.LIGHT_GRAY, 1));  // 1-cell grid
  *   setFloor(FloorStyle.plain(new Color(230, 230, 220)));
- *   setFloor(FloorStyle.randomTiles());                           // piastrelle
- *   setFloor(FloorStyle.voronoiTiles());                          // lastre di pietra
- *   setFloor(FloorStyle.image("floors/laboratorio.png", ImageFloor.Mode.FIT));
+ *   setFloor(FloorStyle.randomTiles());                           // tiles
+ *   setFloor(FloorStyle.voronoiTiles());                          // stone slabs
+ *   setFloor(FloorStyle.image("floors/lab.png", ImageFloor.Mode.FIT));
  * </pre>
  */
 public interface FloorStyle {
 
     /**
-     * Disegna il pavimento nell'area {@code [0, width] x [0, height]} (pixel).
-     * @param cellSizePx dimensione di una cella in pixel (per i motivi legati alla griglia)
+     * Draws the floor in the area {@code [0, width] x [0, height]} (pixels).
+     * @param cellSizePx size of a cell in pixels (for patterns tied to the grid)
      */
     void paint(Graphics2D g, int width, int height, double cellSizePx);
 
     /**
-     * Disegna solo la parte {@code [x0, x0+w) x [y0, y0+h)} di un pavimento grande
-     * {@code fullW x fullH} pixel, con il pixel (x0, y0) nell'origine di {@code g}.
+     * Draws only the part {@code [x0, x0+w) x [y0, y0+h)} of a floor {@code fullW x fullH}
+     * pixels large, with pixel (x0, y0) at the origin of {@code g}.
      *
-     * I pixel devono essere gli stessi che {@link #paint} disegnerebbe nello stesso punto, qualunque
-     * sia la regione: così il pavimento si può generare a riquadri senza giunture, anche quando
-     * l'arena è troppo grande per un'unica immagine. Gli stili predefiniti disegnano solo la regione;
-     * questa versione di ripiego disegna tutto il pavimento ritagliato alla regione (corretta, ma lenta
-     * su arene molto grandi).
+     * The pixels must be the same {@link #paint} would draw at the same place, whatever the
+     * region: this way the floor can be generated in tiles without seams, even when the arena is
+     * too large for a single image. The built-in styles draw only the region; this fallback draws
+     * the whole floor clipped to the region (correct, but slow on very large arenas).
      */
     default void paintRegion(Graphics2D g, int x0, int y0, int w, int h, int fullW, int fullH, double cellSizePx) {
         Graphics2D c = (Graphics2D) g.create();
@@ -50,47 +49,47 @@ public interface FloorStyle {
 
     // ---- fabbriche ----
 
-    /** Scacchiera verde dell'originale JUSE, con il nome Pianura in basso a destra. */
+    /** Green checkerboard of the original JUSE, with the name Pianura at the bottom right. */
     static FloorStyle checkerboard() {
         return new CheckerboardFloor(Const.arenaFloorColor1, Const.arenaFloorColor2, 1, true);
     }
 
-    /** Scacchiera con colori e lato del quadrato (in celle) a scelta. */
+    /** Checkerboard with chosen colors and square side (cells). */
     static FloorStyle checkerboard(Color c1, Color c2, double squareCells) {
         return new CheckerboardFloor(c1, c2, squareCells, false);
     }
 
-    /** Sfondo uniforme con linee di griglia ogni {@code spacingCells} celle. */
+    /** Plain background with grid lines every {@code spacingCells} cells. */
     static FloorStyle grid(Color background, Color lines, double spacingCells) {
         return new GridFloor(background, lines, spacingCells);
     }
 
-    /** Piastrelle quadrate in tonalità di grigio caldo, con grana e fughe (lato 3 celle). */
+    /** Square tiles in warm gray tones, with grain and grout (side 3 cells). */
     static FloorStyle randomTiles() {
         return new RandomTilesFloor(new Color(180, 176, 168), 3, 17, 1L);
     }
 
-    /** Piastrelle quadrate: colore medio, lato in celle, seme (stesso seme = stesso pavimento). */
+    /** Square tiles: average color, side in cells, seed (same seed = same floor). */
     static FloorStyle randomTiles(Color base, double tileCells, long seed) {
         return new RandomTilesFloor(base, tileCells, 17, seed);
     }
 
-    /** Lastre irregolari tipo pietra (Voronoi), dimensione media 3 celle. */
+    /** Irregular stone-like slabs (Voronoi), average size 3 cells. */
     static FloorStyle voronoiTiles() {
         return new VoronoiFloor(new Color(196, 186, 168), 3, 20, 1L);
     }
 
-    /** Lastre irregolari: colore medio, dimensione media in celle, seme. */
+    /** Irregular slabs: average color, average size in cells, seed. */
     static FloorStyle voronoiTiles(Color base, double meanCellCells, long seed) {
         return new VoronoiFloor(base, meanCellCells, 20, seed);
     }
 
-    /** Pista per il line-following: linea nera larga 2/3 di cella su fondo bianco, a 4 celle dal bordo. */
+    /** Line-following track: a black line 2/3 of a cell wide on white, 4 cells from the edge. */
     static FloorStyle track() {
         return new TrackFloor(Color.WHITE, new Color(20, 20, 20), 2.0 / 3, 4);
     }
 
-    /** Pista con colori, spessore della linea e margine dal bordo (in celle) a scelta. */
+    /** Track with chosen colors, line width and margin from the edge (cells). */
     static FloorStyle track(Color background, Color line, double lineCells, double marginCells) {
         return new TrackFloor(background, line, lineCells, marginCells);
     }
@@ -101,8 +100,8 @@ public interface FloorStyle {
     }
 
     /**
-     * Immagine da file (PNG, JPG, GIF, BMP). Se il file non si legge viene stampato
-     * un avviso e si usa la scacchiera predefinita: lo scenario parte comunque.
+     * Image from file (PNG, JPG, GIF, BMP). If the file cannot be read, a warning is printed and
+     * the default checkerboard is used: the scenario starts anyway.
      */
     static FloorStyle image(String path, ImageFloor.Mode mode) {
         return ImageFloor.load(path, mode);

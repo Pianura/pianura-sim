@@ -5,9 +5,9 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 
 /**
- * Trasformazione mondo → schermo della vista: {@code schermo = mondo * scale + offset}.
- * Il mondo è in pixel di mondo (celle x Const.cellSize); lo schermo in pixel del pannello.
- * Nessuna dipendenza da Swing: è la parte testabile della vista.
+ * World → screen transformation of the view: {@code screen = world * scale + offset}.
+ * The world is in world pixels (cells x Const.cellSize); the screen in panel pixels.
+ * No dependency on Swing: it is the testable part of the view.
  */
 public final class ViewTransform {
 
@@ -30,7 +30,7 @@ public final class ViewTransform {
 
     public Point2D toWorld(double sx, double sy) { return new Point2D.Double((sx - offX) / scale, (sy - offY) / scale); }
 
-    /** Adatta il rettangolo di mondo alla vista, centrato, con un margine in pixel di schermo. */
+    /** Fits the world rectangle to the view, centred, with a margin in screen pixels. */
     public void fit(Rectangle2D world, double viewW, double viewH, double paddingPx) {
         double availW = Math.max(1, viewW - 2 * paddingPx), availH = Math.max(1, viewH - 2 * paddingPx);
         scale = clamp(Math.min(availW / world.getWidth(), availH / world.getHeight()));
@@ -38,12 +38,12 @@ public final class ViewTransform {
         offY = (viewH - world.getHeight() * scale) / 2 - world.getY() * scale;
     }
 
-    /** Moltiplica lo zoom per {@code factor} tenendo fermo il punto di schermo (sx, sy). */
+    /** Multiplies the zoom by {@code factor}, keeping the screen point (sx, sy) still. */
     public void zoomAt(double factor, double sx, double sy) {
         setScaleAt(scale * factor, sx, sy);
     }
 
-    /** Imposta lo zoom tenendo fermo il punto di schermo (sx, sy). */
+    /** Sets the zoom, keeping the screen point (sx, sy) still. */
     public void setScaleAt(double newScale, double sx, double sy) {
         Point2D w = toWorld(sx, sy);
         scale = clamp(newScale);
@@ -51,24 +51,24 @@ public final class ViewTransform {
         offY = sy - w.getY() * scale;
     }
 
-    /** Sposta la vista di (dx, dy) pixel di schermo. */
+    /** Moves the view by (dx, dy) screen pixels. */
     public void pan(double dx, double dy) {
         offX += dx;
         offY += dy;
     }
 
-    /** Punto di mondo al centro di una vista di {@code viewW x viewH} pixel. */
+    /** World point at the centre of a view of {@code viewW x viewH} pixels. */
     public Point2D center(double viewW, double viewH) { return toWorld(viewW / 2, viewH / 2); }
 
-    /** Porta il punto di mondo (wx, wy) al centro della vista, senza cambiare lo zoom. */
+    /** Brings the world point (wx, wy) to the centre of the view, without changing the zoom. */
     public void centerOn(double wx, double wy, double viewW, double viewH) {
         offX = viewW / 2 - wx * scale;
         offY = viewH / 2 - wy * scale;
     }
 
     /**
-     * Avvicina il centro della vista al punto (wx, wy) della frazione {@code f} (0 = fermo, 1 = subito):
-     * usato per seguire un robot in modo morbido.
+     * Moves the centre of the view towards the point (wx, wy) by the fraction {@code f}
+     * (0 = still, 1 = at once): used to follow a robot smoothly.
      */
     public void moveCenterToward(double wx, double wy, double viewW, double viewH, double f) {
         Point2D c = center(viewW, viewH);
@@ -76,8 +76,8 @@ public final class ViewTransform {
     }
 
     /**
-     * Tiene il centro della vista dentro il rettangolo di mondo: si può volare sopra la mappa
-     * ma non perdersi nel vuoto attorno.
+     * Keeps the centre of the view inside the world rectangle: you can fly over the map but not
+     * get lost in the void around it.
      */
     public void clampCenter(Rectangle2D world, double viewW, double viewH) {
         Point2D c = center(viewW, viewH);
@@ -87,8 +87,8 @@ public final class ViewTransform {
     }
 
     /**
-     * Direzione di scorrimento quando il puntatore è vicino al bordo della vista:
-     * {-1, 0, +1} per x e per y (+1 = verso destra / verso il basso del mondo).
+     * Scroll direction when the pointer is near the edge of the view: {-1, 0, +1} for x and for y
+     * (+1 = towards the right / the bottom of the world).
      */
     public static int[] edgeDirection(double x, double y, double viewW, double viewH, double marginPx) {
         int dx = x < marginPx ? -1 : (x > viewW - marginPx ? 1 : 0);

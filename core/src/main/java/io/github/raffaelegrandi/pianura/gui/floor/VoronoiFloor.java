@@ -5,11 +5,11 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 
 /**
- * Lastre irregolari (diagramma di Voronoi), stile pavimentazione in pietra.
+ * Irregular slabs (Voronoi diagram), stone paving style.
  *
- * Si spargono punti a caso; ogni pixel prende il colore del punto più vicino e
- * diventa "fuga" dove i due punti più vicini sono quasi equidistanti. Il calcolo
- * è fatto per regioni, quando servono. Con lo stesso seed il pavimento è sempre identico.
+ * Points are scattered at random; every pixel takes the color of the nearest point and
+ * becomes "grout" where the two nearest points are almost equidistant. The computation is
+ * done per region, when needed. With the same seed the floor is always identical.
  */
 public class VoronoiFloor implements FloorStyle {
 
@@ -19,10 +19,10 @@ public class VoronoiFloor implements FloorStyle {
     private final long seed;
 
     /**
-     * @param base          colore medio delle lastre
-     * @param meanCellCells dimensione media di una lastra in celle
-     * @param variation     variazione massima di luminosità tra lastre (0–255)
-     * @param seed          seme del generatore casuale
+     * @param base          average color of the slabs
+     * @param meanCellCells average size of a slab in cells
+     * @param variation     largest brightness variation between slabs (0–255)
+     * @param seed          seed of the random generator
      */
     public VoronoiFloor(Color base, double meanCellCells, int variation, long seed) {
         if (!(meanCellCells > 0)) throw new IllegalArgumentException("meanCellCells must be > 0");
@@ -38,8 +38,9 @@ public class VoronoiFloor implements FloorStyle {
     }
 
     /**
-     * Punti su una griglia "jittered" grande quanto tutto il pavimento: la posizione di ogni punto
-     * dipende solo dalla sua casella e dal seme, quindi ogni regione si calcola da sola, senza giunture.
+     * Points on a "jittered" grid as large as the whole floor: the position of every point
+     * depends only on its grid cell and on the seed, so every region is computed on its own,
+     * without seams.
      */
     @Override
     public void paintRegion(Graphics2D g, int x0, int y0, int w, int h, int width, int height, double cellSizePx) {
@@ -50,7 +51,7 @@ public class VoronoiFloor implements FloorStyle {
         int gy = Math.max(1, (int) Math.ceil((double) n / gx));
         double sx = (double) width / gx, sy = (double) height / gy;
 
-        // punti delle caselle che possono essere i più vicini ai pixel della regione (margine di 2 caselle)
+        // points of the grid cells that can be the nearest to the region's pixels (2-cell margin)
         int i0 = Math.max(0, (int) (x0 / sx) - 2), i1 = Math.min(gx - 1, (int) ((x0 + w) / sx) + 2);
         int j0 = Math.max(0, (int) (y0 / sy) - 2), j1 = Math.min(gy - 1, (int) ((y0 + h) / sy) + 2);
         int ni = i1 - i0 + 1, nj = j1 - j0 + 1;
@@ -76,7 +77,7 @@ public class VoronoiFloor implements FloorStyle {
             for (int xx = 0; xx < w; xx++) {
                 int x = x0 + xx;
                 int ci = Math.min(gx - 1, (int) (x / sx));
-                // con la griglia jittered il punto più vicino sta nelle 5x5 caselle attorno
+                // with the jittered grid the nearest point lies in the 5x5 grid cells around
                 double d1 = Double.MAX_VALUE, d2 = Double.MAX_VALUE;
                 int best = 0;
                 for (int j = Math.max(j0, cj - 2); j <= Math.min(j1, cj + 2); j++) {
@@ -88,7 +89,7 @@ public class VoronoiFloor implements FloorStyle {
                         else if (d < d2) d2 = d;
                     }
                 }
-                // distanza dalla linea di confine tra i due punti più vicini ≈ (√d2 − √d1)/2
+                // distance from the boundary line between the two nearest points ≈ (√d2 − √d1)/2
                 boolean edge = (Math.sqrt(d2) - Math.sqrt(d1)) / 2 < groutPx / 2 + 0.5;
                 int rgb = edge ? grout : colors[best];
                 if (!edge) {   // grana leggera

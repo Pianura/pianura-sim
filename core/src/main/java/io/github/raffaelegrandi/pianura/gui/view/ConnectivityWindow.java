@@ -66,10 +66,10 @@ public class ConnectivityWindow extends JFrame {
     private final Timer timer;
 
     private ConnectivityGraph shown = ConnectivityGraph.empty();
-    // celle che lampeggiano: chiave "da>a" (id dei robot) → [istante di fine (ms), 1 = nato / 0 = rotto]
+    // blinking cells: key "from>to" (robot ids) → [end instant (ms), 1 = new / 0 = broken]
     private final Map<String, long[]> flashes = new HashMap<>();
     private Set<String> previousLinks = new HashSet<>();
-    private final Map<String, Long> newLinkFlash = new HashMap<>();   // colonne di incidenza nuove
+    private final Map<String, Long> newLinkFlash = new HashMap<>();   // new incidence columns
 
     public ConnectivityWindow(CommNetwork network, SimClock clock, List<? extends RobotUnit> robots,
                               double arenaWidthPx, double arenaHeightPx) {
@@ -310,7 +310,7 @@ public class ConnectivityWindow extends JFrame {
                     }
                     g.setColor(bg);
                     g.fillRect(x, y, CELL, CELL);
-                    // lampeggio delle celle cambiate
+                    // blinking of the changed cells
                     long[] f = null;
                     if (!incidence()) f = flashes.get(key(gr.id(i), gr.id(c)));
                     else {

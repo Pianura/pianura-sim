@@ -18,10 +18,10 @@ import javax.swing.KeyStroke;
 import io.github.raffaelegrandi.pianura.sim.SimEngine;
 
 /**
- * Barra dei controlli della simulazione.
+ * Simulation toolbar.
  *
- * Run/Pause (Spazio), Step (freccia destra: avanza di {@value #STEP_SECONDS} s di tempo
- * simulato), velocità, tempo simulato e velocità effettiva misurata.
+ * Run/Pause (Space), Step (Right arrow: advances {@value #STEP_SECONDS} s of simulated
+ * time), speed, simulated time and the measured actual speed.
  */
 @SuppressWarnings("serial")
 public class SimControlBar extends JToolBar {
@@ -36,11 +36,11 @@ public class SimControlBar extends JToolBar {
     private final JButton step = new JButton("Step");
     private final JButton stop = new JButton("\u25A0 Stop");
     private Runnable stopAction;
-    private boolean syncing;   // aggiornamento del menu velocità da codice: non rimandarlo al motore
+    private boolean syncing;   // speed menu updated from code: do not send it back to the engine
     private final JComboBox<String> speed = new JComboBox<>(SPEED_LABELS);
     private final JLabel timeLabel = new JLabel();
 
-    // misura della velocità effettiva (tempo simulato / tempo reale)
+    // measurement of the actual speed (simulated time / real time)
     private long lastWall = System.nanoTime();
     private double lastSim = 0;
     private double effective = 0;
@@ -50,7 +50,7 @@ public class SimControlBar extends JToolBar {
         this.stopAction = engine::stop;
         setFloatable(false);
 
-        // i pulsanti non prendono il focus: Spazio va alla scorciatoia e non "clicca" il pulsante
+        // the buttons do not take the focus: Space goes to the shortcut and does not "click" the button
         runPause.setFocusable(false);
         step.setFocusable(false);
         stop.setFocusable(false);
@@ -80,7 +80,7 @@ public class SimControlBar extends JToolBar {
         refresh();
     }
 
-    /** Registra le scorciatoie da tastiera sul componente indicato (valide in tutta la finestra). */
+    /** Registers the keyboard shortcuts on the given component (valid in the whole window). */
     public void installKeyBindings(JComponent target) {
         target.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0), "pianura-toggle");
         target.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0), "pianura-step");
@@ -92,7 +92,7 @@ public class SimControlBar extends JToolBar {
         });
     }
 
-    /** Azione eseguita da Stop (Simulator la sostituisce con stopSim, che ferma anche i robot e scrive nel log). */
+    /** Action run by Stop (Simulator replaces it with stopSim, which also stops the robots and writes to the log). */
     public void setStopAction(Runnable action) { stopAction = action != null ? action : engine::stop; }
 
     private void confirmStop() {
@@ -116,7 +116,7 @@ public class SimControlBar extends JToolBar {
         refresh();
     }
 
-    /** Aggiorna etichette e stato dei pulsanti (chiamato dal timer di ridisegno). */
+    /** Refreshes labels and button states (called by the repaint timer). */
     public void refresh() {
         boolean stopped = engine.isStopped();
         boolean started = engine.isRunning() || stopped;
@@ -126,7 +126,7 @@ public class SimControlBar extends JToolBar {
         step.setEnabled(paused && !stopped && started);
         stop.setEnabled(started && !stopped);
 
-        // il menu segue la velocità anche se impostata da codice (setSpeed)
+        // the menu follows the speed even when set from code (setSpeed)
         double sp = engine.getSpeed();
         for (int i = 0; i < SPEED_VALUES.length; i++) {
             if (SPEED_VALUES[i] == sp && speed.getSelectedIndex() != i) { syncing = true; speed.setSelectedIndex(i); syncing = false; }

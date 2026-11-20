@@ -14,13 +14,13 @@ import java.awt.geom.Point2D;
 import java.awt.geom.RoundRectangle2D;
 
 /**
- * Disegno di un robot visto dall'alto (corpo, due ruote con battistrada, muso, ruotino)
- * e della sua etichetta a "fumetto".
+ * Drawing of a robot seen from above (body, two wheels with treads, nose, caster) and of
+ * its "speech bubble" label.
  *
- * Il robot è disegnato in coordinate di mondo con una rototraslazione; l'etichetta in
- * coordinate di schermo, sempre dritta, alla distanza {@code distanceFromCenter} (in raggi
- * del robot) dal centro, sempre in alto a sinistra a 45° sullo schermo (non ruota col robot):
- * 0 = sopra il centro, 1 = sul bordo.
+ * The robot is drawn in world coordinates with a rotation + translation; the label in screen
+ * coordinates, always upright, {@code distanceFromCenter} robot radii from the centre, always
+ * at the top left at 45° on screen (it does not turn with the robot): 0 = over the centre,
+ * 1 = on the edge.
  */
 public final class RobotGlyph {
 
@@ -31,15 +31,15 @@ public final class RobotGlyph {
     private static final Color TREAD = new Color(160, 160, 160);
     private static final Color CASTER = new Color(125, 125, 125);
     private static final Font LABEL_FONT = new Font(Font.SANS_SERIF, Font.BOLD, 11);
-    /** Sotto questo raggio sullo schermo (pixel) il robot è disegnato semplificato: disco + muso. */
+    /** Below this radius on screen (pixels) the robot is drawn simplified: disc + nose. */
     public static final double DETAIL_MIN_SCREEN_RADIUS = 7;
 
     /**
-     * Robot nel riferimento locale già traslato e ruotato (asse x = direzione di marcia).
-     * @param R             raggio in unità di mondo
-     * @param px            un pixel di schermo in unità di mondo
-     * @param leftTravel    strada percorsa dalla ruota sinistra (unità di mondo): fa scorrere il battistrada
-     * @param rightTravel   strada percorsa dalla ruota destra
+     * Robot in the local frame, already translated and rotated (x axis = direction of travel).
+     * @param R             radius in world units
+     * @param px            one screen pixel in world units
+     * @param leftTravel    distance travelled by the left wheel (world units): scrolls the tread
+     * @param rightTravel   distance travelled by the right wheel
      */
     public static void paintBody(Graphics2D g, double R, double px, Color body, double leftTravel, double rightTravel) {
         boolean detailed = R / px >= DETAIL_MIN_SCREEN_RADIUS;
@@ -50,9 +50,9 @@ public final class RobotGlyph {
         g.setColor(NOSE);
         g.fill(new Arc2D.Double(-R, -R, 2 * R, 2 * R, -35, 70, Arc2D.PIE));
         if (detailed) {
-            // ruote sopra il corpo, sporgenti dal bordo come nella vista dall'alto di un robot reale
-            // (sinistra = y negativo: y cresce verso il basso e il robot guarda verso +x)
-            // ruote vicine al centro lungo l'asse: sporgono poco dal cerchio del corpo
+            // wheels over the body, sticking out of the edge as in a top view of a real robot
+            // (left = negative y: y grows downwards and the robot faces +x)
+            // wheels near the centre along the axis: they stick out little from the body's circle
             double wl = 0.90 * R, ww = 0.34 * R, wy = 0.78 * R;
             paintWheel(g, -wy, wl, ww, px, leftTravel);
             paintWheel(g, wy, wl, ww, px, rightTravel);
@@ -67,7 +67,7 @@ public final class RobotGlyph {
         RoundRectangle2D wheel = new RoundRectangle2D.Double(-len / 2, cy - wid / 2, len, wid, wid * 0.8, wid * 0.8);
         g.setColor(WHEEL);
         g.fill(wheel);
-        // battistrada: righe che scorrono all'indietro quando la ruota avanza
+        // tread: lines that scroll backwards when the wheel moves forward
         Shape oldClip = g.getClip();
         g.clip(wheel);
         g.setColor(TREAD);
@@ -81,13 +81,13 @@ public final class RobotGlyph {
         g.setClip(oldClip);
     }
 
-    /** Direzione dell'etichetta sullo schermo: in alto a sinistra a 45° (y cresce verso il basso). */
+    /** Direction of the label on screen: top left at 45° (y grows downwards). */
     public static final double LABEL_DIR_X = -Math.sqrt(0.5), LABEL_DIR_Y = -Math.sqrt(0.5);
 
     /**
-     * Centro dell'etichetta in coordinate di mondo: in alto a sinistra a 45°, a
-     * {@code distanceFromCenter} raggi dal centro. Non dipende dall'orientamento del robot,
-     * così l'etichetta non gira intorno al robot quando questo ruota.
+     * Centre of the label in world coordinates: top left at 45°, {@code distanceFromCenter}
+     * radii from the centre. It does not depend on the robot's heading, so the label does not
+     * circle around the robot when it turns.
      */
     public static Point2D labelCenter(double cx, double cy, double R, double distanceFromCenter) {
         double d = Math.max(0, distanceFromCenter) * R;
@@ -95,11 +95,11 @@ public final class RobotGlyph {
     }
 
     /**
-     * Etichetta in coordinate di schermo: riquadro arrotondato con il numero, dritto.
-     * Se è staccata dal robot, un codino la collega al bordo del robot come un fumetto.
-     * @param robotScreen centro del robot sullo schermo
-     * @param labelScreen centro dell'etichetta sullo schermo
-     * @param robotScreenR raggio del robot sullo schermo
+     * Label in screen coordinates: an upright rounded box with the number. When it is detached
+     * from the robot, a tail joins it to the robot's edge like a speech bubble.
+     * @param robotScreen centre of the robot on screen
+     * @param labelScreen centre of the label on screen
+     * @param robotScreenR radius of the robot on screen
      */
     public static void paintLabel(Graphics2D g, String text, Point2D robotScreen, Point2D labelScreen,
                                   double robotScreenR, Color accent) {
@@ -109,7 +109,7 @@ public final class RobotGlyph {
         double lx = labelScreen.getX(), ly = labelScreen.getY();
         RoundRectangle2D box = new RoundRectangle2D.Double(lx - w / 2, ly - h / 2, w, h, 8, 8);
 
-        // codino: dal bordo dell'etichetta al bordo del robot, solo se c'è spazio tra i due
+        // tail: from the label's edge to the robot's edge, only if there is room between them
         double dx = robotScreen.getX() - lx, dy = robotScreen.getY() - ly, dist = Math.hypot(dx, dy);
         double fromBox = Math.min(w, h) / 2;
         if (dist > robotScreenR + fromBox + 2) {
@@ -128,7 +128,7 @@ public final class RobotGlyph {
         g.drawString(text, (float) (lx - fm.stringWidth(text) / 2.0), (float) (ly + fm.getAscent() / 2.0 - 1.5));
     }
 
-    /** Solo per comodità di chi disegna fuori dalla vista: robot completo in coordinate di mondo. */
+    /** Convenience for drawing outside the view: full robot in world coordinates. */
     public static void paint(Graphics2D g, double cx, double cy, double theta, double R, double px, Color body,
                              double leftTravel, double rightTravel) {
         AffineTransform saved = g.getTransform();

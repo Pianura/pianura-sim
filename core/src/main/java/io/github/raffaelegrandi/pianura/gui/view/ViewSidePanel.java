@@ -30,8 +30,8 @@ import io.github.raffaelegrandi.pianura.utils.Const;
 import io.github.raffaelegrandi.pianura.utils.Position;
 
 /**
- * Pannello laterale con le opzioni di visualizzazione: vista (zoom), livelli,
- * pavimento, informazioni sull'arena e sul robot selezionato.
+ * Side panel with the view options: view (zoom), layers, floor, information about the arena
+ * and the selected robot.
  */
 @SuppressWarnings("serial")
 public class ViewSidePanel extends JPanel {
@@ -53,8 +53,8 @@ public class ViewSidePanel extends JPanel {
     private javax.swing.JSlider dist;
 
     /**
-     * @param floorChanger chiamato con il nuovo stile quando l'utente cambia pavimento
-     *                     (ridisegna lo sfondo; è solo grafica, la simulazione non cambia)
+     * @param floorChanger called with the new style when the user changes the floor (redraws the
+     *                     background and what the floor sensors read)
      */
     public ViewSidePanel(ArenaView view, ViewOptions options, FloorStyle scenarioFloor,
                          Consumer<FloorStyle> floorChanger, String arenaInfo) {
@@ -107,7 +107,7 @@ public class ViewSidePanel extends JPanel {
         JCheckBox onlySelected = layer("Selected robot only", () -> options.drawingsSelectedOnly, v -> options.drawingsSelectedOnly = v);
         onlySelected.setToolTipText("Show only the drawings of the selected robot");
         livelli.add(onlySelected);
-        // distanza dell'etichetta dal centro, in raggi del robot (0 = sopra il robot)
+        // distance of the label from the centre, in robot radii (0 = over the robot)
         JLabel distLabel = new JLabel();
         distLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         dist = new javax.swing.JSlider(0, 40, (int) Math.round(options.labelDistanceFromCenter * 10));
@@ -181,9 +181,9 @@ public class ViewSidePanel extends JPanel {
     @Override
     public Dimension getMinimumSize() { return new Dimension(WIDTH, 0); }
 
-    /** Aggiorna zoom e dati del robot selezionato (chiamato periodicamente dalla GUI). */
+    /** Refreshes zoom and the selected robot's data (called periodically by the GUI). */
     public void refresh() {
-        // il cursore segue la distanza anche se cambiata da codice (getViewOptions())
+        // the slider follows the distance even when changed from code (getViewOptions())
         int want = (int) Math.round(options.labelDistanceFromCenter * 10);
         if (dist != null && !dist.getValueIsAdjusting() && dist.getValue() != want) dist.setValue(want);
         layerBoxes.forEach((box, value) -> { if (box.isSelected() != value.getAsBoolean()) box.setSelected(value.getAsBoolean()); });
@@ -236,7 +236,7 @@ public class ViewSidePanel extends JPanel {
             case 6 -> FloorStyle.track();
             default -> chooseImage();
         };
-        if (style == null) {               // scelta del file annullata
+        if (style == null) {               // file choice cancelled
             floorBox.setSelectedIndex(lastFloorIndex);
             return;
         }
@@ -252,10 +252,10 @@ public class ViewSidePanel extends JPanel {
         return FloorStyle.image(f.getPath());
     }
 
-    // ---- piccoli helper di layout ----
+    // ---- small layout helpers ----
 
     private static JPanel section(String title) {
-        // altezza massima = altezza preferita: le sezioni non si allungano, lo spazio libero va in fondo
+        // maximum height = preferred height: sections do not stretch, free space goes to the bottom
         JPanel p = new JPanel() {
             @Override public Dimension getMaximumSize() { return new Dimension(Integer.MAX_VALUE, getPreferredSize().height); }
         };
@@ -275,7 +275,7 @@ public class ViewSidePanel extends JPanel {
         return b;
     }
 
-    /** Caselle dei livelli con il valore corrente dell'opzione: refresh() le tiene allineate. */
+    /** Layer check boxes with the option's current value: refresh() keeps them in step. */
     private final java.util.Map<JCheckBox, java.util.function.BooleanSupplier> layerBoxes = new java.util.LinkedHashMap<>();
 
     private JCheckBox layer(String text, java.util.function.BooleanSupplier value, Consumer<Boolean> onChange) {
@@ -312,7 +312,7 @@ public class ViewSidePanel extends JPanel {
     /** Replaces the arena text (e.g. after opening a scene). */
     public void setArenaInfo(String html) { arenaInfoLabel.setText(html); }
 
-    /** Testo informativo sull'arena per il pannello, con la scala dello scenario. */
+    /** Information text about the arena for the panel, with the scenario's scale. */
     public static String arenaInfo(double wCells, double hCells, double metersPerCell, int obstacles, int robots) {
         return String.format(Locale.ROOT, "<html>%s × %s cells (%s × %s)<br>1 cell = %s<br>%d obstacles · %d robots</html>",
             fmt(wCells), fmt(hCells), meters(wCells * metersPerCell), meters(hCells * metersPerCell),

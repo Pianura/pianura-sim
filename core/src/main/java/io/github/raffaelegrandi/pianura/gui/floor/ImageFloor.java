@@ -13,17 +13,17 @@ import java.io.InputStream;
 import javax.imageio.ImageIO;
 
 /**
- * Pavimento da immagine.
+ * Floor from an image.
  *
- * Modalità:
- *   STRETCH  riempie l'arena (può deformare l'immagine)
- *   FIT      la adatta mantenendo le proporzioni; lo spazio residuo ha il colore di sfondo
- *   FILL     la adatta mantenendo le proporzioni e riempie l'arena, ritagliando l'eccesso
- *   TILE     la ripete a mosaico alla sua dimensione originale
- *   CENTER   la mette al centro alla sua dimensione originale
+ * Modes:
+ *   STRETCH  fills the arena (may distort the image)
+ *   FIT      fits it keeping the proportions; the space left has the background color
+ *   FILL     fits it keeping the proportions and fills the arena, cropping the excess
+ *   TILE     repeats it as a mosaic at its original size
+ *   CENTER   puts it in the centre at its original size
  *
- * Con {@link #withOpacity(float)} l'immagine viene schiarita sullo sfondo: utile con
- * foto o planimetrie molto contrastate, perché robot e ostacoli restino leggibili.
+ * With {@link #withOpacity(float)} the image is lightened over the background: useful with
+ * high-contrast photos or floor plans, so that robots and obstacles stay readable.
  */
 public class ImageFloor implements FloorStyle {
 
@@ -44,18 +44,17 @@ public class ImageFloor implements FloorStyle {
 
     public ImageFloor(BufferedImage image, Mode mode) { this(image, mode, Color.WHITE, 1f); }
 
-    /** Stessa immagine, disegnata con l'opacità indicata (0 = invisibile, 1 = piena) sul colore di sfondo. */
+    /** Same image, drawn with the given opacity (0 = invisible, 1 = full) over the background color. */
     public ImageFloor withOpacity(float alpha) { return new ImageFloor(image, mode, background, alpha); }
 
-    /** Stessa immagine con un diverso colore di sfondo (bande in FIT, base per l'opacità). */
+    /** Same image with another background color (bands in FIT, base for the opacity). */
     public ImageFloor withBackground(Color bg) { return new ImageFloor(image, mode, bg, opacity); }
 
     public BufferedImage getImage() { return image; }
 
     /**
-     * Carica da file; se il percorso non esiste prova come risorsa del classpath
-     * (es. un'immagine messa in src/main/resources). In caso di errore stampa un
-     * avviso e restituisce la scacchiera predefinita.
+     * Loads from file; if the path does not exist, tries it as a classpath resource (e.g. an
+     * image in src/main/resources). On error prints a warning and returns the default checkerboard.
      */
     public static FloorStyle load(String path, Mode mode) {
         try {
@@ -99,7 +98,7 @@ public class ImageFloor implements FloorStyle {
                 g.drawImage(image, (width - dw) / 2, (height - dh) / 2, dw, dh, null);
                 g.setClip(clip);
             }
-            case TILE -> {   // solo le ripetizioni che cadono nella zona da disegnare
+            case TILE -> {   // only the repetitions that fall in the area to draw
                 java.awt.Rectangle c = g.getClipBounds();
                 int ya = c == null ? 0 : Math.max(0, c.y / ih * ih), yb = c == null ? height : Math.min(height, c.y + c.height);
                 int xa = c == null ? 0 : Math.max(0, c.x / iw * iw), xb = c == null ? width : Math.min(width, c.x + c.width);
