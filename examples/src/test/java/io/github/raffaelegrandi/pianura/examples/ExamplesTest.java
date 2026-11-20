@@ -160,4 +160,20 @@ class ExamplesTest {
         assertFalse(r.getDrawings().get("tree").isEmpty());
         assertEquals(1, r.getDrawings().get("path").size());
     }
+
+    @Test
+    void theBrainsScenarioPlacesEveryRobotClearOfObstacles() throws Exception {
+        var server = io.github.raffaelegrandi.pianura.remote.RemoteServer.start(0, io.github.raffaelegrandi.pianura.remote.RemoteServer.Mode.LOCKSTEP);
+        try {
+            for (int n = 1; n <= io.github.raffaelegrandi.pianura.examples.brains.BrainsScenario.MAX_ROBOTS; n++) {
+                var sc = new io.github.raffaelegrandi.pianura.examples.brains.BrainsScenario(server, n);
+                var cd = new CollisionDetector(sc.getObstacles(), sc.getArenaWidthPx(), sc.getArenaHeightPx());
+                assertEquals(List.of(), cd.validatePlacement(sc.getRobots().stream().map(r -> r.getUnitObject()).toList()), "n = " + n);
+                assertEquals(List.of(), cd.validateObstacles(), "n = " + n);
+                assertEquals(n, sc.getNumRobots());
+            }
+        } finally {
+            server.close();
+        }
+    }
 }

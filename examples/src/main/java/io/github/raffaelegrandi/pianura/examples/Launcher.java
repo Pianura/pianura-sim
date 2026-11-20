@@ -50,7 +50,8 @@ public final class Launcher {
         new Example("radio", "Fourteen robots exchanging radio beacons"),
         new Example("largemap", "A 300x200 building explored by 60 robots, with the minimap"),
         new Example("braitenberg", "Five Braitenberg vehicles with their trails"),
-        new Example("planning", "An RRT grows, then the robot follows the path; with the inspector"));
+        new Example("planning", "An RRT grows, then the robot follows the path; with the inspector"),
+        new Example("brains", "One brain per robot: eight robots driven by separate programs over UDP"));
 
     private Launcher() {}
 

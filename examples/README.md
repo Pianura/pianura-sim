@@ -34,6 +34,7 @@ example; see [Scene files](../README.md#scene-files).
 | `largemap` | A 300×200 building generated from a seed, explored by 60 robots: fly over it with the minimap | `BeaconWanderer` | added 2026 |
 | `braitenberg` | Five Braitenberg vehicles with trails on; each draws an arrow with its intention | `BraitenbergVehicle` | added 2026 |
 | `planning` | An RRT grows under your eyes, the simulation pauses when the path is found, then the robot follows it; the inspector opens by itself | `RrtPlanner` | added 2026 |
+| `brains` | One brain per robot: eight remote robots, each driven by a separate program (`clients/python/swarm.py`) that knows only its sensors and the radio; they gather in groups. `--args=12` for twelve robots | remote, `brain.py` | added 2026 |
 
 | ![obstacles](../docs/img/obstacles.png) | ![braitenberg](../docs/img/braitenberg.png) |
 |---|---|

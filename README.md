@@ -81,7 +81,7 @@ To run another example, pass its name:
 ```
 
 The available examples are `timedmotion`, `obstacles`, `rooms`, `linefollowing`, `remote`,
-`radio`, `largemap`, `braitenberg` and `planning`. [`examples/README.md`](examples/README.md) says what
+`radio`, `largemap`, `braitenberg`, `planning` and `brains`. [`examples/README.md`](examples/README.md) says what
 each one shows, with screenshots; the controllers they use are described in
 [`algorithms/README.md`](algorithms/README.md).
 

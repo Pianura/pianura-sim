@@ -1,7 +1,8 @@
 # Driving Pianura robots from Python
 
 A ready-made Python client (`pianura_client.py`, Python 3.8 or later, standard library only) and
-an example (`wander.py`). The protocol, the modes and the Pianura side are described in
+two examples: `wander.py` (several robots from one program) and `brain.py` with `swarm.py` (one
+program per robot). The protocol, the modes and the Pianura side are described in
 [`../README.md`](../README.md).
 
 ## Quick start
@@ -53,3 +54,30 @@ Pianura's **Inspector** window shows the algorithm's state, values, time plots a
 `wander.py` sends a beacon every second with its position, prints which robots it can hear and
 draws a line to where it believes each neighbour is (layer `radio`); in the Inspector it shows
 whether it is cruising or turning away, its front IR reading and how many neighbours it hears.
+
+## One brain per robot
+
+Each robot can have a program of its own: its brain. `brain.py` is the brain of one robot and
+`swarm.py` starts one brain process per robot:
+
+1. `./gradlew run -Pexample=brains` from the project root: eight remote robots, paused
+   (`--args=12` for twelve, up to 28).
+2. `python3 swarm.py 8`, or `python3 brain.py 3` in a terminal of its own for each robot.
+3. Press **Run** (or Space) in Pianura.
+
+The brains share nothing: each knows what its robot senses and what it hears on Pianura's radio,
+which has a limited range and can lose messages. Their task is aggregation. Every half second a
+brain broadcasts where it is and how big its group is. It goes to a neighbour from a bigger
+group if it hears one, otherwise to the centre of the robots it hears, and stops there. A small
+group that stays small breaks up for a while to explore, so that groups out of radio range of
+each other can still meet. Layer `group` shows where each brain thinks its group is; the
+Inspector shows its state, how many neighbours it hears and how far the centre is.
+
+In lockstep mode the simulation waits for every brain at every step, so a brain can take its
+time (a neural network, a planner, a language model) without changing what happens: replace
+`Brain.decide()` with yours. Pianura waits up to 1 s per answer, then keeps the robot's last
+command; for slower brains start the example with `--args="8 --wait 30"` (seconds). A brain can also run on another computer: start the example with
+`--args="8 --lan"` and the brains with `--host <address of the Pianura machine>`.
+
+![Eight brains have gathered their robots in one group](../../docs/img/brains.png)
+
