@@ -117,7 +117,7 @@ public class ConnectivityWindow extends JFrame {
         refresh();
     }
 
-    // ------------------------------------------------------------------ aggiornamento
+    // ------------------------------------------------------------------ update
 
     private static String key(int from, int to) { return from + ">" + to; }
 
@@ -165,7 +165,7 @@ public class ConnectivityWindow extends JFrame {
         return g;
     }
 
-    // ------------------------------------------------------------------ grafo
+    // ------------------------------------------------------------------ graph
 
     private class GraphPanel extends JPanel {
         GraphPanel() {
@@ -202,7 +202,7 @@ public class ConnectivityWindow extends JFrame {
             Graphics2D g = smooth(g0);
             ConnectivityGraph gr = shown;
             Point2D[] p = layoutNodes(gr);
-            if (layout.getSelectedIndex() == 0) {   // contorno dell'arena
+            if (layout.getSelectedIndex() == 0) {   // outline of the arena
                 double w = getWidth(), h = getHeight(), m = 30;
                 double s = Math.min((w - 2 * m) / arenaW, (h - 2 * m) / arenaH);
                 g.setColor(new Color(220, 220, 220));
@@ -251,7 +251,7 @@ public class ConnectivityWindow extends JFrame {
         }
     }
 
-    // ------------------------------------------------------------------ matrice
+    // ------------------------------------------------------------------ matrix
 
     private class MatrixPanel extends JPanel {
         static final int CELL = 24, HEAD = 34;
@@ -284,7 +284,7 @@ public class ConnectivityWindow extends JFrame {
             int[][] m = incidence() ? gr.incidence() : gr.adjacency();
             final int TOP = top();
 
-            // intestazioni
+            // headers
             g.setColor(new Color(70, 70, 70));
             for (int i = 0; i < n; i++) {
                 String t = String.valueOf(gr.id(i));

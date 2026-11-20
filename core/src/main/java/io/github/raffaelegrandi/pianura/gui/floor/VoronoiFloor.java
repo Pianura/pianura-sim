@@ -92,7 +92,7 @@ public class VoronoiFloor implements FloorStyle {
                 // distance from the boundary line between the two nearest points ≈ (√d2 − √d1)/2
                 boolean edge = (Math.sqrt(d2) - Math.sqrt(d1)) / 2 < groutPx / 2 + 0.5;
                 int rgb = edge ? grout : colors[best];
-                if (!edge) {   // grana leggera
+                if (!edge) {   // light grain
                     long hg = FloorHash.mix(seed, x, y, 4);
                     if ((hg & 0xffff) < 65536 / 30) rgb = FloorHash.shade(rgb, (int) Math.floorMod(hg >>> 16, 25L) - 12);
                 }

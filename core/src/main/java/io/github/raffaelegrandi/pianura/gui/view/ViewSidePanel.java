@@ -78,7 +78,7 @@ public class ViewSidePanel extends JPanel {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
 
-        // --- Vista ---
+        // --- View ---
         JPanel zoomButtons = new JPanel(new GridLayout(2, 2, 3, 3));
         zoomButtons.add(button("Zoom −", "Zoom out (mouse wheel)", () -> view.zoom(1 / 1.25)));
         zoomButtons.add(button("Zoom +", "Zoom in (mouse wheel)", () -> view.zoom(1.25)));
@@ -122,7 +122,7 @@ public class ViewSidePanel extends JPanel {
         livelli.add(layer("Cell grid", () -> options.grid, v -> options.grid = v));
         add(livelli);
 
-        // --- Pavimento ---
+        // --- Floor ---
         JPanel pav = section("Floor");
         floorBox.setFocusable(false);
         floorBox.setAlignmentX(Component.LEFT_ALIGNMENT);

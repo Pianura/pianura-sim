@@ -124,7 +124,7 @@ public final class CommNetwork {
             Message m = o.msg();
             sent++;
             int si = g.indexOf(m.from());
-            if (si < 0) { unreachable++; continue; }                  // mittente fermo / guasto
+            if (si < 0) { unreachable++; continue; }                  // sender stopped / faulty
             double deliverAt = m.sentAt() + Math.max(s.getLatency(), dt);
             for (int j = 0; j < g.size(); j++) {
                 if (!g.reaches(si, j)) continue;

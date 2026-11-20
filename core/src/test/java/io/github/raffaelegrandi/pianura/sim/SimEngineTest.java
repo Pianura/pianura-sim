@@ -51,7 +51,7 @@ class SimEngineTest {
     @Timeout(20)
     void straightMotionMatchesKinematics() {
         List<RobotDummy> robots = List.of(new ControllerRobot(1, new Position(10, 20, 0), 2, 0.1,
-            (r, t) -> r.setRobotSpeed(1.0, 0)));   // 1 cella/s verso +x
+            (r, t) -> r.setRobotSpeed(1.0, 0)));   // 1 cell/s towards +x
         SimEngine engine = setup(robots, List.of());
         startRobots(robots);
         engine.runUntil(5.0);
@@ -117,7 +117,7 @@ class SimEngineTest {
         List<RobotDummy> robots = List.of(new ControllerRobot(1, new Position(20, 20, 0), 2, 0.1,
             (r, t) -> r.setRobotSpeed(1.0, 0)));
         SimEngine engine = setup(robots, List.of());
-        engine.start();                // parte in pausa
+        engine.start();                // starts paused
         startRobots(robots);
         Thread.sleep(200);
         assertEquals(0, engine.getClock().getStep(), "while paused, time must not advance");

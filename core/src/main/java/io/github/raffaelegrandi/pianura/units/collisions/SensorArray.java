@@ -25,7 +25,7 @@ public class SensorArray {
 	public SensorArray(double initVal){
 		initSensValue = initVal;
 		sensorAngleArray = new double[arrayLength];
-		double sensorStepAngle = 360.0 / arrayLength; // 20 gradi
+		double sensorStepAngle = 360.0 / arrayLength; // 20 degrees
 		for (int i = 0; i < arrayLength; i++) {
 			sensorAngleArray[i] = Math.toRadians(sensorStepAngle * i);
 		}

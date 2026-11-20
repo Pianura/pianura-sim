@@ -46,7 +46,7 @@ public final class RobotGlyph {
 
         g.setColor(body);
         g.fill(new Ellipse2D.Double(-R, -R, 2 * R, 2 * R));
-        // muso: settore colorato davanti
+        // nose: colored sector in front
         g.setColor(NOSE);
         g.fill(new Arc2D.Double(-R, -R, 2 * R, 2 * R, -35, 70, Arc2D.PIE));
         if (detailed) {
@@ -56,7 +56,7 @@ public final class RobotGlyph {
             double wl = 0.90 * R, ww = 0.34 * R, wy = 0.78 * R;
             paintWheel(g, -wy, wl, ww, px, leftTravel);
             paintWheel(g, wy, wl, ww, px, rightTravel);
-            // ruotino posteriore
+            // rear caster
             double c = 0.16 * R;
             g.setColor(CASTER);
             g.fill(new Ellipse2D.Double(-0.72 * R - c, -c, 2 * c, 2 * c));

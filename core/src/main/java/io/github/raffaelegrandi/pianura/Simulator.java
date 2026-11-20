@@ -56,7 +56,7 @@ public class Simulator {
 		if (mainFrame.simPanel.getControlBar() != null) mainFrame.simPanel.getControlBar().setStopAction(this::stopSim);
 
 		CollisionDetector.Validation validation = engine.validate();
-		mainFrame.simPanel.getArenaView().setValidation(validation);   // elementi non validi in rosso
+		mainFrame.simPanel.getArenaView().setValidation(validation);   // invalid elements in red
 		for (String problem : validation.messages()) {
 			System.err.println("SCENARIO WARNING: " + problem);
 			printLogMsg(false, "WARNING: " + problem);
@@ -71,7 +71,7 @@ public class Simulator {
 	public void startSimPaused(){
 		if (started) return;
 		started = true;
-		engine.start();                  // in pausa, sensori calcolati all'istante 0
+		engine.start();                  // paused, sensors computed at instant 0
 		scenarioMngRef.enableRobots();   // the robots start and stop at their first sleepSim()
 		mainFrame.startRefresh();
 		printLogMsg(false, "Simulation ready (paused) - Run / Space to start");

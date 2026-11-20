@@ -126,7 +126,7 @@ public class CollisionDetector {
     }
 
     // ---------------------------------------------------------
-    //  Forme statiche
+    //  Static shapes
     // ---------------------------------------------------------
 
     private Shapes buildShapes(List<Obstacle> obstacles) {
@@ -136,10 +136,10 @@ public class CollisionDetector {
 
         // arena walls: outside the floor, with their inner face exactly on the border
         double aw = arenaWidthPx, ah = arenaHeightPx, t = WALL_THICKNESS_PX;
-        result.add(new RectShape(-t / 2,     ah / 2,     t,          ah + 2 * t, 0));  // sinistro
-        result.add(new RectShape(aw + t / 2, ah / 2,     t,          ah + 2 * t, 0));  // destro
-        result.add(new RectShape(aw / 2,     -t / 2,     aw + 2 * t, t,          0));  // superiore
-        result.add(new RectShape(aw / 2,     ah + t / 2, aw + 2 * t, t,          0));  // inferiore
+        result.add(new RectShape(-t / 2,     ah / 2,     t,          ah + 2 * t, 0));  // left
+        result.add(new RectShape(aw + t / 2, ah / 2,     t,          ah + 2 * t, 0));  // right
+        result.add(new RectShape(aw / 2,     -t / 2,     aw + 2 * t, t,          0));  // top
+        result.add(new RectShape(aw / 2,     ah + t / 2, aw + 2 * t, t,          0));  // bottom
         walls.addAll(result);
 
         for (Obstacle obs : obstacles) {
@@ -181,7 +181,7 @@ public class CollisionDetector {
     }
 
     // ---------------------------------------------------------
-    //  Aggiornamento sensori
+    //  Sensor update
     // ---------------------------------------------------------
 
     /** Static obstacles only (compatibility). */
@@ -263,7 +263,7 @@ public class CollisionDetector {
     }
 
     // ---------------------------------------------------------
-    //  Validazione dello scenario
+    //  Scenario validation
     // ---------------------------------------------------------
 
     /**

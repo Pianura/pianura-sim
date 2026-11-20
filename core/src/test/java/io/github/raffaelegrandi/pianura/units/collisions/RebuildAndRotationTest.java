@@ -62,7 +62,7 @@ class RebuildAndRotationTest {
         Obstacle a = new Obstacle(ArenaObjectType.OBSTACLE_RECT, Color.BLUE, new Position(10, 10, 0), new Dimension(4, 4));
         Obstacle b = new Obstacle(ArenaObjectType.OBSTACLE_RECT, Color.BLUE, new Position(12, 10, 0), new Dimension(4, 4));
         Obstacle c = new Obstacle(ArenaObjectType.OBSTACLE_OVAL, Color.WHITE, new Position(30, 30, 0), new Dimension(2, 2));
-        RobotDummy r1 = new RobotDummy(1, new Position(30, 31.5, 0), 2) { @Override public void executeLoop() {} };  // tocca l'ovale
+        RobotDummy r1 = new RobotDummy(1, new Position(30, 31.5, 0), 2) { @Override public void executeLoop() {} };  // touches the oval
         RobotDummy r2 = new RobotDummy(2, new Position(5, 30, 0), 2) { @Override public void executeLoop() {} };
         CollisionDetector.Validation v = new CollisionDetector(List.of(a, b, c))
             .validate(List.of(r1.getUnitObject(), r2.getUnitObject()));

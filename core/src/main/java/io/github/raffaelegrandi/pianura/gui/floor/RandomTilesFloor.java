@@ -60,7 +60,7 @@ public class RandomTilesFloor implements FloorStyle {
                     if (col[x] != lastCol) { lastCol = col[x]; tileDelta = FloorHash.symmetric(seed, lastCol, row, 1, variation); }
                     int d = tileDelta;
                     long hg = FloorHash.mix(seed, x0 + x, py, 2);
-                    if ((hg & 0xffff) < 65536 / 25) d += (int) Math.floorMod(hg >>> 16, 31L) - 15;   // grana
+                    if ((hg & 0xffff) < 65536 / 25) d += (int) Math.floorMod(hg >>> 16, 31L) - 15;   // grain
                     rgb = FloorHash.shade(baseRgb, d);
                 }
                 buf[y * w + x] = rgb;

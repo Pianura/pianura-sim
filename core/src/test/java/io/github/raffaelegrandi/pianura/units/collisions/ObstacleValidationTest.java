@@ -33,7 +33,7 @@ class ObstacleValidationTest {
 
     @Test
     void touchingEdgesAreNotOverlap() {
-        // due quadrati 4x4 affiancati: lati coincidenti a x = 12
+        // two 4x4 squares side by side: sides coinciding at x = 12
         assertTrue(check(rect(10, 10, 4, 4, 0), rect(14, 10, 4, 4, 0)).isEmpty());
     }
 

@@ -22,13 +22,13 @@ class RobotGlyphTest {
     void labelSitsUpLeftAt45DegreesAtTheGivenDistance() {
         double k = 30 / Math.sqrt(2);                                        // 2 radii of 15 px along the diagonal
         Point2D a = RobotGlyph.labelCenter(100, 100, 15, 2);
-        assertEquals(100 - k, a.getX(), 1e-9);                               // a sinistra
+        assertEquals(100 - k, a.getX(), 1e-9);                               // to the left
         assertEquals(100 - k, a.getY(), 1e-9);                               // up (y grows downwards)
         assertEquals(30, a.distance(100, 100), 1e-9);
         Point2D c = RobotGlyph.labelCenter(100, 100, 15, 0);                 // 0 = over the centre
         assertEquals(100, c.getX(), 1e-9);
         assertEquals(100, c.getY(), 1e-9);
-        Point2D d = RobotGlyph.labelCenter(100, 100, 15, -3);                // negativo trattato come 0
+        Point2D d = RobotGlyph.labelCenter(100, 100, 15, -3);                // negative treated as 0
         assertEquals(100, d.getX(), 1e-9);
     }
 

@@ -35,7 +35,7 @@ class ViewTransformTest {
         Point2D tl = vt.toScreen(0, 0), br = vt.toScreen(1200, 750);
         assertEquals(10, tl.getX(), EPS);
         assertEquals(790, br.getX(), EPS);
-        assertEquals(300, (tl.getY() + br.getY()) / 2, EPS);     // centrato in verticale
+        assertEquals(300, (tl.getY() + br.getY()) / 2, EPS);     // centred vertically
     }
 
     @Test

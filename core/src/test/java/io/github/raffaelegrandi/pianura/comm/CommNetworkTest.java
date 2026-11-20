@@ -83,7 +83,7 @@ class CommNetworkTest {
         RobotDummy a = robot(1, 10, 20, recorder(log, (r, t) -> { if (t == 0) r.broadcast("A"); }));
         RobotDummy b = robot(2, 15, 20, recorder(log, (r, t) -> { if (t == 0) r.broadcast("B"); }));
         a.setCommRange(10);
-        b.setCommRange(3);                          // distanza 5: A arriva a B, B non arriva ad A
+        b.setCommRange(3);                          // distance 5: A reaches B, B does not reach A
         SimEngine e = run(List.of(a, b), List.of(), new CommSettings(), 0.5);
         assertTrue(log.stream().anyMatch(g -> g.at() == 2 && "A".equals(g.payload())));
         assertTrue(log.stream().noneMatch(g -> g.at() == 1), log.toString());

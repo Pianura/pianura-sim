@@ -47,7 +47,7 @@ public interface FloorStyle {
         c.dispose();
     }
 
-    // ---- fabbriche ----
+    // ---- factories ----
 
     /** Green checkerboard of the original JUSE, with the name Pianura at the bottom right. */
     static FloorStyle checkerboard() {
@@ -94,7 +94,7 @@ public interface FloorStyle {
         return new TrackFloor(background, line, lineCells, marginCells);
     }
 
-    /** Tinta unita. */
+    /** Plain color. */
     static FloorStyle plain(Color color) {
         return (g, w, h, cell) -> { g.setColor(color); g.fillRect(0, 0, w, h); };
     }
@@ -107,7 +107,7 @@ public interface FloorStyle {
         return ImageFloor.load(path, mode);
     }
 
-    /** Immagine da file, adattata all'arena mantenendo le proporzioni. */
+    /** Image from file, fitted to the arena keeping its proportions. */
     static FloorStyle image(String path) {
         return ImageFloor.load(path, ImageFloor.Mode.FIT);
     }

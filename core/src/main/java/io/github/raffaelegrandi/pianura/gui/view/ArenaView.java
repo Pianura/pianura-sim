@@ -387,7 +387,7 @@ public class ArenaView extends JPanel {
         double min = MIN_SIZE_CELLS * Const.cellSize, snapPx = SNAP_CELLS * Const.cellSize;
         double w = r.w(), h = r.h(), cxl = 0, cyl = 0;
         if (sx != 0) {
-            double ox = -sx * r.w() / 2;                       // lato opposto, fermo
+            double ox = -sx * r.w() / 2;                       // opposite side, still
             w = Math.max(min, sx * (lx - ox));
             if (snap) w = Math.max(min, Math.round(w / snapPx) * snapPx);
             cxl = ox + sx * w / 2;
@@ -566,7 +566,7 @@ public class ArenaView extends JPanel {
     }
 
     // ------------------------------------------------------------------
-    //  Navigazione
+    //  Navigation
     // ------------------------------------------------------------------
 
     /** Follows the robot (null = stop): the view keeps it in the centre while it moves. */
@@ -589,7 +589,7 @@ public class ArenaView extends JPanel {
     }
 
     // ------------------------------------------------------------------
-    //  Minimappa
+    //  Minimap
     // ------------------------------------------------------------------
 
     /** The minimap shows when it is enabled and the arena does not already fit in the view. */
@@ -712,7 +712,7 @@ public class ArenaView extends JPanel {
     }
 
     // ------------------------------------------------------------------
-    //  Disegno
+    //  Drawing
     // ------------------------------------------------------------------
 
     @Override
@@ -813,7 +813,7 @@ public class ArenaView extends JPanel {
     }
 
     private void paintHandles(Graphics2D g, int i, double px) {
-        double hs = HANDLE_PX * px;   // dimensione costante sullo schermo
+        double hs = HANDLE_PX * px;   // constant size on screen
         g.setStroke(new BasicStroke((float) px));
         for (int k = 0; k < HANDLES.length; k++) {
             Point2D h = handlePos(i, k);
@@ -916,7 +916,7 @@ public class ArenaView extends JPanel {
             ArrayDeque<Point2D> tr = trails.computeIfAbsent(rs.get(i), k -> new ArrayDeque<>());
             Point2D p = new Point2D.Double(pos[i].x * Const.cellSize, pos[i].y * Const.cellSize);
             Point2D lastP = tr.peekLast();
-            if (lastP != null && lastP.distance(p) > 3 * Const.cellSize) tr.clear();   // robot spostato a mano
+            if (lastP != null && lastP.distance(p) > 3 * Const.cellSize) tr.clear();   // robot moved by hand
             if (lastP == null || lastP.distance(p) >= 1.5) {
                 tr.addLast(p);
                 if (tr.size() > TRAIL_MAX) tr.removeFirst();
@@ -1058,7 +1058,7 @@ public class ArenaView extends JPanel {
         g.rotate(p.theta);
 
         Color body = r.getUnitObject().getID().getColor();
-        if (!r.isActive()) body = blend(body, Color.GRAY, 0.6);   // fermo / guasto
+        if (!r.isActive()) body = blend(body, Color.GRAY, 0.6);   // stopped / faulty
         if (r == selected || badRobots.contains(r.getUnitObject())) {
             g.setColor(r == selected ? SELECTION : INVALID);
             g.setStroke(new BasicStroke((float) Math.max(2.5 * px, 1.2)));
@@ -1074,7 +1074,7 @@ public class ArenaView extends JPanel {
     private void paintFloorSensors(Graphics2D g, List<RobotUnit> rs, double px) {
         for (RobotUnit r : rs) {
             io.github.raffaelegrandi.pianura.units.sensors.FloorSensorArray fs = r.getUnitObject().getFloorSensors();
-            double d = Math.max(fs.getLayout().footprintCells() * Const.cellSize, 1.0);   // pallino = area sensibile reale
+            double d = Math.max(fs.getLayout().footprintCells() * Const.cellSize, 1.0);   // dot = real sensitive area
             for (int k = 0; k < fs.count(); k++) {
                 Point2D p = fs.getPosition(k);
                 if (p == null) continue;

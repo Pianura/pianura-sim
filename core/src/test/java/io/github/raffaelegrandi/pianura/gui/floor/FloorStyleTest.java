@@ -67,7 +67,7 @@ class FloorStyleTest {
         assertEquals(Color.ORANGE, px(img, W - 1, H - 1));
     }
 
-    /** 2x2: rosso | verde / blu | bianco */
+    /** 2x2: red | green / blue | white */
     private static BufferedImage quad() {
         BufferedImage q = new BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB);
         q.setRGB(0, 0, Color.RED.getRGB());  q.setRGB(1, 0, Color.GREEN.getRGB());
@@ -89,9 +89,9 @@ class FloorStyleTest {
         BufferedImage wide = new BufferedImage(200, 100, BufferedImage.TYPE_INT_RGB);   // 2:1 → bands above and below
         Graphics2D g = wide.createGraphics(); g.setColor(Color.RED); g.fillRect(0, 0, 200, 100); g.dispose();
         BufferedImage img = render(new ImageFloor(wide, ImageFloor.Mode.FIT).withBackground(Color.BLACK));
-        assertEquals(Color.BLACK, px(img, W / 2, 10));        // banda superiore
+        assertEquals(Color.BLACK, px(img, W / 2, 10));        // top band
         assertEquals(Color.RED, px(img, W / 2, H / 2));
-        assertEquals(Color.BLACK, px(img, W / 2, H - 10));    // banda inferiore
+        assertEquals(Color.BLACK, px(img, W / 2, H - 10));    // bottom band
     }
 
     @Test
@@ -104,9 +104,9 @@ class FloorStyleTest {
 
     @Test
     void opacityBlendsWithBackground() {
-        BufferedImage black = new BufferedImage(4, 4, BufferedImage.TYPE_INT_RGB);   // tutta nera
+        BufferedImage black = new BufferedImage(4, 4, BufferedImage.TYPE_INT_RGB);   // all black
         BufferedImage img = render(new ImageFloor(black, ImageFloor.Mode.STRETCH).withOpacity(0.25f));
-        Color c = px(img, W / 2, H / 2);   // 25% nero su bianco ≈ 191
+        Color c = px(img, W / 2, H / 2);   // 25% black over white ≈ 191
         assertEquals(191, c.getRed(), 2);
     }
 

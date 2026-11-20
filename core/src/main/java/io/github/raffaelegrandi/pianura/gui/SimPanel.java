@@ -259,7 +259,7 @@ public class SimPanel extends JPanel implements ActionListener{
 	@Override
 	public void actionPerformed(ActionEvent arg0) {
 		arena.repaint();
-		// etichette e pannello non servono a 60 Hz
+		// labels and panel do not need 60 Hz
 		if (++refreshCounter % 6 == 0) {
 			if (controlBar != null) controlBar.refresh();
 			sidePanel.refresh();

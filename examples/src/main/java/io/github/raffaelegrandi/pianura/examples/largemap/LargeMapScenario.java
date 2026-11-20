@@ -62,7 +62,7 @@ public class LargeMapScenario extends ScenarioManager {
 			i++;
 		}
 
-		// --- robot in posizioni libere ---
+		// --- robots in free positions ---
 		for (int id = 1, tries = 0; id <= robots && tries < robots * 200; tries++) {
 			double x = 3 + rnd.nextDouble() * (widthCells - 6), y = 3 + rnd.nextDouble() * (heightCells - 6);
 			Rectangle2D box = new Rectangle2D.Double(x - 2, y - 2, 4, 4);
@@ -78,7 +78,7 @@ public class LargeMapScenario extends ScenarioManager {
 		double t = 1;
 		for (double start = 0; start < length; start += room) {
 			double end = Math.min(length, start + room);
-			double d0 = start + 4 + rnd.nextDouble() * Math.max(0, end - start - door - 8);   // porta
+			double d0 = start + 4 + rnd.nextDouble() * Math.max(0, end - start - door - 8);   // door
 			// horizontal walls stop against the vertical ones (they touch, they do not overlap)
 			double a = !vertical && start > 0 ? start + t / 2 : start;
 			double b = !vertical && end < length ? end - t / 2 : end;

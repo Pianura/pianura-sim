@@ -42,7 +42,7 @@ public class CircleShape implements CollidableShape {
         double t1 = (-B - sqrtDisc) / 2.0;
         double t2 = (-B + sqrtDisc) / 2.0;
 
-        if (t2 < 0) return -1;      // cerchio dietro l'origine
+        if (t2 < 0) return -1;      // circle behind the origin
         if (t1 < 0) return 0;       // origin inside the circle
         return (t1 <= maxDist) ? t1 : -1;
     }

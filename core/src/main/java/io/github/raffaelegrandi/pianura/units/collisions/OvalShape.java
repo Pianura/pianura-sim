@@ -21,8 +21,8 @@ package io.github.raffaelegrandi.pianura.units.collisions;
  */
 public class OvalShape implements CollidableShape {
 
-    private final double cx, cy;      // centro in pixel
-    private final double a, b;        // semi-assi in pixel
+    private final double cx, cy;      // centre in pixels
+    private final double a, b;        // semi-axes in pixels
     private final double angle;
     private final double cosA, sinA;  // cos(-angle), sin(-angle) for the inverse transformation
 
@@ -32,11 +32,11 @@ public class OvalShape implements CollidableShape {
     }
 
     /**
-     * @param cx     centro X in pixel
-     * @param cy     centro Y in pixel
-     * @param width  larghezza dell'ellisse (asse x locale) in pixel
-     * @param height altezza dell'ellisse (asse y locale) in pixel
-     * @param angle  rotazione in radianti
+     * @param cx     centre X in pixels
+     * @param cy     centre Y in pixels
+     * @param width  width of the ellipse (local x axis) in pixels
+     * @param height height of the ellipse (local y axis) in pixels
+     * @param angle  rotation in radians
      */
     public OvalShape(double cx, double cy, double width, double height, double angle) {
         this.cx = cx;
@@ -58,7 +58,7 @@ public class OvalShape implements CollidableShape {
 
     @Override
     public double rayIntersect(double ox, double oy, double dx0, double dy0, double maxDist) {
-        // riferimento locale: centro nell'origine, assi dell'ellisse allineati
+        // local frame: centre at the origin, ellipse axes aligned
         double px = ox - cx, py = oy - cy;
         double rx = cosA * px - sinA * py;
         double ry = sinA * px + cosA * py;
@@ -70,7 +70,7 @@ public class OvalShape implements CollidableShape {
         double C = (rx * rx) / (a * a) + (ry * ry) / (b * b) - 1.0;
 
         double disc = B * B - 4.0 * A * C;
-        if (disc < 0) return -1;  // nessuna intersezione
+        if (disc < 0) return -1;  // no intersection
 
         double sqrtDisc = Math.sqrt(disc);
         double t1 = (-B - sqrtDisc) / (2.0 * A);

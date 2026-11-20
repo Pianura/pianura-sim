@@ -125,14 +125,14 @@ class SceneEditingTest {
 
     @Test
     void edgeHandleResizesKeepingOppositeSideFixed() {
-        Fixture f = new Fixture();                       // rettangolo 4x2 centrato in (10,10): x da 8 a 12
+        Fixture f = new Fixture();                       // 4x2 rectangle centred at (10,10): x from 8 to 12
         click(f, f.screen(10, 10));
         assertEquals(0, f.view.getSelectedObstacle());
-        f.drag(f.screen(12, 10), f.screen(15, 10), 0);   // maniglia destra trascinata a x = 15
+        f.drag(f.screen(12, 10), f.screen(15, 10), 0);   // right handle dragged to x = 15
         var id = f.obstacles.get(0).getID();
         assertEquals(7, id.getWidth(), 0.1);            // da 8 a 15
         assertEquals(2, id.getHeight(), 1e-9);
-        assertEquals(11.5, id.getPos().x, 0.05);        // lato sinistro fermo a x = 8
+        assertEquals(11.5, id.getPos().x, 0.05);        // left side still at x = 8
         assertEquals(10, id.getPos().y, 1e-9);
         assertEquals(1, f.finishedChanges);
     }
@@ -146,7 +146,7 @@ class SceneEditingTest {
         click(f, f.screen(10, 10));
         // local corner (+2, +1) → in the world (10 - 1, 10 + 2) = (9, 12); moved to (8, 13)
         f.drag(f.screen(9, 12), f.screen(8, 13), 0);
-        assertEquals(5, id.getWidth(), 0.1);             // asse x locale: da -2 (fermo) a +3
+        assertEquals(5, id.getWidth(), 0.1);             // local x axis: from -2 (still) to +3
         assertEquals(3, id.getHeight(), 0.1);            // local y axis: from -1 (still) to +2 (towards -x in the world)
         // the opposite corner (local -2,-1 → world 11, 8) did not move
         double cx = id.getPos().x, cy = id.getPos().y, hw = id.getWidth() / 2, hh = id.getHeight() / 2;

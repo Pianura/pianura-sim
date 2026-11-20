@@ -9,8 +9,8 @@ package io.github.raffaelegrandi.pianura.units.collisions;
  */
 public class RectShape implements CollidableShape {
 
-    private final double cx, cy;  // centro in pixel
-    private final double hw, hh;  // semi-larghezza e semi-altezza in pixel
+    private final double cx, cy;  // centre in pixels
+    private final double hw, hh;  // half width and half height in pixels
     private final double cosA, sinA;  // cos(-angle), sin(-angle) for the inverse transformation
     private final double angle;
 
