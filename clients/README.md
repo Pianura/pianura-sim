@@ -158,10 +158,19 @@ stamped with the simulated time of the command:
 | `watch` | Named values to show, `{name: number or string}` |
 | `plot` | Points for the time plots, `{name: number}`: one plot per name |
 | `log` | A line, or a list of lines, for the log |
+| `bars` | Vectors shown as bars, `{name: [numbers]}` or `{name: {"values": [...], "labels": [...]}}` |
+| `matrix` | Matrices shown as heat maps, `{name: [[row], [row], ...]}` |
+| `network` | Layered networks, `{name: {"activations": [[layer 0], [layer 1], ...], "weights": [W1, ...], "labels": [[names], null, ...]}}`; `weights` and `labels` optional, `W[j][i]` = from neuron i of a layer to neuron j of the next (out x in, as PyTorch stores it) |
+
+Bars, heat maps and networks show the latest values sent: send them again when they change. A
+`null` in a vector is a gap. A UDP message holds about 64 KB, so a few thousand numbers per
+command: show a network's layers, not a large one's every weight.
 
 The Python client sends them with `robot.inspect.state(...)`, `.watch(...)`, `.plot(...)`,
-`.log(...)`, MATLAB with `robot.inspectState`, `inspectWatch`, `inspectPlot`, `inspectLog`: they
-leave with the next `drive`/`wheels`. A `cmd` with only inspector fields keeps the previous speeds.
+`.log(...)`, `.bars(...)`, `.matrix(...)`, `.network(...)` (NumPy arrays and PyTorch tensors
+accepted), MATLAB with `robot.inspectState`, `inspectWatch`, `inspectPlot`, `inspectLog`,
+`inspectBars`, `inspectMatrix`, `inspectNetwork`: they leave with the next `drive`/`wheels`. A
+`cmd` with only inspector fields keeps the previous speeds.
 
 ## Versions
 
@@ -170,6 +179,6 @@ welcome: update the clients together with Pianura.
 
 | Version | Changes |
 |---|---|
-| 3 | Units in cells everywhere: `ir` in cells (was px, 255 = nothing), `bump` as booleans, wheel commands in cells/s (were JUSE's motor units); `meters_per_cell` and `body` in the welcome; debug drawings (`draw` in cmd); inspector (`state`, `watch`, `plot`, `log` in cmd) |
+| 3 | Units in cells everywhere: `ir` in cells (was px, 255 = nothing), `bump` as booleans, wheel commands in cells/s (were JUSE's motor units); `meters_per_cell` and `body` in the welcome; debug drawings (`draw` in cmd); inspector (`state`, `watch`, `plot`, `log`, then `bars`, `matrix`, `network` in cmd: optional fields, older clients unaffected) |
 | 2 | Radio messages: `inbox` in sensors, `broadcast` / `send` in cmd |
 | 1 | First version |

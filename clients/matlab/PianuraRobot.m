@@ -35,8 +35,10 @@ classdef PianuraRobot < handle
     % A layer keeps its shapes until drawClear: redraw it at every step, or let it grow.
     %
     % The Inspector window (button on Pianura's toolbar) shows what you send with
-    % inspectState(txt), inspectWatch(name, value), inspectPlot(name, value), inspectLog(txt);
-    % like drawings, they leave with the next drive()/wheels().
+    % inspectState(txt), inspectWatch(name, value), inspectPlot(name, value), inspectLog(txt),
+    % and views of the insides: inspectBars(name, v), inspectMatrix(name, M),
+    % inspectNetwork(name, {a0, a1, ...}, {W1, ...}); like drawings, they leave with the next
+    % drive()/wheels().
     %
     % Errors (catch them with try/catch and look at err.identifier):
     %   Pianura:stopped   the simulation was stopped, or the robot was disabled
@@ -70,6 +72,7 @@ classdef PianuraRobot < handle
         InspLog = {}
         InspWatch = {}
         InspPlot = {}
+        InspViews = struct('bars', {{}}, 'matrix', {{}}, 'network', {{}})
     end
 
     methods
@@ -190,6 +193,44 @@ classdef PianuraRobot < handle
             obj.InspPlot{end + 1} = [jsonencode(char(name)), ':', jsonencode(double(value))];
         end
 
+        function inspectBars(obj, name, values, labels)
+            % inspectBars(name, values [, labels]): a vector as bars, e.g. the outputs of a network.
+            % labels (optional): a cell array of names, one per value.
+            v = PianuraRobot.vecJson(values);
+            if nargin > 3 && ~isempty(labels)
+                v = ['{"values":', v, ',"labels":', PianuraRobot.strJson(labels), '}'];
+            end
+            obj.InspViews.bars{end + 1} = [jsonencode(char(name)), ':', v];
+        end
+
+        function inspectMatrix(obj, name, M)
+            % inspectMatrix(name, M): a matrix as a heat map, M(row, column).
+            obj.InspViews.matrix{end + 1} = [jsonencode(char(name)), ':', PianuraRobot.matJson(M)];
+        end
+
+        function inspectNetwork(obj, name, activations, weights, labels)
+            % inspectNetwork(name, activations [, weights [, labels]]): a layered network.
+            % activations: cell array, one vector per layer, inputs first.
+            % weights (optional, may be {}): cell array, W{l} is out x in (layer l to layer l+1).
+            % labels (optional): cell array, one cell array of names per layer ({} for none).
+            a = cell(1, numel(activations));
+            for k = 1:numel(activations), a{k} = PianuraRobot.vecJson(activations{k}); end
+            net = ['{"activations":[', strjoin(a, ','), ']'];
+            if nargin > 3 && ~isempty(weights)
+                w = cell(1, numel(weights));
+                for k = 1:numel(weights), w{k} = PianuraRobot.matJson(weights{k}); end
+                net = [net, ',"weights":[', strjoin(w, ','), ']'];
+            end
+            if nargin > 4 && ~isempty(labels)
+                lb = cell(1, numel(labels));
+                for k = 1:numel(labels)
+                    if isempty(labels{k}), lb{k} = 'null'; else, lb{k} = PianuraRobot.strJson(labels{k}); end
+                end
+                net = [net, ',"labels":[', strjoin(lb, ','), ']'];
+            end
+            obj.InspViews.network{end + 1} = [jsonencode(char(name)), ':', net, '}'];
+        end
+
         % ---- debug drawings (layer = name of the layer, e.g. 'plan'; color is optional) ----
 
         function drawClear(obj, layer)
@@ -295,6 +336,12 @@ classdef PianuraRobot < handle
             extra = '';                          % "watch" and "plot": objects with free names, written by hand
             if ~isempty(obj.InspWatch), extra = [extra, ',"watch":{', strjoin(obj.InspWatch, ','), '}']; end
             if ~isempty(obj.InspPlot), extra = [extra, ',"plot":{', strjoin(obj.InspPlot, ','), '}']; end
+            kinds = {'bars', 'matrix', 'network'};
+            for k = 1:numel(kinds)
+                if ~isempty(obj.InspViews.(kinds{k}))
+                    extra = [extra, ',"', kinds{k}, '":{', strjoin(obj.InspViews.(kinds{k}), ','), '}']; %#ok<AGROW>
+                end
+            end
             obj.Broadcasts = {};
             obj.Sends = {};
             obj.Draws = {};
@@ -302,6 +349,7 @@ classdef PianuraRobot < handle
             obj.InspLog = {};
             obj.InspWatch = {};
             obj.InspPlot = {};
+            obj.InspViews = struct('bars', {{}}, 'matrix', {{}}, 'network', {{}});
             obj.sendJson(msg, extra);
         end
 
@@ -347,6 +395,28 @@ classdef PianuraRobot < handle
     end
 
     methods (Static, Access = private)
+        function j = vecJson(v)
+            % always a JSON array, even for one element; NaN becomes null
+            v = double(v(:)');
+            parts = cell(1, numel(v));
+            for k = 1:numel(v)
+                if isfinite(v(k)), parts{k} = sprintf('%.10g', v(k)); else, parts{k} = 'null'; end
+            end
+            j = ['[', strjoin(parts, ','), ']'];
+        end
+
+        function j = matJson(M)
+            rows = cell(1, size(M, 1));
+            for r = 1:size(M, 1), rows{r} = PianuraRobot.vecJson(M(r, :)); end
+            j = ['[', strjoin(rows, ','), ']'];
+        end
+
+        function j = strJson(c)
+            parts = cell(1, numel(c));
+            for k = 1:numel(c), parts{k} = jsonencode(char(c{k})); end
+            j = ['[', strjoin(parts, ','), ']'];
+        end
+
         function v = row(x)
             v = double(x(:))';
         end

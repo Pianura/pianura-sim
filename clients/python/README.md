@@ -49,7 +49,11 @@ Pianura's **Inspector** window shows the algorithm's state, values, time plots a
 
 ```python
         robot.inspect.state("searching").watch("nodes", n).plot("error", e).log("goal seen")
+        robot.inspect.bars("outputs", y).network("policy", [x, h, y], weights=[w1, w2])
 ```
+
+`bars`, `matrix` and `network` take lists, NumPy arrays or PyTorch tensors: a network's neurons
+light up in the Inspector with their activations, its connections are coloured by weight.
 
 `wander.py` sends a beacon every second with its position, prints which robots it can hear and
 draws a line to where it believes each neighbour is (layer `radio`); in the Inspector it shows

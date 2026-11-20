@@ -197,6 +197,51 @@ class Inspect:
         self._robot._insp.setdefault("plot", {})[str(name)] = float(value)
         return self
 
+    def bars(self, name: str, values, labels=None) -> "Inspect":
+        """Shows a vector as bars, e.g. the outputs of a network; labels are optional."""
+        v = _floats(values)
+        self._robot._insp.setdefault("bars", {})[str(name)] = (
+            {"values": v, "labels": [None if x is None else str(x) for x in labels]} if labels is not None else v)
+        return self
+
+    def matrix(self, name: str, values) -> "Inspect":
+        """Shows a matrix (a list of rows, or a 2-D array) as a heat map."""
+        self._robot._insp.setdefault("matrix", {})[str(name)] = [_floats(row) for row in _rows(values)]
+        return self
+
+    def network(self, name: str, activations, weights=None, labels=None) -> "Inspect":
+        """Shows a layered network whose neurons light up with their activation.
+
+        activations: one vector per layer, inputs first. weights (optional): one matrix per pair of
+        layers, shaped out x in like a PyTorch Linear layer's weight. labels (optional): one list
+        of names per layer, or None for a layer without names.
+        Keep it small: a UDP message holds a few thousand numbers."""
+        net = {"activations": [_floats(a) for a in activations]}
+        if weights is not None:
+            net["weights"] = [None if w is None else [_floats(r) for r in _rows(w)] for w in weights]
+        if labels is not None:
+            net["labels"] = [None if l is None else [str(x) for x in l] for l in labels]
+        self._robot._insp.setdefault("network", {})[str(name)] = net
+        return self
+
+
+def _rows(m):
+    """Rows of a matrix: a list of lists, or anything with tolist() (NumPy, PyTorch)."""
+    if hasattr(m, "detach"):
+        m = m.detach().cpu()
+    if hasattr(m, "tolist"):
+        m = m.tolist()
+    return list(m)
+
+
+def _floats(v):
+    """A vector as a list of floats (NaN and infinities become null, a gap)."""
+    out = []
+    for x in _rows(v):
+        f = float(x)
+        out.append(f if f == f and abs(f) != float("inf") else None)
+    return out
+
 
 class PianuraRobot:
     """One remote robot. Use one instance (and one socket) per robot."""

@@ -66,6 +66,8 @@ other in the same loop, as `wander.m` does.
 | `robot.drawPoint(layer, x, y, color)` | Debug drawings over the arena, in cells; they leave with the next `drive`/`wheels`. Also `drawLine` / `drawArrow(layer, x1, y1, x2, y2, color)`, `drawCircle` / `drawDisc(layer, x, y, r, color)`, `drawRect(layer, x, y, w, h, color)` (filled, top-left corner), `drawPolyline` / `drawPolygon(layer, xs, ys, color)`, `drawText(layer, x, y, txt, color)`. `color` is optional: `[r g b]` in 0..1, `'r'`, `'b'`, ... or `'#rrggbb'` |
 | `robot.inspectState(txt)` / `robot.inspectLog(txt)` | Pianura's Inspector window: the current state (changes are logged), a line in the log |
 | `robot.inspectWatch(name, value)` / `robot.inspectPlot(name, value)` | A named value to show, a point for the time plot `name`; all leave with the next `drive`/`wheels` |
+| `robot.inspectBars(name, v [, labels])` / `robot.inspectMatrix(name, M)` | A vector as bars (labels: cell array of names), a matrix as a heat map |
+| `robot.inspectNetwork(name, {a0, a1, ...} [, {W1, ...} [, labels]])` | A layered network: activations per layer (inputs first), optional weights `W{l}` out x in, optional names per layer |
 | `robot.close()` | Stops driving the robot (it keeps its last command) and releases the socket |
 
 The reading `s` is a struct:

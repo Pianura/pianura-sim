@@ -28,6 +28,10 @@ import io.github.raffaelegrandi.pianura.utils.Const;
  * <p>Debug drawing (layer {@code "steer"}): an arrow from the body towards where the vehicle is
  * heading half a second from now, longer when it goes faster; red while it turns on the spot after a contact.
  *
+ * <p>In the inspector the wiring is what it is, a one-layer neural network: 18 input neurons
+ * (the sensors' activations) connected to 2 output neurons (steer and brake) by the fixed
+ * weights. Watch the inputs light up as an obstacle comes near, and the outputs follow.
+ *
  * <p>Added in 2026. First written for the historical edition of JUSE (as a {@code RobotDummy}
  * loop), then adapted to Pianura's {@link RobotController} API: it runs at a fixed period of
  * simulated time and commands linear and angular speed.
@@ -50,6 +54,13 @@ public class BraitenbergVehicle implements RobotController {
 	private final double[] brakeWeight = new double[Const.sensorCount];
 	private double lastSteer = 0;
 	private int escaping = 0;
+	private final double[] inputs = new double[Const.sensorCount];
+	private static final String[][] LABELS = new String[2][];
+	static {
+		LABELS[0] = new String[Const.sensorCount];
+		for (int i = 0; i < Const.sensorCount; i++) LABELS[0][i] = "s" + i;
+		LABELS[1] = new String[] { "steer", "brake" };
+	}
 
 	public BraitenbergVehicle() {
 		// The "wiring": one fixed weight per sensor, computed once from the sensor angle.
@@ -70,6 +81,7 @@ public class BraitenbergVehicle implements RobotController {
 			double w = lastSteer >= 0 ? -ESCAPE_SPEED : ESCAPE_SPEED;
 			robot.setRobotSpeed(0, w);
 			drawIntent(robot, 0, w, ESCAPE_COLOR);
+			robot.inspector().state("escaping after a contact");
 			return;
 		}
 		double range = robot.getIrRange();              // cells
@@ -77,6 +89,7 @@ public class BraitenbergVehicle implements RobotController {
 		double steer = 0, brake = 0;
 		for (int i = 0; i < ir.length; i++) {
 			double activation = ir[i] < range ? (range - ir[i]) / range : 0;   // 0 far .. 1 touching
+			if (i < inputs.length) inputs[i] = activation;
 			steer += steerWeight[i] * activation;
 			brake += brakeWeight[i] * activation;
 		}
@@ -88,6 +101,12 @@ public class BraitenbergVehicle implements RobotController {
 		double v = CRUISE * (1 - BRAKE_GAIN * brake), w = -STEER_GAIN * steer;
 		robot.setRobotSpeed(v, w);
 		drawIntent(robot, v, w, INTENT_COLOR);
+
+		var in = robot.inspector();
+		in.state(steer == 0 && brake == 0 ? "cruising" : "avoiding");
+		in.network("wiring", new double[][] { inputs, { steer, brake } },
+			new double[][][] { { steerWeight, brakeWeight } }, LABELS);
+		in.plot("steer", steer);
 	}
 
 	private static final java.awt.Color INTENT_COLOR = new java.awt.Color(40, 90, 220);

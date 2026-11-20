@@ -209,8 +209,11 @@ and the MATLAB example `gotogoal.m` show how.
 
 ### The inspector
 
-The **Inspector** button on the toolbar opens a separate window about the selected robot: what
-its algorithm is doing (state), a few values it watches, time plots, and a log of its decisions,
+The **Inspector** button on the toolbar, or **Inspect** in a robot's right-click menu, opens a
+separate window about one robot. On the left, its **body** as Pianura sees it, with nothing to
+write: the infrared readings as rays around the robot (heading up), contacts, floor sensors,
+the two wheels with their speeds, and the numbers. On the right, what its algorithm says about
+itself: the state, views of its insides, time plots, watched values and a log of decisions,
 all stamped with the simulated time. The robot's code fills it:
 
 ```java
@@ -219,6 +222,9 @@ in.state("searching");                       // a change of state is also logged
 in.watch("nodes", tree.size());
 in.plot("distance to goal", d);              // one plot per name, against simulated time
 in.log("path found, length " + len);
+in.bars("action values", q);                 // a vector, one bar per element
+in.matrix("weights 1", w1);                  // a matrix as a heat map
+in.network("policy", activations, weights);  // neurons that light up, connections by weight
 robot.pauseSimulation("path found");         // pauses everything, as the Pause button does
 ```
 
@@ -227,9 +233,13 @@ simulation, and memory is bounded. From Python and MATLAB the same goes through
 `robot.inspect.state(...)` / `robot.inspectState(...)` and friends (see
 [`clients/README.md`](clients/README.md#inspector)). The example `planning` shows it at work:
 an RRT grows under your eyes, the simulation pauses when the path is found, and the inspector
-follows the search and the drive.
+follows the search and the drive. In the example `braitenberg` each vehicle shows its wiring as
+the one-layer network it is: the sensors light up as an obstacle comes near, and steer and brake
+follow.
 
 ![The planning example: the RRT tree, the path found, and the inspector](docs/img/planning.png)
+
+![A Braitenberg vehicle in the inspector: its body and its wiring as a network](docs/img/inspector.png)
 
 ---
 
