@@ -39,9 +39,9 @@ class ObstacleBorderTest {
     @Test
     void customBorderIsDrawnInsideTheShape() {
         BufferedImage img = render(square(Color.WHITE).withBorder(Color.BLACK, 2));
-        assertEquals(Color.WHITE, px(img, 300, 300), "centro");
-        assertEquals(Color.BLACK, px(img, 271, 300), "bordo interno sinistro");
-        assertEquals(Color.BLACK, px(img, 300, 328), "bordo interno inferiore");
+        assertEquals(Color.WHITE, px(img, 300, 300), "center");
+        assertEquals(Color.BLACK, px(img, 271, 300), "inner left border");
+        assertEquals(Color.BLACK, px(img, 300, 328), "inner bottom border");
         assertEquals(FLOOR, px(img, 267, 300), "outside the shape: the border must not stick out");
     }
 

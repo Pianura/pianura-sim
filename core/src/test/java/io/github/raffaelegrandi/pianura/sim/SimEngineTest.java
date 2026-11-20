@@ -43,7 +43,7 @@ class SimEngineTest {
         engine.runUntil(1.0);
         engine.stop();
         // calls at t = 0.0, 0.1, ..., 1.0: runUntil returns after the robots reacted to the final instant
-        assertEquals(11, calls.size(), "chiamate: " + calls);
+        assertEquals(11, calls.size(), "calls: " + calls);
         for (int i = 0; i < calls.size(); i++) assertEquals(i * 0.1, calls.get(i), 1e-9);
     }
 
@@ -71,7 +71,7 @@ class SimEngineTest {
         engine.runUntil(10.0);
         engine.stop();
         double surfaceToWallPx = robots.get(0).getPosition().x * Const.cellSize - Const.unitRadius;
-        assertTrue(surfaceToWallPx >= 0, "compenetrazione: " + surfaceToWallPx + " px");
+        assertTrue(surfaceToWallPx >= 0, "overlap: " + surfaceToWallPx + " px");
         assertTrue(surfaceToWallPx < Const.sensorsCheckingRange0 + 1, "it stopped too far: " + surfaceToWallPx);
     }
 
@@ -93,7 +93,7 @@ class SimEngineTest {
         double rightGap = w - (p.x * Const.cellSize + Const.unitRadius);
         double bottomGap = h - (p.y * Const.cellSize + Const.unitRadius);
         assertTrue(p.x > 60 && p.y > 40, "the robot must be beyond the standard arena: " + p);
-        assertTrue(rightGap >= 0 && bottomGap >= 0, "compenetrazione: " + rightGap + ", " + bottomGap);
+        assertTrue(rightGap >= 0 && bottomGap >= 0, "overlap: " + rightGap + ", " + bottomGap);
         assertTrue(Math.min(rightGap, bottomGap) < Const.sensorsCheckingRange0 + 1, "it did not reach the wall: " + p);
     }
 
@@ -140,17 +140,17 @@ class SimEngineTest {
     void editableBeforeStartAndInPauseButNotAfterStop() throws Exception {
         List<RobotDummy> robots = List.of(new ControllerRobot(1, new Position(20, 20, 0), 2, 0.1, (r, t) -> {}));
         SimEngine engine = setup(robots, List.of());
-        assertTrue(engine.isEditable(), "prima dell'avvio");
+        assertTrue(engine.isEditable(), "before start");
         engine.start();
         startRobots(robots);
-        assertTrue(engine.isEditable(), "in pausa");
+        assertTrue(engine.isEditable(), "paused");
         engine.resume();
         waitFor(() -> engine.getClock().now() > 0.2);
-        assertFalse(engine.isEditable(), "in esecuzione");
+        assertFalse(engine.isEditable(), "running");
         engine.stop();
         engine.join();
         assertTrue(engine.isStopped());
-        assertFalse(engine.isEditable(), "dopo lo stop");
+        assertFalse(engine.isEditable(), "after stop");
     }
 
     @Test

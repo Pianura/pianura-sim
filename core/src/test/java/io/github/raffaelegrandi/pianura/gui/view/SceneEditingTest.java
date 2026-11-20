@@ -83,7 +83,7 @@ class SceneEditingTest {
         assertEquals(16, p.x, 0.15);
         assertEquals(12, p.y, 0.15);
         assertTrue(f.changes >= 2, "live validation while dragging");
-        assertEquals(1, f.finishedChanges, "esito finale al rilascio");
+        assertEquals(1, f.finishedChanges, "final outcome on release");
         assertEquals(0, f.view.getSelectedObstacle());
     }
 
@@ -114,7 +114,7 @@ class SceneEditingTest {
         double offBefore = f.view.getTransform().getOffsetX();
         f.drag(f.screen(10, 10), f.screen(16, 10), 0);
         assertEquals(10, f.obstacles.get(0).getID().getPos().x, 1e-9, "the obstacle must not move");
-        assertNotEquals(offBefore, f.view.getTransform().getOffsetX(), "la vista doveva spostarsi");
+        assertNotEquals(offBefore, f.view.getTransform().getOffsetX(), "the view should have moved");
         assertEquals(0, f.changes);
     }
 

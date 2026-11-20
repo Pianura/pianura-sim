@@ -69,7 +69,7 @@ class CommNetworkTest {
         assertEquals(1, atC.size(), log.toString());
         assertEquals(2, atC.get(0).from(), "C receives only from B");
         assertEquals(Map.of("relay", "hello from A"), atC.get(0).payload());
-        assertTrue(log.stream().anyMatch(g -> g.at() == 2 && g.from() == 1), "B riceve A");
+        assertTrue(log.stream().anyMatch(g -> g.at() == 2 && g.from() == 1), "B receives A");
         assertTrue(log.stream().anyMatch(g -> g.at() == 1 && g.from() == 2), "A also hears B's retransmission");
         ConnectivityGraph g = e.getNetwork().getGraph();
         assertEquals(2, g.links().size());
@@ -122,7 +122,7 @@ class CommNetworkTest {
             RobotDummy a = robot(1, 10, 20, (r, t) -> { if (t == 0) r.broadcast("x"); });
             RobotDummy b = robot(2, 15, 20, recorder(log, null));
             run(List.of(a, b), wall, new CommSettings().setRange(6).setLineOfSight(los), 0.5);
-            assertEquals(los ? 0 : 1, log.size(), "linea di vista " + los);
+            assertEquals(los ? 0 : 1, log.size(), "line of sight " + los);
         }
     }
 
@@ -138,9 +138,9 @@ class CommNetworkTest {
             run(List.of(a, b), List.of(), new CommSettings().setLossProbability(p[k]).setSeed(42), 5.0);
             counts[k] = log.size();
         }
-        assertEquals(0, counts[0], "perdita 100%");
-        assertTrue(counts[1] > 10 && counts[1] < 40, "perdita 50% su ~50 messaggi: " + counts[1]);
-        assertEquals(counts[1], counts[2], "stesso seme, stesse perdite");
+        assertEquals(0, counts[0], "100% loss");
+        assertTrue(counts[1] > 10 && counts[1] < 40, "50% loss over ~50 messages: " + counts[1]);
+        assertEquals(counts[1], counts[2], "same seed, same losses");
     }
 
     @Test
@@ -151,7 +151,7 @@ class CommNetworkTest {
         RobotDummy b = robot(2, 13, 20, recorder(log, null));
         run(List.of(a, b), List.of(), new CommSettings().setLatency(0.35), 1.0);
         assertEquals(1, log.size());
-        assertEquals(0.4, log.get(0).t(), 1e-9, "inviato a 0, arriva a 0.35: letto al ciclo di 0.4");
+        assertEquals(0.4, log.get(0).t(), 1e-9, "sent at 0, arrives at 0.35: read at the 0.4 cycle");
     }
 
     @Test
@@ -170,7 +170,7 @@ class CommNetworkTest {
         run(List.of(a, b), List.of(), new CommSettings(), 0.5);
         assertEquals(1, errors.size(), "an arbitrary object is not valid content");
         @SuppressWarnings("unchecked") Map<String, Object> m = (Map<String, Object>) log.get(0).payload();
-        assertEquals(7.0, m.get("n"), "i numeri arrivano come Double, come in JSON");
+        assertEquals(7.0, m.get("n"), "numbers arrive as Double, as in JSON");
         assertEquals(List.of(1.0, 2.0), m.get("list"));
     }
 
@@ -183,7 +183,7 @@ class CommNetworkTest {
         SimEngine e = run(List.of(a, b), List.of(), new CommSettings(), 2.0);
         assertTrue(log.stream().allMatch(g -> g.t() < 0.5 + 1e-9), "after the fault (0.5 s) no more messages");
         assertEquals(0, e.getNetwork().getGraph().links().size());
-        assertTrue(e.getNetwork().getLinkEvents().stream().anyMatch(ev -> !ev.up()), "evento di collegamento rotto");
+        assertTrue(e.getNetwork().getLinkEvents().stream().anyMatch(ev -> !ev.up()), "link-broken event");
     }
 
     @Test

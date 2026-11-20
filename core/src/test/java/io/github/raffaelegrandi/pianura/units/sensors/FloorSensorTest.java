@@ -59,8 +59,8 @@ class FloorSensorTest {
         // left sensor (−20°) at x ≈ 303 → on the line; right (+20°) at x ≈ 313 → white
         RobotDummy r = robot(308, 300, -Math.PI / 2);
         sense(r, LINE);
-        assertTrue(r.getFloorGray(0) < 20, "sinistro dovrebbe vedere nero: " + r.getFloorGray(0));
-        assertTrue(r.getFloorGray(1) > 235, "destro dovrebbe vedere bianco: " + r.getFloorGray(1));
+        assertTrue(r.getFloorGray(0) < 20, "the left one should see black: " + r.getFloorGray(0));
+        assertTrue(r.getFloorGray(1) > 235, "the right one should see white: " + r.getFloorGray(1));
         Point2D left = r.getUnitObject().getFloorSensors().getPosition(0);
         assertEquals(308 - 0.97 * 15 * Math.sin(Math.toRadians(20)), left.getX() * Const.cellSize, 1e-6);
     }

@@ -86,27 +86,27 @@ public class ViewSidePanel extends JPanel {
         zoomButtons.add(button("1:1", "Actual size", view::actualSize));
         zoomButtons.setAlignmentX(Component.LEFT_ALIGNMENT);
         zoomButtons.setMaximumSize(new Dimension(Integer.MAX_VALUE, zoomButtons.getPreferredSize().height));
-        JPanel vista = section("View");
-        vista.add(zoomButtons);
-        vista.add(zoomLabel);
-        vista.add(small("Drag to pan · wheel to zoom"));
-        vista.add(small("WASD: fly · Shift: faster · Home: fit"));
-        vista.add(small("Double click a robot: follow it"));
-        vista.add(layer("Edge scrolling", () -> options.edgeScroll, v -> options.edgeScroll = v));
-        vista.add(layer("Minimap", () -> options.minimap, v -> options.minimap = v));
-        add(vista);
+        JPanel viewSection = section("View");
+        viewSection.add(zoomButtons);
+        viewSection.add(zoomLabel);
+        viewSection.add(small("Drag to pan · wheel to zoom"));
+        viewSection.add(small("WASD: fly · Shift: faster · Home: fit"));
+        viewSection.add(small("Double click a robot: follow it"));
+        viewSection.add(layer("Edge scrolling", () -> options.edgeScroll, v -> options.edgeScroll = v));
+        viewSection.add(layer("Minimap", () -> options.minimap, v -> options.minimap = v));
+        add(viewSection);
 
-        // --- Livelli ---
-        JPanel livelli = section("Layers");
-        livelli.add(layer("IR sensor range", () -> options.sensorRange, v -> options.sensorRange = v));
-        livelli.add(layer("Sensor rays", () -> options.sensorRays, v -> options.sensorRays = v));
-        livelli.add(layer("Robot trails", () -> options.trails, v -> options.trails = v));
-        livelli.add(layer("Floor sensors", () -> options.floorSensors, v -> options.floorSensors = v));
-        livelli.add(layer("Robot IDs", () -> options.ids, v -> options.ids = v));
-        livelli.add(layer("Robot drawings", () -> options.drawings, v -> options.drawings = v));
+        // --- Layers ---
+        JPanel layers = section("Layers");
+        layers.add(layer("IR sensor range", () -> options.sensorRange, v -> options.sensorRange = v));
+        layers.add(layer("Sensor rays", () -> options.sensorRays, v -> options.sensorRays = v));
+        layers.add(layer("Robot trails", () -> options.trails, v -> options.trails = v));
+        layers.add(layer("Floor sensors", () -> options.floorSensors, v -> options.floorSensors = v));
+        layers.add(layer("Robot IDs", () -> options.ids, v -> options.ids = v));
+        layers.add(layer("Robot drawings", () -> options.drawings, v -> options.drawings = v));
         JCheckBox onlySelected = layer("Selected robot only", () -> options.drawingsSelectedOnly, v -> options.drawingsSelectedOnly = v);
         onlySelected.setToolTipText("Show only the drawings of the selected robot");
-        livelli.add(onlySelected);
+        layers.add(onlySelected);
         // distance of the label from the centre, in robot radii (0 = over the robot)
         JLabel distLabel = new JLabel();
         distLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -117,10 +117,10 @@ public class ViewSidePanel extends JPanel {
         Runnable showDist = () -> distLabel.setText(String.format(Locale.ROOT, "  Label distance: %.1f radii", dist.getValue() / 10.0));
         dist.addChangeListener(e -> { options.labelDistanceFromCenter = dist.getValue() / 10.0; showDist.run(); view.repaint(); });
         showDist.run();
-        livelli.add(distLabel);
-        livelli.add(dist);
-        livelli.add(layer("Cell grid", () -> options.grid, v -> options.grid = v));
-        add(livelli);
+        layers.add(distLabel);
+        layers.add(dist);
+        layers.add(layer("Cell grid", () -> options.grid, v -> options.grid = v));
+        add(layers);
 
         // --- Floor ---
         JPanel pav = section("Floor");
@@ -153,7 +153,7 @@ public class ViewSidePanel extends JPanel {
         arena.add(arenaInfoLabel);
         add(arena);
 
-        // --- Robot selezionato ---
+        // --- Selected robot ---
         JPanel robot = section("Selected robot");
         robotInfo.setVerticalAlignment(JLabel.TOP);
         robotInfo.setAlignmentX(Component.LEFT_ALIGNMENT);

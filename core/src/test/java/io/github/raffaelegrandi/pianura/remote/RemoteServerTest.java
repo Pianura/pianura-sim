@@ -133,7 +133,7 @@ class RemoteServerTest {
             }
             sim.finish();
         }
-        assertEquals(21, times.size(), "sensori a t = 0.0, 0.1, …, 2.0: " + times);
+        assertEquals(21, times.size(), "sensors at t = 0.0, 0.1, …, 2.0: " + times);
         assertEquals(12.0, sim.robot.getPosition().x, 1e-6, "1 cell/s for 2 s starting from x = 10");
         assertTrue(sim.log.stream().noneMatch(m -> m.contains("no reply")), sim.log.toString());
     }
@@ -178,10 +178,10 @@ class RemoteServerTest {
             c.receive();
             sim.runAsync(2.0);
             Map<String, Object> s = c.receive();
-            c.send(Client.msg("type", "cmd", "robot", 1, "seq", s.get("seq"), "v", 1.0));   // un solo comando, poi silenzio
+            c.send(Client.msg("type", "cmd", "robot", 1, "seq", s.get("seq"), "v", 1.0));   // a single command, then silence
             sim.finish();
         }
-        assertEquals(12.0, sim.robot.getPosition().x, 0.11, "continua con l'ultimo comando");
+        assertEquals(12.0, sim.robot.getPosition().x, 0.11, "keeps going with the last command");
         assertEquals(1, sim.log.stream().filter(m -> m.contains("no reply")).count(), sim.log.toString());
     }
 
@@ -192,7 +192,7 @@ class RemoteServerTest {
         try (Client c = new Client(sim.server.getPort())) {
             c.send(Client.msg("type", "hello", "robot", 1));
             c.receive();
-            c.send(Client.msg("type", "cmd", "robot", 1, "v", 1.0));   // senza seq: in tempo reale va bene
+            c.send(Client.msg("type", "cmd", "robot", 1, "v", 1.0));   // no seq: fine in real time
             Thread.sleep(200);
             sim.runAsync(3.0);
             sim.finish();

@@ -62,7 +62,7 @@ class RobotGlyphTest {
         // starts 1.5 cells from the right edge (40) and pushes for 3 s: the body stops, the wheels do not
         RobotDummy r = run(1.0, 0, 3.0, 38.5);
         assertTrue(r.getPosition().x < 39.01, "the body must not go through the wall: " + r.getPosition().x);
-        assertEquals(3.0, r.getLeftWheelTravel(), 0.03, "le ruote slittano ma girano");
+        assertEquals(3.0, r.getLeftWheelTravel(), 0.03, "the wheels slip but still turn");
     }
 
 }

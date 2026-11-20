@@ -146,7 +146,7 @@ public class SimControlBar extends JToolBar {
         else if (!started)    state = "<font color='#7f8c8d'>&#9675; READY</font>";
         else if (paused)      state = "<font color='#d35400'>&#10074;&#10074; PAUSED</font>";
         else                  state = String.format(Locale.ROOT, "<font color='#1e8449'>&#9654; RUNNING &times;%.1f</font>", effective);
-        String time = String.format(Locale.ROOT, "t = %8.2f s", sim).replace(" ", "&nbsp;");   // larghezza fissa
+        String time = String.format(Locale.ROOT, "t = %8.2f s", sim).replace(" ", "&nbsp;");   // fixed width
         timeLabel.setText("<html><tt>" + time + "</tt>&nbsp;&nbsp;&nbsp;<b>" + state + "</b>&nbsp;</html>");
     }
 

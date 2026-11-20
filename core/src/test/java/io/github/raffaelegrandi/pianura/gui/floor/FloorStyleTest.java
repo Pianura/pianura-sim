@@ -38,8 +38,8 @@ class FloorStyleTest {
             for (int j = 0; j < Const.gridCellCount; j++) {
                 if (i == Const.gridCellCount - 2 && j >= 35) continue;   // cells with the letters of the mark
                 Color expected = ((i + j) % 2 == 0) ? Const.arenaFloorColor2 : Const.arenaFloorColor1;
-                assertEquals(expected, px(img, j * c + 1, i * c + 1), "cella " + i + "," + j);
-                assertEquals(expected, px(img, j * c + c - 2, i * c + c - 2), "cella " + i + "," + j);
+                assertEquals(expected, px(img, j * c + 1, i * c + 1), "cell " + i + "," + j);
+                assertEquals(expected, px(img, j * c + c - 2, i * c + c - 2), "cell " + i + "," + j);
             }
         }
     }
@@ -144,7 +144,7 @@ class FloorStyleTest {
             if (rgb == grout.getRGB()) groutPx++; else colors.add(rgb);
         }
         double groutFraction = groutPx / (double) ((W / 3) * (H / 3));
-        assertTrue(groutFraction > 0.03 && groutFraction < 0.25, "frazione fughe " + groutFraction);
+        assertTrue(groutFraction > 0.03 && groutFraction < 0.25, "grout fraction " + groutFraction);
         assertTrue(colors.size() > 20, "too few tones: " + colors.size());
     }
 
@@ -156,7 +156,7 @@ class FloorStyleTest {
         assertInstanceOf(ImageFloor.class, ok);
         assertEquals(Color.RED, px(render(ok), 10, 10));
 
-        FloorStyle missing = FloorStyle.image(dir.resolve("non-esiste.png").toString());
+        FloorStyle missing = FloorStyle.image(dir.resolve("does-not-exist.png").toString());
         assertInstanceOf(CheckerboardFloor.class, missing);
     }
 
