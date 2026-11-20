@@ -45,6 +45,7 @@ public final class RemoteController implements RobotController {
     private boolean stoppedSent = false;   // guarded by lock
     private final List<Outgoing> outgoing = new ArrayList<>();   // radio messages to send, guarded by lock
     private final List<java.util.function.Consumer<io.github.raffaelegrandi.pianura.viz.Viz>> drawing = new ArrayList<>();   // debug drawings to apply, guarded by lock
+    private final List<java.util.function.Consumer<io.github.raffaelegrandi.pianura.inspect.Inspector>> inspecting = new ArrayList<>();   // inspector updates, guarded by lock
 
     private volatile RobotUnit robot;   // known once the robot is created (geometry and scale for the welcome)
 
@@ -135,12 +136,17 @@ public final class RemoteController implements RobotController {
             catch (IllegalArgumentException e) { return "cmd: " + e.getMessage(); }
         }
 
+        // inspector (protocol 3): "state", "log", "watch", "plot"
+        List<java.util.function.Consumer<io.github.raffaelegrandi.pianura.inspect.Inspector>> insp;
+        try { insp = parseInspector(msg); }
+        catch (IllegalArgumentException e) { return "cmd: " + e.getMessage(); }
+
         Command c = null;
         if (msg.containsKey("left") || msg.containsKey("right")) {
             double l = MiniJson.num(msg, "left", Double.NaN), r = MiniJson.num(msg, "right", Double.NaN);
             if (!Double.isFinite(l) || !Double.isFinite(r)) return "cmd: \"left\" and \"right\" must both be numbers";
             c = new Command(s, true, l, r);
-        } else if (msg.containsKey("v") || (radio.isEmpty() && !msg.containsKey("draw"))) {
+        } else if (msg.containsKey("v") || (radio.isEmpty() && !msg.containsKey("draw") && insp.isEmpty())) {
             double v = MiniJson.num(msg, "v", Double.NaN), w = MiniJson.num(msg, "w", 0);
             if (!Double.isFinite(v) || !Double.isFinite(w)) return "cmd: \"v\" (and optional \"w\") must be numbers, or use \"left\"/\"right\"";
             c = new Command(s, false, v, w);
@@ -153,6 +159,7 @@ public final class RemoteController implements RobotController {
             else last = new Command(s, false, 0, 0);
             outgoing.addAll(radio);
             drawing.addAll(draw);
+            inspecting.addAll(insp);
             lagging = false;
             replied.signalAll();
         } finally { lock.unlock(); }
@@ -188,6 +195,7 @@ public final class RemoteController implements RobotController {
         Command cmd;
         List<Outgoing> radio;
         List<java.util.function.Consumer<io.github.raffaelegrandi.pianura.viz.Viz>> draw;
+        List<java.util.function.Consumer<io.github.raffaelegrandi.pianura.inspect.Inspector>> insp;
         lock.lock();
         try {
             if (server.getMode() == RemoteServer.Mode.LOCKSTEP && !lagging) {
@@ -209,6 +217,8 @@ public final class RemoteController implements RobotController {
             outgoing.clear();
             draw = new ArrayList<>(drawing);
             drawing.clear();
+            insp = new ArrayList<>(inspecting);
+            inspecting.clear();
         } finally { lock.unlock(); }
 
         if (cmd != null) {
@@ -218,6 +228,10 @@ public final class RemoteController implements RobotController {
         if (!draw.isEmpty()) {
             io.github.raffaelegrandi.pianura.viz.Viz viz = robot.drawings();
             for (var op : draw) op.accept(viz);
+        }
+        if (!insp.isEmpty()) {
+            io.github.raffaelegrandi.pianura.inspect.Inspector in = robot.inspector();
+            for (var op : insp) op.accept(in);
         }
         for (Outgoing o : radio) {
             try {
@@ -296,4 +310,42 @@ public final class RemoteController implements RobotController {
         return m;
     }
 
+
+    /**
+     * Inspector fields of a command: "state": text, "log": text or list of texts,
+     * "watch": {name: value}, "plot": {name: number}. Applied in this order.
+     */
+    static List<java.util.function.Consumer<io.github.raffaelegrandi.pianura.inspect.Inspector>> parseInspector(Map<String, Object> msg) {
+        List<java.util.function.Consumer<io.github.raffaelegrandi.pianura.inspect.Inspector>> ops = new ArrayList<>();
+        if (msg.containsKey("state")) {
+            if (!(msg.get("state") instanceof String st)) throw new IllegalArgumentException("\"state\" must be a string");
+            ops.add(in -> in.state(st));
+        }
+        if (msg.containsKey("log")) {
+            Object l = msg.get("log");
+            List<?> lines = l instanceof List<?> list ? list : List.of(l);
+            for (Object line : lines) {
+                if (!(line instanceof String text)) throw new IllegalArgumentException("\"log\" must be a string or a list of strings");
+                ops.add(in -> in.log(text));
+            }
+        }
+        if (msg.containsKey("watch")) {
+            if (!(msg.get("watch") instanceof Map<?, ?> m)) throw new IllegalArgumentException("\"watch\" must be an object {name: value}");
+            for (Map.Entry<?, ?> e : m.entrySet()) {
+                String name = String.valueOf(e.getKey());
+                Object value = e.getValue() instanceof Double d && d == Math.rint(d) && Math.abs(d) < 1e15 ? (Object) d.longValue() : e.getValue();
+                ops.add(in -> in.watch(name, value));
+            }
+        }
+        if (msg.containsKey("plot")) {
+            if (!(msg.get("plot") instanceof Map<?, ?> m)) throw new IllegalArgumentException("\"plot\" must be an object {name: number}");
+            for (Map.Entry<?, ?> e : m.entrySet()) {
+                if (!(e.getValue() instanceof Number n)) throw new IllegalArgumentException("\"plot\": \"" + e.getKey() + "\" must be a number");
+                String name = String.valueOf(e.getKey());
+                double v = n.doubleValue();
+                ops.add(in -> in.plot(name, v));
+            }
+        }
+        return ops;
+    }
 }

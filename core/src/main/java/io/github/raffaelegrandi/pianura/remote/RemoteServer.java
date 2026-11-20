@@ -30,6 +30,7 @@ import io.github.raffaelegrandi.pianura.utils.Position;
  *   client → Pianura   {"type":"cmd","robot":1,"seq":7,"v":1.0,"w":0.3}      (or "left"/"right" wheel speeds, cells/s)
  *                   optional radio messages: "broadcast": data, "send": [{"to":3,"data":...}]
  *                   optional debug drawings: "draw": [{"op":"line","layer":"plan","x1":..,"y1":..,"x2":..,"y2":..}, ...]
+ *                   optional inspector: "state": "...", "log": "..." or [...], "watch": {name: value}, "plot": {name: number}
  *   client → Pianura   {"type":"bye","robot":1}
  * </pre>
  * Radio messages go through the simulated network ({@link io.github.raffaelegrandi.pianura.comm.CommNetwork}): range,
@@ -63,7 +64,8 @@ public final class RemoteServer implements AutoCloseable {
     /**
      * 3 = units in cells everywhere: "ir" in cells from the body ("ir_range" when nothing is in range),
      * "bump" as booleans, wheel commands in cells/s; the welcome carries "meters_per_cell" and the
-     * robot's geometry ("body"); optional "draw" in cmd for debug drawings. Version 2 added radio
+     * robot's geometry ("body"); optional "draw" (debug drawings) and "state"/"log"/"watch"/"plot"
+     * (inspector) in cmd. Version 2 added radio
      * messages, version 1 was the first one.
      */
     public static final int PROTOCOL_VERSION = 3;

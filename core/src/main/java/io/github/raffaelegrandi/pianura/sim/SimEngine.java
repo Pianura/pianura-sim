@@ -64,6 +64,11 @@ public final class SimEngine {
         for (RobotUnit r : robots) bodies.add(r.getUnitObject());
         network = new io.github.raffaelegrandi.pianura.comm.CommNetwork(clock, detector, robots);
         for (RobotUnit r : robots) r.attachNetwork(network);
+        for (RobotUnit r : robots) r.attachPauseHook(reason -> {
+            if (!running) return;   // runUntil and tests: no pause
+            logger.accept(String.format(java.util.Locale.ROOT, "Paused by robot #%d at t = %.2f s: %s", r.getIDnum(), clock.now(), reason));
+            pause();
+        });
         setFloor(io.github.raffaelegrandi.pianura.gui.floor.FloorStyle.checkerboard());
     }
 
@@ -124,7 +129,7 @@ public final class SimEngine {
         thread = Thread.ofPlatform().name("pianura-engine").daemon(true).start(this::loop);
     }
 
-    /** Ferma motore e robot (i robot in sleepSim ricevono SimulationStoppedException). */
+    /** Stops engine and robots (the robots in sleepSim receive SimulationStoppedException). */
     public void stop() {
         running = false;
         clock.stop();
@@ -138,7 +143,7 @@ public final class SimEngine {
     }
 
     // ------------------------------------------------------------------
-    //  Controlli
+    //  Controls
     // ------------------------------------------------------------------
 
     public void pause() {
@@ -151,7 +156,7 @@ public final class SimEngine {
         try { paused = false; pacingReset = true; ctrlChanged.signalAll(); } finally { ctrlLock.unlock(); }
     }
 
-    /** In pausa: esegue {@code n} passi e torna in pausa. */
+    /** While paused: runs {@code n} steps and pauses again. */
     public void step(int n) {
         ctrlLock.lock();
         try {
@@ -200,21 +205,21 @@ public final class SimEngine {
     }
 
     // ------------------------------------------------------------------
-    //  Ciclo principale
+    //  Main loop
     // ------------------------------------------------------------------
 
     private void loop() {
         long wallAnchor = 0;
         double simAnchor = 0;
         while (running) {
-            // --- pausa / passo singolo ---
+            // --- pause / single step ---
             double currentSpeed;
             boolean reanchor;
             ctrlLock.lock();
             try {
                 while (running && paused && stepsToRun == 0) ctrlChanged.awaitUninterruptibly();
                 if (!running) break;
-                boolean single = paused;          // in pausa con passi richiesti: niente pacing
+                boolean single = paused;          // paused with steps requested: no pacing
                 if (single) stepsToRun--;
                 currentSpeed = single ? MAX_SPEED : speed;
                 reanchor = pacingReset || single;
@@ -255,7 +260,7 @@ public final class SimEngine {
         }
         double t = clock.now();
 
-        // guasti simulati (in tempo simulato)
+        // simulated faults (in simulated time)
         for (RobotDummy r : robots) {
             if (r.isActive() && r.getFaultTime() >= 0 && t >= r.getFaultTime()) {
                 r.setActive(false);
@@ -263,11 +268,11 @@ public final class SimEngine {
             }
         }
 
-        // 2. movimento
+        // 2. motion
         double dt = clock.getDt();
         for (RobotUnit r : robots) if (r.isActive()) r.evaluateMovement(dt);
 
-        // 3. sensori nelle nuove posizioni
+        // 3. sensors at the new positions
         sense();
 
         // 3b. radio network: graph, routing and delivery of the messages for the instant the robots will see

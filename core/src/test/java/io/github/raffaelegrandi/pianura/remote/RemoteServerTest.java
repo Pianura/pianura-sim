@@ -254,6 +254,46 @@ class RemoteServerTest {
 
     @Test
     @Timeout(20)
+    void clientFeedsTheInspector() throws Exception {
+        Sim sim = new Sim(RemoteServer.Mode.LOCKSTEP, 1000);
+        try (Client c = new Client(sim.server.getPort())) {
+            c.send(Client.msg("type", "hello", "robot", 1));
+            c.receive();
+            sim.runAsync(0.2);
+            while (true) {
+                Map<String, Object> s = c.receive();
+                if (!"sensors".equals(s.get("type"))) continue;
+                double t = (Double) s.get("t");
+                c.send(Client.msg("type", "cmd", "robot", 1, "seq", s.get("seq"), "v", 1.0,
+                    "state", t < 0.15 ? "warming up" : "cruising", "log", List.of("tick " + t),
+                    "watch", Client.msg("t", t, "count", 3.0, "mode", "fast"), "plot", Client.msg("t", t)));
+                if (t >= 0.2 - 1e-9) break;
+            }
+            sim.finish();
+            var snap = sim.robot.inspector().snapshot();
+            assertEquals("cruising", snap.state());
+            assertEquals("3", snap.watched().get("count"), "integral numbers shown without decimals");
+            assertEquals("fast", snap.watched().get("mode"));
+            assertEquals(3, snap.series().get(0).size(), "one point per step: t = 0, 0.1, 0.2");
+            assertTrue(snap.log().stream().anyMatch(e -> e.text().equals("state: warming up")));
+            assertTrue(snap.log().stream().anyMatch(e -> e.text().startsWith("tick 0.1")));
+        }
+    }
+
+    @Test
+    @Timeout(20)
+    void malformedInspectorFieldsAreRejected() throws Exception {
+        Sim sim = new Sim(RemoteServer.Mode.LOCKSTEP, 1000);
+        try (Client c = new Client(sim.server.getPort())) {
+            c.send(Client.msg("type", "cmd", "robot", 1, "plot", Client.msg("e", "high")));
+            assertTrue(((String) c.receive().get("message")).contains("\"plot\": \"e\" must be a number"));
+            c.send(Client.msg("type", "cmd", "robot", 1, "state", 3.0));
+            assertTrue(((String) c.receive().get("message")).contains("\"state\" must be a string"));
+        } finally { sim.engine.stop(); sim.server.close(); }
+    }
+
+    @Test
+    @Timeout(20)
     void malformedDrawingsAreRejected() throws Exception {
         Sim sim = new Sim(RemoteServer.Mode.LOCKSTEP, 1000);
         try (Client c = new Client(sim.server.getPort())) {

@@ -116,6 +116,9 @@ public class Simulator {
 	public double getSimTime()          { return clock.now(); }
 	public SimEngine getEngine()        { return engine; }
 
+	/** Opens the inspector window (as the Inspector button does). */
+	public void openInspector() { SwingUtilities.invokeLater(() -> mainFrame.simPanel.setInspectorVisible(true)); }
+
 	/** View options, e.g. {@code getViewOptions().labelDistanceFromCenter = 0}. */
 	public io.github.raffaelegrandi.pianura.gui.view.ViewOptions getViewOptions() { return mainFrame.simPanel.getViewOptions(); }
 

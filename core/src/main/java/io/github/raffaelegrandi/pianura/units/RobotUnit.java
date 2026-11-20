@@ -29,6 +29,8 @@ public abstract class RobotUnit implements Runnable{
 	private volatile double leftWheelTravel = 0, rightWheelTravel = 0;
 	private volatile double metersPerCell = Const.DEFAULT_METERS_PER_CELL;
 	private volatile io.github.raffaelegrandi.pianura.viz.Viz viz;   // created on first use
+	private volatile io.github.raffaelegrandi.pianura.inspect.Inspector inspector;   // created on first use
+	private volatile java.util.function.Consumer<String> pauseHook;   // set by the engine
 
 	public RobotUnit(int unitIDnum, Position unitPos, double sensRange, Color unitColor){
 		unitObj = new UnitObject(new ObjectID(ArenaObjectType.UNIT, unitColor, unitPos, Const.unitDim), sensRange);
@@ -189,6 +191,43 @@ public abstract class RobotUnit implements Runnable{
 		io.github.raffaelegrandi.pianura.viz.Viz v = viz;
 		return v == null ? java.util.Map.of() : v.snapshot();
 	}
+
+	/**
+	 * What this robot shows in the inspector window: state, watched values, time plots and a
+	 * log of decisions, all stamped with the simulated time.
+	 * <pre>
+	 *   inspector().state("searching").watch("nodes", n).plot("distance to goal", d);
+	 *   inspector().log("path found");
+	 * </pre>
+	 */
+	public io.github.raffaelegrandi.pianura.inspect.Inspector inspector(){
+		io.github.raffaelegrandi.pianura.inspect.Inspector in = inspector;
+		if (in == null) {
+			synchronized (this) {
+				if (inspector == null) inspector = new io.github.raffaelegrandi.pianura.inspect.Inspector(this::getSimTime);
+				in = inspector;
+			}
+		}
+		return in;
+	}
+
+	/** True if the robot has used its inspector (for the window: robots without data are listed last). */
+	public boolean hasInspectorData(){ return inspector != null; }
+
+	/**
+	 * Pauses the whole simulation, as the Pause button does, e.g. to look at a decision:
+	 * {@code if (pathFound) pauseSimulation("first path found")}. The reason goes to the log and
+	 * to the inspector. The robot itself goes on with its current step; Run resumes everything.
+	 * Ignored outside a running simulation (and in runUntil).
+	 */
+	public void pauseSimulation(String reason){
+		java.util.function.Consumer<String> h = pauseHook;
+		if (inspector != null || reason != null) inspector().log("paused the simulation: " + reason);
+		if (h != null) h.accept(reason);
+	}
+
+	/** Set by the simulation engine. Not meant for robot code. */
+	public void attachPauseHook(java.util.function.Consumer<String> hook){ this.pauseHook = hook; }
 
 	private void publishDrawings(){
 		io.github.raffaelegrandi.pianura.viz.Viz v = viz;

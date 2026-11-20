@@ -19,6 +19,7 @@ import io.github.raffaelegrandi.pianura.sim.SimEngine;
 import io.github.raffaelegrandi.pianura.structures.ScenarioManager;
 import io.github.raffaelegrandi.pianura.structures.SceneFile;
 import io.github.raffaelegrandi.pianura.units.RobotDummy;
+import io.github.raffaelegrandi.pianura.units.RobotUnit;
 import io.github.raffaelegrandi.pianura.utils.Const;
 import io.github.raffaelegrandi.pianura.units.collisions.CollisionDetector;
 import io.github.raffaelegrandi.pianura.utils.LogArea;
@@ -41,6 +42,8 @@ public class SimPanel extends JPanel implements ActionListener{
 	private final SimEngine engine;
 	private List<RobotDummy> robots;
 	private io.github.raffaelegrandi.pianura.gui.view.ConnectivityWindow connectivity;
+	private io.github.raffaelegrandi.pianura.gui.view.InspectorWindow inspector;
+	private JToggleButton inspectorToggle;
 	private final ScenarioManager scenario;
 	private static java.io.File lastSceneDir;   // folder of the last scene opened or saved
 
@@ -80,7 +83,10 @@ public class SimPanel extends JPanel implements ActionListener{
 			ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		sideScroll.setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.LIGHT_GRAY));
 		add(sideScroll, BorderLayout.EAST);
-		arena.setSelectionListener(r -> sidePanel.refresh());
+		arena.setSelectionListener(r -> {
+			sidePanel.refresh();
+			if (inspector != null) inspector.arenaSelectionChanged(r);
+		});
 		arena.setViewListener(sidePanel::refresh);
 
 		if (engine != null) {
@@ -101,7 +107,12 @@ public class SimPanel extends JPanel implements ActionListener{
 			controlBar.addSeparator();
 			controlBar.add(openScene);
 			controlBar.add(saveScene);
+			inspectorToggle = new JToggleButton("Inspector", false);
+			inspectorToggle.setFocusable(false);
+			inspectorToggle.setToolTipText("Open/close the inspector: state, values, plots and log of the selected robot");
+			inspectorToggle.addActionListener(e -> setInspectorVisible(inspectorToggle.isSelected()));
 			controlBar.addSeparator();
+			controlBar.add(inspectorToggle);
 			controlBar.add(panelToggle);
 			int menu = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();   // Ctrl, or Cmd on macOS
 			getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, menu), "pianura-open");
@@ -247,6 +258,30 @@ public class SimPanel extends JPanel implements ActionListener{
 		connectivity.setVisible(true);
 		connectivity.toFront();
 	}
+
+	/** Opens or closes the inspector window (separate from the main window). */
+	public void setInspectorVisible(boolean visible) {
+		if (engine == null) return;
+		if (visible && inspector == null) {
+			inspector = new io.github.raffaelegrandi.pianura.gui.view.InspectorWindow(robots, () -> engine.getClock().now(), arena::select);
+			java.awt.Window owner = SwingUtilities.getWindowAncestor(this);
+			if (owner != null) inspector.setLocation(owner.getX() + owner.getWidth() + 8, owner.getY());
+			inspector.addComponentListener(new java.awt.event.ComponentAdapter() {
+				@Override public void componentHidden(java.awt.event.ComponentEvent e) {
+					if (inspectorToggle != null) inspectorToggle.setSelected(false);
+				}
+			});
+			RobotUnit sel = arena.getSelected();
+			if (sel != null) inspector.show(sel);
+		}
+		if (inspector == null) return;
+		inspector.setVisible(visible);
+		if (visible) inspector.toFront();
+		if (inspectorToggle != null) inspectorToggle.setSelected(visible);
+	}
+
+	/** The inspector window, or null if it was never opened. */
+	public io.github.raffaelegrandi.pianura.gui.view.InspectorWindow getInspectorWindow(){ return inspector; }
 
 	/** View options (layers, label distance, ...). */
 	public ViewOptions getViewOptions(){ return options; }
