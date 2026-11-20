@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.gui.view;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -21,7 +24,7 @@ import io.github.raffaelegrandi.pianura.units.collisions.CollisionDetector;
 import io.github.raffaelegrandi.pianura.utils.Const;
 import io.github.raffaelegrandi.pianura.utils.Position;
 
-/** Trascinamento di ostacoli e robot nella vista, con eventi del mouse sintetici (senza schermo). */
+/** Dragging obstacles and robots in the view, with synthetic mouse events (no screen). */
 class SceneEditingTest {
 
     private static final double C = Const.cellSize;
@@ -82,8 +85,8 @@ class SceneEditingTest {
         Position p = f.obstacles.get(0).getID().getPos();
         assertEquals(16, p.x, 0.15);
         assertEquals(12, p.y, 0.15);
-        assertTrue(f.changes >= 2, "validazione dal vivo durante il trascinamento");
-        assertEquals(1, f.finishedChanges, "esito finale al rilascio");
+        assertTrue(f.changes >= 2, "live validation while dragging");
+        assertEquals(1, f.finishedChanges, "final outcome on release");
         assertEquals(0, f.view.getSelectedObstacle());
     }
 
@@ -92,8 +95,8 @@ class SceneEditingTest {
         Fixture f = new Fixture();
         f.drag(f.screen(10, 10), f.screen(14.13, 17.31), InputEvent.CTRL_DOWN_MASK);
         Position p = f.obstacles.get(0).getID().getPos();
-        assertEquals(0, (p.x * 2) % 1, 1e-9, "x non agganciato: " + p.x);
-        assertEquals(0, (p.y * 2) % 1, 1e-9, "y non agganciato: " + p.y);
+        assertEquals(0, (p.x * 2) % 1, 1e-9, "x not snapped: " + p.x);
+        assertEquals(0, (p.y * 2) % 1, 1e-9, "y not snapped: " + p.y);
     }
 
     @Test
@@ -113,8 +116,8 @@ class SceneEditingTest {
         f.editable = false;
         double offBefore = f.view.getTransform().getOffsetX();
         f.drag(f.screen(10, 10), f.screen(16, 10), 0);
-        assertEquals(10, f.obstacles.get(0).getID().getPos().x, 1e-9, "l'ostacolo non deve muoversi");
-        assertNotEquals(offBefore, f.view.getTransform().getOffsetX(), "la vista doveva spostarsi");
+        assertEquals(10, f.obstacles.get(0).getID().getPos().x, 1e-9, "the obstacle must not move");
+        assertNotEquals(offBefore, f.view.getTransform().getOffsetX(), "the view should have moved");
         assertEquals(0, f.changes);
     }
 
@@ -125,14 +128,14 @@ class SceneEditingTest {
 
     @Test
     void edgeHandleResizesKeepingOppositeSideFixed() {
-        Fixture f = new Fixture();                       // rettangolo 4x2 centrato in (10,10): x da 8 a 12
+        Fixture f = new Fixture();                       // 4x2 rectangle centred at (10,10): x from 8 to 12
         click(f, f.screen(10, 10));
         assertEquals(0, f.view.getSelectedObstacle());
-        f.drag(f.screen(12, 10), f.screen(15, 10), 0);   // maniglia destra trascinata a x = 15
+        f.drag(f.screen(12, 10), f.screen(15, 10), 0);   // right handle dragged to x = 15
         var id = f.obstacles.get(0).getID();
         assertEquals(7, id.getWidth(), 0.1);            // da 8 a 15
         assertEquals(2, id.getHeight(), 1e-9);
-        assertEquals(11.5, id.getPos().x, 0.05);        // lato sinistro fermo a x = 8
+        assertEquals(11.5, id.getPos().x, 0.05);        // left side still at x = 8
         assertEquals(10, id.getPos().y, 1e-9);
         assertEquals(1, f.finishedChanges);
     }
@@ -141,14 +144,14 @@ class SceneEditingTest {
     void cornerHandleOnRotatedObstacleWorksInLocalFrame() {
         Fixture f = new Fixture();
         var id = f.obstacles.get(0).getID();
-        id.setPos(new Position(10, 10, Math.PI / 2));    // ruotato di 90°: asse x locale verso il basso
+        id.setPos(new Position(10, 10, Math.PI / 2));    // rotated by 90°: local x axis pointing down
         f.detector.rebuild();
         click(f, f.screen(10, 10));
-        // vertice locale (+2, +1) → nel mondo (10 - 1, 10 + 2) = (9, 12); lo porto a (8, 13)
+        // local corner (+2, +1) → in the world (10 - 1, 10 + 2) = (9, 12); moved to (8, 13)
         f.drag(f.screen(9, 12), f.screen(8, 13), 0);
-        assertEquals(5, id.getWidth(), 0.1);             // asse x locale: da -2 (fermo) a +3
-        assertEquals(3, id.getHeight(), 0.1);            // asse y locale: da -1 (fermo) a +2 (verso -x nel mondo)
-        // il vertice opposto (locale -2,-1 → mondo 11, 8) non si è mosso
+        assertEquals(5, id.getWidth(), 0.1);             // local x axis: from -2 (still) to +3
+        assertEquals(3, id.getHeight(), 0.1);            // local y axis: from -1 (still) to +2 (towards -x in the world)
+        // the opposite corner (local -2,-1 → world 11, 8) did not move
         double cx = id.getPos().x, cy = id.getPos().y, hw = id.getWidth() / 2, hh = id.getHeight() / 2;
         assertEquals(11, cx + hh, 0.1);
         assertEquals(8, cy - hw, 0.1);
@@ -159,16 +162,16 @@ class SceneEditingTest {
         Fixture f = new Fixture();
         var id = f.obstacles.get(0).getID();
         click(f, f.screen(10, 10));
-        f.drag(f.screen(12, 10), f.screen(2, 10), 0);    // oltre il lato opposto
+        f.drag(f.screen(12, 10), f.screen(2, 10), 0);    // beyond the opposite side
         assertEquals(0.5, id.getWidth(), 1e-9);
         f.drag(f.screen(8.5, 10), f.screen(11.37, 10), InputEvent.CTRL_DOWN_MASK);
-        assertEquals(0, (id.getWidth() * 2) % 1, 1e-9, "larghezza non agganciata: " + id.getWidth());
+        assertEquals(0, (id.getWidth() * 2) % 1, 1e-9, "width not snapped: " + id.getWidth());
     }
 
     @Test
     void movingOntoAnotherObstacleIsFlaggedAndMovingAwayClearsIt() {
         Fixture f = new Fixture();
-        f.drag(f.screen(10, 10), f.screen(30, 30), 0);          // sopra l'ovale
+        f.drag(f.screen(10, 10), f.screen(30, 30), 0);          // over the oval
         assertFalse(f.last.isOk());
         assertTrue(f.last.badObstacles().containsAll(List.of(0, 1)));
         f.drag(f.screen(30, 30), f.screen(8, 30), 0);            // via

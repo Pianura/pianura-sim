@@ -18,7 +18,10 @@ files also run in **GNU Octave** 7 or later, if Octave can use Java.
    rec = gotogoal();
    ```
 3. Press **Run** (or Space) in Pianura. Robot 1 drives through three waypoints, and at the end
-   a figure shows its trajectory and how the distance and heading errors went to zero.
+   a figure shows its trajectory and how the distance and heading errors went to zero. While it
+   runs, Pianura shows the route and an arrow to the current waypoint with the heading error,
+   drawn by `gotogoal.m` itself (debug drawings, see the API below). Press **Inspector** on
+   Pianura's toolbar to follow its state, the commands, and distance and heading error over time.
 
 For the radio example, restart the scenario and run `wander([1 2])` instead: two robots wander
 around and print which robots they can hear.
@@ -31,8 +34,8 @@ robot.connect();
 try
     while true
         s = robot.sensors();      % waits for the next control period
-        if min(s.ir([1 2 18])) < 20
-            robot.drive(0, 1.5);  % obstacle ahead: turn on the spot (clockwise)
+        if min(s.ir([1 2 18])) < 1
+            robot.drive(0, 1.5);  % obstacle less than 1 cell ahead: turn on the spot (clockwise)
         else
             robot.drive(1, 0);    % straight on: 1 cell/s
         end
@@ -53,12 +56,16 @@ other in the same loop, as `wander.m` does.
 | Call | What it does |
 |---|---|
 | `robot = PianuraRobot(id, host, port, timeout)` | One robot. Defaults: `'127.0.0.1'`, `5555`, `30` s |
-| `w = robot.connect()` | Says hello; returns the welcome message (`w.mode`, `w.period`, `w.units`) |
+| `w = robot.connect()` | Says hello; returns the welcome message: `w.mode`, `w.period`, `w.units.meters_per_cell`, the robot's geometry in cells `w.body` (`radius`, `wheel_base`, `wheel_radius`, `ir_count`, `ir_range`) |
 | `s = robot.sensors()` | Waits for the next reading (struct below) |
 | `robot.drive(v, w)` | Linear speed `v` (cells/s) and angular speed `w` (rad/s, positive = clockwise on screen) |
-| `robot.wheels(left, right)` | Wheel speeds, same units as the Java `setMotorSpeed` (500, 500 = straight on) |
+| `robot.wheels(left, right)` | Wheel speeds in cells/s; left faster than right turns clockwise (to the right) |
 | `robot.broadcast(data)` | Radio message to every robot in range; it leaves with the next `drive`/`wheels` |
 | `robot.send(to, data)` | Radio message to robot `to`, delivered only if it is in range |
+| `robot.drawClear(layer)` / `robot.drawClearAll()` | Empties a debug drawing layer / all of them |
+| `robot.drawPoint(layer, x, y, color)` | Debug drawings over the arena, in cells; they leave with the next `drive`/`wheels`. Also `drawLine` / `drawArrow(layer, x1, y1, x2, y2, color)`, `drawCircle` / `drawDisc(layer, x, y, r, color)`, `drawRect(layer, x, y, w, h, color)` (filled, top-left corner), `drawPolyline` / `drawPolygon(layer, xs, ys, color)`, `drawText(layer, x, y, txt, color)`. `color` is optional: `[r g b]` in 0..1, `'r'`, `'b'`, ... or `'#rrggbb'` |
+| `robot.inspectState(txt)` / `robot.inspectLog(txt)` | Pianura's Inspector window: the current state (changes are logged), a line in the log |
+| `robot.inspectWatch(name, value)` / `robot.inspectPlot(name, value)` | A named value to show, a point for the time plot `name`; all leave with the next `drive`/`wheels` |
 | `robot.close()` | Stops driving the robot (it keeps its last command) and releases the socket |
 
 The reading `s` is a struct:
@@ -67,8 +74,8 @@ The reading `s` is a struct:
 |---|---|
 | `t`, `seq` | Simulated time (s) and sequence number |
 | `x`, `y`, `theta` | True pose: cells, cells, radians (clockwise on screen) |
-| `ir` | 1×18, distance in px from the body to the nearest obstacle or robot, 255 = nothing in range |
-| `bump` | 1×18, 0 = no contact |
+| `ir` | 1×18, distance in cells from the body to the nearest obstacle or robot; `w.body.ir_range` when nothing is in range |
+| `bump` | 1×18 logical, `true` = contact in that direction |
 | `contact` | `true` while the body is pushing against something |
 | `floor` | Floor sensors, 0 = black … 255 = white; `floor(1)` = left, `floor(2)` = right |
 | `wheelLeft`, `wheelRight` | Distance travelled by each wheel (cells, signed) |
@@ -80,7 +87,9 @@ The reading `s` is a struct:
 `s.ir(k+1)` is sensor k, clockwise every 20°. So `s.ir([1 2 18])` are the front sensor and its
 two neighbours.
 
-**Units.** Lengths in cells, time in seconds, angles in radians. The y axis grows downwards and
+**Units.** Lengths in cells, time in seconds, angles in radians. A cell is
+`w.units.meters_per_cell` meters (0.05 by default: the robot is 2 cells, 10 cm, across), so
+`s.x * w.units.meters_per_cell` is the position in meters. The y axis grows downwards and
 positive angles turn clockwise, as on screen: `atan2(dy, dx)` gives directions in the same
 convention as `s.theta`. In plots, `set(gca, 'YDir', 'reverse')` shows the arena the right way.
 

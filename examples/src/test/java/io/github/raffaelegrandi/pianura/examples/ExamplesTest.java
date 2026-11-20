@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.examples;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -28,7 +31,7 @@ import io.github.raffaelegrandi.pianura.utils.Position;
  */
 class ExamplesTest {
 
-    /** Crea clock+motore, collega e avvia i robot (motore non ancora avviato). */
+    /** Creates clock + engine, connects and starts the robots (engine not started yet). */
     private static SimEngine setup(List<RobotDummy> robots, List<Obstacle> obstacles) {
         SimClock clock = new SimClock(Const.physicsStep);
         SimEngine engine = new SimEngine(clock, new CollisionDetector(obstacles), robots);
@@ -43,9 +46,9 @@ class ExamplesTest {
 
     private static List<Obstacle> someObstacles() {
         List<Obstacle> obs = new ArrayList<>();
-        obs.add(new Obstacle(ArenaObjectType.OBSTACLE_RECT, Color.BLUE, new Position(30, 25, 10), new Dimension(7, 7)));
+        obs.add(new Obstacle(ArenaObjectType.OBSTACLE_RECT, Color.BLUE, new Position(30, 25, Math.toRadians(10)), new Dimension(7, 7)));
         obs.add(new Obstacle(ArenaObjectType.OBSTACLE_OVAL, Color.WHITE, new Position(22, 17, 0), new Dimension(4, 4)));
-        obs.add(new Obstacle(ArenaObjectType.OBSTACLE_RECT, Color.RED, new Position(30, 37, 30), new Dimension(2, 15)));
+        obs.add(new Obstacle(ArenaObjectType.OBSTACLE_RECT, Color.RED, new Position(30, 37, Math.toRadians(30)), new Dimension(2, 15)));
         return obs;
     }
 
@@ -74,7 +77,7 @@ class ExamplesTest {
         List<double[]> a = runSwarm(30);
         List<double[]> b = runSwarm(30);
         for (int i = 0; i < a.size(); i++) {
-            assertArrayEquals(a.get(i), b.get(i), 0.0, "robot " + (i + 1) + " diverso tra due esecuzioni");
+            assertArrayEquals(a.get(i), b.get(i), 0.0, "robot " + (i + 1) + " differs between two runs");
         }
     }
 
@@ -82,8 +85,9 @@ class ExamplesTest {
     void scenarioTest04OverlapsAreFound() {
         List<String> p = new CollisionDetector(new ObstaclesScenario().getObstacles()).validateObstacles();
         p.forEach(System.out::println);
-        assertTrue(p.stream().anyMatch(s -> s.contains("white rectangle") && s.contains("red rectangle")
-            && s.contains("overlap")), p.toString());
+        // the scenario keeps its original mistakes on purpose, to show the warnings
+        assertTrue(p.stream().anyMatch(s -> s.contains("white oval") && s.contains("overlap")), p.toString());
+        assertTrue(p.stream().anyMatch(s -> s.contains("yellow rectangle") && s.contains("outside the arena")), p.toString());
     }
 
     @Test
@@ -120,4 +124,40 @@ class ExamplesTest {
         }
     }
 
+
+    @Test
+    void theExamplesShipTheModernLook() {
+        assertTrue(io.github.raffaelegrandi.pianura.gui.LookAndFeelSetup.flatLafAvailable(),
+            "FlatLaf is a runtime dependency of the examples (optional for core)");
+    }
+
+    @Test
+    @Timeout(60)
+    void theRrtPlannerFindsAPathAndReachesTheGoalWithoutContacts() {
+        io.github.raffaelegrandi.pianura.examples.planning.PlanningScenario sc = new io.github.raffaelegrandi.pianura.examples.planning.PlanningScenario();
+        SimClock clock = new SimClock(Const.physicsStep);
+        SimEngine e = new SimEngine(clock, new CollisionDetector(sc.getObstacles(), sc.getArenaWidthPx(), sc.getArenaHeightPx()), sc.getRobots());
+        e.setLogger(m -> {});
+        RobotDummy r = sc.getRobots().get(0);
+        r.attachClock(clock);
+        r.start();
+        int contacts = 0;
+        double t = 0;
+        while (!sc.getPlanner().arrived() && t < 90) {
+            t += 0.1;
+            e.runUntil(t);
+            if (r.hasCollision()) contacts++;
+        }
+        e.stop();
+        assertTrue(sc.getPlanner().arrived(), "goal not reached in 90 s");
+        assertEquals(0, contacts, "the planned path keeps clear of the obstacles");
+        assertEquals(io.github.raffaelegrandi.pianura.examples.planning.PlanningScenario.GOAL_X, r.getPosition().x, 0.35);
+        assertEquals(io.github.raffaelegrandi.pianura.examples.planning.PlanningScenario.GOAL_Y, r.getPosition().y, 0.35);
+        var snap = r.inspector().snapshot();
+        assertEquals("arrived", snap.state());
+        assertTrue(snap.log().stream().anyMatch(en -> en.text().startsWith("path found after")));
+        assertTrue(snap.series().stream().anyMatch(se -> se.name().equals("heading error (rad)")));
+        assertFalse(r.getDrawings().get("tree").isEmpty());
+        assertEquals(1, r.getDrawings().get("path").size());
+    }
 }

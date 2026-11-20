@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.units;
 
 import java.awt.Color;
@@ -15,18 +18,22 @@ public abstract class RobotUnit implements Runnable{
 	private volatile SimClock clock;
 	private volatile io.github.raffaelegrandi.pianura.comm.CommNetwork network;
 	private final java.util.concurrent.ConcurrentLinkedQueue<io.github.raffaelegrandi.pianura.comm.Message> inbox = new java.util.concurrent.ConcurrentLinkedQueue<>();
-	private long messageSeq = 0;                       // solo thread del robot
-	private volatile double commRange = Double.NaN;    // NaN = raggio predefinito dello scenario
+	private long messageSeq = 0;                       // robot's thread only
+	private volatile double commRange = Double.NaN;    // NaN = the scenario's default range
 
 	private ObjectID unitID;
 	private UnitObject unitObj;
 	protected volatile boolean activeStatus = true;
-	// Scritti dal thread del robot, letti dal thread di simulazione
+	// Written by the robot's thread, read by the simulation thread
 	private volatile double vK = 0;
 	private volatile double wK = 0;
 	private volatile boolean collisionStatus = false;
-	// strada percorsa da ciascuna ruota (celle, con segno): scritta dal motore, letta dalla vista
+	// distance travelled by each wheel (cells, signed): written by the engine, read by the view
 	private volatile double leftWheelTravel = 0, rightWheelTravel = 0;
+	private volatile double metersPerCell = Const.DEFAULT_METERS_PER_CELL;
+	private volatile io.github.raffaelegrandi.pianura.viz.Viz viz;   // created on first use
+	private volatile io.github.raffaelegrandi.pianura.inspect.Inspector inspector;   // created on first use
+	private volatile java.util.function.Consumer<String> pauseHook;   // set by the engine
 
 	public RobotUnit(int unitIDnum, Position unitPos, double sensRange, Color unitColor){
 		unitObj = new UnitObject(new ObjectID(ArenaObjectType.UNIT, unitColor, unitPos, Const.unitDim), sensRange);
@@ -37,12 +44,12 @@ public abstract class RobotUnit implements Runnable{
 	/***********************************************************************************************************/
 
 	/**
-	 * Attiva/disattiva il robot. Disattivato, il robot resta fermo come ostacolo e il
-	 * suo thread termina alla prossima sleepSim().
+	 * Activates/deactivates the robot. Deactivated, the robot stays still as an obstacle and
+	 * its thread ends at the next sleepSim().
 	 */
 	public void setActive(boolean status){
 		activeStatus = status;
-		if (!status && clock != null) clock.deregister(this);   // sveglia il thread se è in sleepSim
+		if (!status && clock != null) clock.deregister(this);   // wakes the thread if it is in sleepSim
 	}
 
 	public boolean hasCollision(){ return collisionStatus; }
@@ -57,44 +64,79 @@ public abstract class RobotUnit implements Runnable{
 
 	/***********************************************************************************************************/
 
-	public int[] getAllSens(){ return unitObj.getIrSensors().getSensors();}
+	/*  Units: lengths in cells, time in seconds, angles in radians. One cell is
+	 *  getMetersPerCell() meters (scenario setting, default 0.05 m: a robot 10 cm across). */
 
-	public int getOneSen(int index){ return unitObj.getIrSensors().getSensorValue(index);}
+	/**
+	 * The 18 infrared sensors: distance in cells from the robot's surface to the nearest object,
+	 * {@link #getIrRange()} when nothing is in range. Index 0 points straight ahead, then
+	 * clockwise on screen every 20 degrees.
+	 */
+	public double[] getIr(){ return unitObj.getIrSensors().getSensors(); }
+
+	/** Infrared sensor {@code index}, in cells (see {@link #getIr()}). */
+	public double getIr(int index){ return unitObj.getIrSensors().getSensorValue(index); }
+
+	/** Range of the infrared sensors in cells, measured from the robot's surface. */
+	public double getIrRange(){ return unitObj.getSensorRange(); }
+
+	/** Number of infrared sensors (18). */
+	public int getIrCount(){ return unitObj.getIrSensors().length(); }
+
+	/** Radius of the robot's body, cells (1). */
+	public double getBodyRadius(){ return (double) Const.unitRadius / Const.cellSize; }
+
+	/** Distance between the two wheels, cells (2: the wheels sit on the rim of the body). */
+	public double getWheelBase(){ return unitObj.wheelsDistance; }
+
+	/** Radius of the wheels, cells: converts wheel speeds (cells/s) into wheel turn rates (rad/s). */
+	public double getWheelRadius(){ return unitObj.wheelRadius; }
+
+	/** Scale of the scenario: meters per cell (default 0.05). Lengths in the API stay in cells. */
+	public double getMetersPerCell(){ return metersPerCell; }
+
+	/** Set by the simulation from the scenario (ScenarioManager.setMetersPerCell). Not meant for robot code. */
+	public void attachScale(double metersPerCell){ this.metersPerCell = metersPerCell; }
 
 	/***********************************************************************************************************/
-	/*  Sensori ottici di pavimento (line-following)                                                           */
+	/*  Floor sensors (line following)                                                                         */
 	/***********************************************************************************************************/
 
-	/** Numero di sensori ottici (predefinito 2: indice 0 = sinistra, 1 = destra). */
+	/** Number of floor sensors (2 by default: index 0 = left, 1 = right). */
 	public int getFloorSensorCount(){ return unitObj.getFloorSensors().count(); }
 
-	/** Luminosità del pavimento sotto il sensore i: 0 = nero, 255 = bianco. */
+	/** Brightness of the floor under sensor i: 0 = black, 255 = white. */
 	public int getFloorGray(int i){ return unitObj.getFloorSensors().getGray(i); }
 
-	/** Luminosità sotto tutti i sensori ottici. */
+	/** Brightness under all the floor sensors. */
 	public int[] getFloorGrays(){ return unitObj.getFloorSensors().getGrays(); }
 
-	/** Colore del pavimento sotto il sensore i (media sull'area sensibile). */
+	/** Color of the floor under sensor i (average over the sensitive area). */
 	public Color getFloorColor(int i){ return unitObj.getFloorSensors().getColor(i); }
 
 	/**
-	 * Configura i sensori ottici: distanza dal centro come frazione del raggio del robot,
-	 * raggio dell'area sensibile in pixel di mondo, angoli in gradi rispetto alla direzione
-	 * di marcia (negativo = sinistra, positivo = destra). Esempio: {@code configureFloorSensors(0.97, 2, -20, 20)}.
+	 * Configures the floor sensors: distance from the centre as a fraction of the robot's
+	 * radius, radius of the sensitive area in cells, angles in degrees from the direction of
+	 * travel (negative = left, positive = right). Example: {@code configureFloorSensors(0.97, 0.1, -20, 20)}.
 	 */
-	public void configureFloorSensors(double radiusFraction, double footprintPx, double... anglesDeg){
-		unitObj.getFloorSensors().setLayout(new io.github.raffaelegrandi.pianura.units.sensors.FloorSensorArray.Layout(radiusFraction, footprintPx, anglesDeg));
+	public void configureFloorSensors(double radiusFraction, double footprintCells, double... anglesDeg){
+		unitObj.getFloorSensors().setLayout(new io.github.raffaelegrandi.pianura.units.sensors.FloorSensorArray.Layout(radiusFraction, footprintCells, anglesDeg));
 	}
 
 	/**********************************************************************************************************/
 
-	public void setMotorSpeed(double wlk, double wrk){
-		double lftSpeed = wlk/100;
-		double rgtSpeed = wrk/100;
-		vK = eq_Vk(lftSpeed, rgtSpeed);
-		wK = eq_Wk(lftSpeed, rgtSpeed);
+	/**
+	 * Wheel speeds in cells/s (speed of each wheel on the ground; negative = backwards).
+	 * Equal speeds go straight; left faster than right turns clockwise on screen (to the right).
+	 * Equivalent to {@code setRobotSpeed((left + right) / 2, (left - right) / getWheelBase())}.
+	 */
+	public void setWheelSpeeds(double left, double right){
+		double L = unitObj.wheelsDistance;
+		vK = (left + right) / 2;
+		wK = (left - right) / L;
 	}
 
+	/** Body speeds: linear in cells/s, angular in rad/s (positive = clockwise on screen). */
 	public void setRobotSpeed(double linSpeed, double angSpeed){
 		vK = linSpeed;
 		wK = angSpeed;
@@ -102,24 +144,101 @@ public abstract class RobotUnit implements Runnable{
 
 	public boolean isActive(){ return activeStatus; }
 
-	/** Velocità lineare comandata (celle/s). */
+	/** Commanded linear speed (cells/s). */
 	public double getLinearSpeed(){ return vK; }
 
-	/** Velocità angolare comandata (rad/s, positiva = oraria sullo schermo). */
+	/** Commanded angular speed (rad/s, positive = clockwise on screen). */
 	public double getAngularSpeed(){ return wK; }
 
 	/**
-	 * Strada percorsa dalla ruota sinistra (celle, con segno) dall'inizio della simulazione.
-	 * Conta la rotazione della ruota: se il robot spinge contro un ostacolo la ruota gira
-	 * comunque (slittamento). Base per l'odometria.
+	 * Distance travelled by the left wheel (cells, signed) since the start of the simulation.
+	 * It counts the wheel's rotation: if the robot pushes against an obstacle the wheel turns
+	 * anyway (slipping). The basis for odometry.
 	 */
 	public double getLeftWheelTravel(){ return leftWheelTravel; }
 
-	/** Strada percorsa dalla ruota destra (celle, con segno). */
+	/** Distance travelled by the right wheel (cells, signed). */
 	public double getRightWheelTravel(){ return rightWheelTravel; }
 
 	/***********************************************************************************************************/
-	/*  Tempo simulato                                                                                         */
+	/*  Debug drawings                                                                                         */
+	/***********************************************************************************************************/
+
+	/**
+	 * Debug drawing layer {@code name} of this robot, drawn over the arena (world coordinates in
+	 * cells). Shows what the algorithm thinks: a planned path, a tree, an estimated map...
+	 * <pre>
+	 *   viz("plan").clear().color(Color.BLUE).polyline(xs, ys).disc(goalX, goalY, 0.3);
+	 * </pre>
+	 * What is drawn appears at the next {@link #sleepSim(double)}. Call it from the robot's own code.
+	 */
+	public io.github.raffaelegrandi.pianura.viz.VizLayer viz(String name){ return drawings().layer(name); }
+
+	/** The default debug drawing layer ({@code viz("default")}). */
+	public io.github.raffaelegrandi.pianura.viz.VizLayer viz(){ return drawings().layer(io.github.raffaelegrandi.pianura.viz.Viz.DEFAULT_LAYER); }
+
+	/** All the debug drawings of this robot (layers, clearAll(), publish()). */
+	public io.github.raffaelegrandi.pianura.viz.Viz drawings(){
+		io.github.raffaelegrandi.pianura.viz.Viz v = viz;
+		if (v == null) {
+			synchronized (this) {
+				if (viz == null) viz = new io.github.raffaelegrandi.pianura.viz.Viz(m -> System.err.println("Robot #" + getIDnum() + ": " + m));
+				v = viz;
+			}
+		}
+		return v;
+	}
+
+	/** Published debug drawings (layer name to shapes), empty if the robot never drew. For the view; any thread. */
+	public java.util.Map<String, java.util.List<io.github.raffaelegrandi.pianura.viz.Shape>> getDrawings(){
+		io.github.raffaelegrandi.pianura.viz.Viz v = viz;
+		return v == null ? java.util.Map.of() : v.snapshot();
+	}
+
+	/**
+	 * What this robot shows in the inspector window: state, watched values, time plots and a
+	 * log of decisions, all stamped with the simulated time.
+	 * <pre>
+	 *   inspector().state("searching").watch("nodes", n).plot("distance to goal", d);
+	 *   inspector().log("path found");
+	 * </pre>
+	 */
+	public io.github.raffaelegrandi.pianura.inspect.Inspector inspector(){
+		io.github.raffaelegrandi.pianura.inspect.Inspector in = inspector;
+		if (in == null) {
+			synchronized (this) {
+				if (inspector == null) inspector = new io.github.raffaelegrandi.pianura.inspect.Inspector(this::getSimTime);
+				in = inspector;
+			}
+		}
+		return in;
+	}
+
+	/** True if the robot has used its inspector (for the window: robots without data are listed last). */
+	public boolean hasInspectorData(){ return inspector != null; }
+
+	/**
+	 * Pauses the whole simulation, as the Pause button does, e.g. to look at a decision:
+	 * {@code if (pathFound) pauseSimulation("first path found")}. The reason goes to the log and
+	 * to the inspector. The robot itself goes on with its current step; Run resumes everything.
+	 * Ignored outside a running simulation (and in runUntil).
+	 */
+	public void pauseSimulation(String reason){
+		java.util.function.Consumer<String> h = pauseHook;
+		if (inspector != null || reason != null) inspector().log("paused the simulation: " + reason);
+		if (h != null) h.accept(reason);
+	}
+
+	/** Set by the simulation engine. Not meant for robot code. */
+	public void attachPauseHook(java.util.function.Consumer<String> hook){ this.pauseHook = hook; }
+
+	private void publishDrawings(){
+		io.github.raffaelegrandi.pianura.viz.Viz v = viz;
+		if (v != null) v.publish();
+	}
+
+	/***********************************************************************************************************/
+	/*  Simulated time                                                                                         */
 	/***********************************************************************************************************/
 
 	/***********************************************************************************************************/
@@ -166,19 +285,19 @@ public abstract class RobotUnit implements Runnable{
 		return n;
 	}
 
-	/** Collega il robot all'orologio della simulazione (fatto da Simulator/SimEngine). */
+	/** Connects the robot to the simulation's clock (done by Simulator/SimEngine). */
 	public void attachClock(SimClock clock){ this.clock = clock; }
 
-	/** Tempo simulato corrente in secondi (0 se il robot non è in una simulazione). */
+	/** Current simulated time in seconds (0 if the robot is not in a simulation). */
 	public double getSimTime(){ return clock != null ? clock.now() : 0; }
 
 	/**
-	 * Attende {@code seconds} di tempo SIMULATO. Da usare al posto di Thread.sleep()
-	 * nel codice dei robot: così pausa, passo singolo e accelerazione funzionano,
-	 * e la simulazione è riproducibile.
+	 * Waits {@code seconds} of SIMULATED time. Use it instead of Thread.sleep() in robot code:
+	 * this way pause, single step and speed-up work, and the simulation is reproducible.
 	 */
 	public void sleepSim(double seconds){
-		if (clock == null) {   // fuori da una simulazione (es. test): tempo reale
+		publishDrawings();   // what was drawn since the last sleep becomes visible all at once
+		if (clock == null) {   // outside a simulation (e.g. tests): real time
 			try { Thread.sleep((long)(seconds * 1000)); }
 			catch (InterruptedException e) { Thread.currentThread().interrupt(); }
 			return;
@@ -199,11 +318,12 @@ public abstract class RobotUnit implements Runnable{
 		try {
 			while(activeStatus) executeLoop();
 		} catch (SimulationStoppedException e) {
-			// simulazione fermata o robot disattivato: uscita normale
+			// simulation stopped or robot deactivated: normal exit
 		} catch (RuntimeException e) {
 			System.err.println("Robot #" + getIDnum() + " terminated by an error: " + e);
 			e.printStackTrace();
 		} finally {
+			publishDrawings();
 			activeStatus = false;
 			if (clock != null) clock.deregister(this);
 		}
@@ -214,9 +334,9 @@ public abstract class RobotUnit implements Runnable{
 	/**********************************	Moving Methods **********************************************************/
 
 	/**
-	 * Ruota sul posto di {@code angle} gradi (positivo = orario sullo schermo), a una velocità
-	 * di Const.angleStep gradi ogni {@code tms} millisecondi. La rotazione avviene in tempo
-	 * simulato tramite i motori, quindi rispetta fisica, pausa e accelerazione.
+	 * Turns on the spot by {@code angle} degrees (positive = clockwise on screen), at
+	 * Const.angleStep degrees every {@code tms} milliseconds. The rotation happens in simulated
+	 * time through the motors, so it respects physics, pause and speed-up.
 	 */
 	public void rotateBy(int angle, int tms){
 		if (angle == 0) return;
@@ -228,28 +348,28 @@ public abstract class RobotUnit implements Runnable{
 		collisionStatus = false;
 	}
 
-	public void forward(double speed){ this.setMotorSpeed(Math.abs(speed), Math.abs(speed)); }
+	/** Straight ahead at {@code speed} cells/s. */
+	public void forward(double speed){ setRobotSpeed(Math.abs(speed), 0); }
 
-	public void backward(double speed){ this.setMotorSpeed(-Math.abs(speed), -Math.abs(speed)); }
+	/** Straight back at {@code speed} cells/s. */
+	public void backward(double speed){ setRobotSpeed(-Math.abs(speed), 0); }
 
 	/***********************************************************************************************************/
 
 	/**
-	 * Avanza il robot di un passo rispettando i contatti (risposta "a scivolamento").
+	 * Advances the robot by one step, respecting contacts ("sliding" response).
 	 *
-	 * Il corpo del robot è un disco, quindi la rotazione non può mai causare
-	 * compenetrazione ed è sempre consentita. Della traslazione del centro si
-	 * elimina solo la componente diretta verso ciascun contatto attivo (bump
-	 * sensor): il robot non entra nell'ostacolo ma può scivolarci lungo, e
-	 * può sempre allontanarsene. I motori NON vengono azzerati: come su un
-	 * robot reale, è la logica del robot a decidere come reagire al bump.
+	 * The robot's body is a disc, so rotation can never cause interpenetration and is always
+	 * allowed. Of the centre's translation, only the component towards each active contact
+	 * (bump sensor) is removed: the robot does not enter the obstacle but can slide along it,
+	 * and can always move away from it. The motors are NOT reset: as on a real robot, it is
+	 * the robot's logic that decides how to react to the bump.
 	 *
-	 * La regola precedente (fermo totale salvo rotazione pura sul posto)
-	 * causava un deadlock con le strategie che sterzano su una ruota:
-	 * la sterzata ha sempre una componente di avanzamento e veniva bloccata.
+	 * The previous rule (full stop except pure rotation on the spot) deadlocked the strategies
+	 * that steer on one wheel: such a turn always has a forward component, which was blocked.
 	 */
 	public void evaluateMovement(double timeSample){
-		// percorso delle ruote: girano secondo i comandi anche se il corpo è bloccato da un contatto (slittamento)
+		// wheel travel: the wheels turn as commanded even when a contact blocks the body (slipping)
 		double v = vK, w = wK, half = unitObj.wheelsDistance / 2;
 		leftWheelTravel  += (v + w * half) * timeSample;
 		rightWheelTravel += (v - w * half) * timeSample;
@@ -262,9 +382,9 @@ public abstract class RobotUnit implements Runnable{
 		boolean blocked = false;
 		SensorArray bump = unitObj.getBumpSensors();
 		if (!bump.isEmpty()) {
-			int[] contacts = bump.getSensors();
-			// Due passate: con più contatti (es. angolo tra due pareti) una sola
-			// proiezione può reintrodurre una componente verso il primo contatto.
+			double[] contacts = bump.getSensors();
+			// Two passes: with several contacts (e.g. a corner between two walls) a single
+			// projection can reintroduce a component towards the first contact.
 			for (int pass = 0; pass < 2; pass++) {
 				for (int i = 0; i < contacts.length; i++) {
 					if (contacts[i] == bump.getInitValue()) continue;
@@ -282,53 +402,11 @@ public abstract class RobotUnit implements Runnable{
 
 	/***********************************************************************************************************/
 
-	public boolean evaluateRotation(){
-		return (vK == 0) && (wK != 0);
-	}
-
-	/***********************************************************************************************************/
-
-	public void stopUnit(){
-		System.out.println("Executing stopUnit");
-		setMotorSpeed(0,0);
-	}
-
-	/** Muove il robot ignorando i contatti. */
-	public void moveUnit(double timeSample){
-		unitObj.setPos(computeNext(unitObj.getExactPos(), timeSample));
-	}
-
-	/** Posa successiva secondo la cinematica differenziale (vK, wK letti una sola volta). */
+	/** Next pose by differential kinematics (vK, wK read once). */
 	private Position computeNext(Position currPos, double timeSample){
 		double v = vK, w = wK;
 		if (Math.abs(w) < 0.001) return computeRungeKutta(currPos, v, 0, timeSample);
 		return computeExact(currPos, v, w, timeSample);
-	}
-
-	/***********************************************************************************************************/
-
-	public int getDirection(){
-		int dir = (int) Math.signum(vK);
-		return dir;
-	}
-
-	public boolean detectCollisions(){
-		int dir = this.getDirection();
-		if(Const.debugEnabled)System.out.println("Direction of unit #"+getIDnum()+" = "+dir);
-		return unitObj.detectCollisions(dir);
-	}
-
-	/************************************************************************************************/
-
-	private double eq_Vk(double wlk, double wrk){
-		double res = unitObj.wheelRadius*(wlk+wrk)/2;
-		return res;
-	}
-
-	private double eq_Wk(double wlk, double wrk){
-		double res = (unitObj.wheelRadius*(wlk-wrk)/unitObj.wheelsDistance);
-		if (res == 0) res=0.00000000001;
-		return res;
 	}
 
 	/************************************************************************************************/

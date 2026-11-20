@@ -1,42 +1,45 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.units.collisions;
 
 /**
- * Ellisse per il rilevamento collisioni geometrico, eventualmente ruotata.
- * La posizione è il centro dell'ellisse (in pixel); l'angolo segue la convenzione
- * dei robot (coordinate schermo, positivo = orario).
+ * Ellipse for geometric collision detection, possibly rotated. The position is the
+ * ellipse's centre (pixels); the angle follows the robots' convention (screen
+ * coordinates, positive = clockwise).
  *
- * Il raggio viene portato nel sistema di riferimento dell'ellisse (rotazione inversa),
- * dove l'ellisse è allineata agli assi; poi si sostituisce l'equazione parametrica
- * del raggio nell'equazione dell'ellisse e si risolve la quadratica:
+ * The ray is brought into the ellipse's frame (inverse rotation), where the ellipse is
+ * axis-aligned; then the ray's parametric equation is substituted into the ellipse's
+ * equation and the quadratic is solved:
  *
- * Con origine (ox, oy) e direzione unitaria (dx, dy), nel riferimento locale:
+ * With origin (ox, oy) and unit direction (dx, dy), in the local frame:
  *   A·t² + B·t + C = 0
- * dove:
+ * where:
  *   A = dx²/a² + dy²/b²
  *   B = 2·(rx·dx/a² + ry·dy/b²)    rx = ox - cx
  *   C = rx²/a² + ry²/b² - 1        ry = oy - cy
  *
- * Il parametro t corrisponde alla distanza euclidea reale
- * poiché (dx, dy) è un vettore unitario (la rotazione conserva le lunghezze).
+ * The parameter t is the real Euclidean distance, since (dx, dy) is a unit vector
+ * (rotation preserves lengths).
  */
 public class OvalShape implements CollidableShape {
 
-    private final double cx, cy;      // centro in pixel
-    private final double a, b;        // semi-assi in pixel
+    private final double cx, cy;      // centre in pixels
+    private final double a, b;        // semi-axes in pixels
     private final double angle;
-    private final double cosA, sinA;  // cos(-angle), sin(-angle) per la trasformazione inversa
+    private final double cosA, sinA;  // cos(-angle), sin(-angle) for the inverse transformation
 
-    /** Ellisse allineata agli assi. */
+    /** Axis-aligned ellipse. */
     public OvalShape(double cx, double cy, double width, double height) {
         this(cx, cy, width, height, 0);
     }
 
     /**
-     * @param cx     centro X in pixel
-     * @param cy     centro Y in pixel
-     * @param width  larghezza dell'ellisse (asse x locale) in pixel
-     * @param height altezza dell'ellisse (asse y locale) in pixel
-     * @param angle  rotazione in radianti
+     * @param cx     centre X in pixels
+     * @param cy     centre Y in pixels
+     * @param width  width of the ellipse (local x axis) in pixels
+     * @param height height of the ellipse (local y axis) in pixels
+     * @param angle  rotation in radians
      */
     public OvalShape(double cx, double cy, double width, double height, double angle) {
         this.cx = cx;
@@ -58,7 +61,7 @@ public class OvalShape implements CollidableShape {
 
     @Override
     public double rayIntersect(double ox, double oy, double dx0, double dy0, double maxDist) {
-        // riferimento locale: centro nell'origine, assi dell'ellisse allineati
+        // local frame: centre at the origin, ellipse axes aligned
         double px = ox - cx, py = oy - cy;
         double rx = cosA * px - sinA * py;
         double ry = sinA * px + cosA * py;
@@ -70,16 +73,16 @@ public class OvalShape implements CollidableShape {
         double C = (rx * rx) / (a * a) + (ry * ry) / (b * b) - 1.0;
 
         double disc = B * B - 4.0 * A * C;
-        if (disc < 0) return -1;  // nessuna intersezione
+        if (disc < 0) return -1;  // no intersection
 
         double sqrtDisc = Math.sqrt(disc);
         double t1 = (-B - sqrtDisc) / (2.0 * A);
         double t2 = (-B + sqrtDisc) / (2.0 * A);
 
-        // Entrambe le intersezioni sono dietro all'origine
+        // Both intersections are behind the origin
         if (t2 < 0) return -1;
 
-        // Origine dentro l'ellisse (t1 < 0 < t2): intersezione immediata
+        // Origin inside the ellipse (t1 < 0 < t2): immediate intersection
         if (t1 < 0) return 0;
 
         return (t1 <= maxDist) ? t1 : -1;

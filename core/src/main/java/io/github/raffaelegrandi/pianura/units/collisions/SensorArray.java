@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.units.collisions;
 
 import java.awt.geom.Point2D;
@@ -6,28 +9,26 @@ import java.util.Arrays;
 import io.github.raffaelegrandi.pianura.utils.Const;
 
 /**
- * Array di sensori radiali di un robot.
+ * Array of radial sensors of a robot.
  *
- * Thread-safety: i valori vengono scritti dal thread di simulazione
- * (SimEngine) e letti dal thread del robot. Per evitare che il robot
- * legga uno stato a metà aggiornamento (es. tutti i valori appena resettati),
- * i valori sono contenuti in uno snapshot immutabile pubblicato con un
- * singolo assegnamento volatile: chi legge vede sempre una lettura completa
- * e coerente dell'ultimo ciclo.
+ * Thread-safety: the values are written by the simulation thread (SimEngine) and read
+ * by the robot's thread. So that the robot never reads a half-updated state (e.g. all
+ * values just reset), the values live in an immutable snapshot published with a single
+ * volatile assignment: readers always see a complete, consistent reading of the last cycle.
  */
 public class SensorArray {
 
-	private record Snapshot(int[] values, Point2D[] points, int activeCount) {}
+	private record Snapshot(double[] values, Point2D[] points, int activeCount) {}
 
 	private final int arrayLength = Const.sensorCount;
 	private final double[] sensorAngleArray;
-	private final int initSensValue;
+	private final double initSensValue;
 	private volatile Snapshot snapshot;
 
-	public SensorArray(int initVal){
+	public SensorArray(double initVal){
 		initSensValue = initVal;
 		sensorAngleArray = new double[arrayLength];
-		double sensorStepAngle = 360.0 / arrayLength; // 20 gradi
+		double sensorStepAngle = 360.0 / arrayLength; // 20 degrees
 		for (int i = 0; i < arrayLength; i++) {
 			sensorAngleArray[i] = Math.toRadians(sensorStepAngle * i);
 		}
@@ -38,34 +39,33 @@ public class SensorArray {
 
 	/***********************************************************************************************/
 
-	/** Valore "a riposo" del sensore (0 per i bump, 255 per gli IR). */
-	public int getInitValue(){ return initSensValue; }
+	/** Rest value of the sensor: 0 for bump sensors, the range (cells) for IR sensors. */
+	public double getInitValue(){ return initSensValue; }
 
 	/**
-	 * Pubblica atomicamente un nuovo set di letture.
-	 * Gli array vengono copiati: il chiamante può riusarli.
-	 * Un sensore è considerato attivo se il suo valore differisce dal valore di riposo.
+	 * Atomically publishes a new set of readings. The arrays are copied: the caller may reuse
+	 * them. A sensor counts as active if its value differs from the rest value.
 	 */
-	public void publish(int[] values, Point2D[] points){
-		int[] v = Arrays.copyOf(values, arrayLength);
+	public void publish(double[] values, Point2D[] points){
+		double[] v = Arrays.copyOf(values, arrayLength);
 		Point2D[] p = Arrays.copyOf(points, arrayLength);
 		int count = 0;
-		for (int x : v) if (x != initSensValue) count++;
+		for (double x : v) if (x != initSensValue) count++;
 		snapshot = new Snapshot(v, p, count);
 	}
 
 	public void resetSensors(){
-		int[] v = new int[arrayLength];
+		double[] v = new double[arrayLength];
 		Arrays.fill(v, initSensValue);
 		snapshot = new Snapshot(v, new Point2D[arrayLength], 0);
 	}
 
-	/* Modifiche puntuali (copy-on-write sullo snapshot). Il simulatore usa publish();
-	 * questi metodi restano per test e per codice esistente. */
+	/* Single-value changes (copy-on-write on the snapshot). The simulator uses publish();
+	 * these methods remain for tests and existing code. */
 
-	public synchronized void setSensorValue(int sensNum, int sensValue){
+	public synchronized void setSensorValue(int sensNum, double sensValue){
 		Snapshot s = snapshot;
-		int[] v = s.values().clone();
+		double[] v = s.values().clone();
 		v[sensNum] = sensValue;
 		publish(v, s.points());
 	}
@@ -81,10 +81,10 @@ public class SensorArray {
 
 	/***********************************************************************************************/
 
-	public int getSensorValue(int sensNum){ return snapshot.values()[sensNum]; }
+	public double getSensorValue(int sensNum){ return snapshot.values()[sensNum]; }
 
-	/** Restituisce una copia delle letture correnti. */
-	public int[] getSensors(){ return snapshot.values().clone(); }
+	/** Returns a copy of the current readings. */
+	public double[] getSensors(){ return snapshot.values().clone(); }
 
 	public double getSensorAngle(int sensNum){ return sensorAngleArray[sensNum]; }
 

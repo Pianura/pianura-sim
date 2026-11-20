@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.units.collisions;
 
 import org.junit.jupiter.api.Test;
@@ -99,7 +102,7 @@ class SensorArrayTest {
     void getSensorsReturnsSameArray() {
         SensorArray sa = new SensorArray();
         sa.setSensorValue(2, 7);
-        int[] arr = sa.getSensors();
+        double[] arr = sa.getSensors();
         assertEquals(7, arr[2]);
         assertEquals(sa.length(), arr.length);
     }

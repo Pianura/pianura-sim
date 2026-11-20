@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.remote;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -74,7 +77,7 @@ class RemoteServerTest {
             engine.setLogger(log::add);
             robot.attachClock(clock);
         }
-        /** Avvia robot e motore: il client si è già presentato (come premere Run dopo averlo collegato). */
+        /** Starts robots and engine: the client already said hello (like pressing Run after connecting it). */
         void runAsync(double until) {
             robot.start();
             runner = new Thread(() -> engine.runUntil(until));
@@ -95,9 +98,17 @@ class RemoteServerTest {
             c.send(Client.msg("type", "hello", "robot", 1));
             Map<String, Object> w = c.receive();
             assertEquals("welcome", w.get("type"));
-            assertEquals(2.0, w.get("protocol"));
+            assertEquals(3.0, w.get("protocol"));
             assertEquals("lockstep", w.get("mode"));
             assertEquals(0.1, w.get("period"));
+            Map<?, ?> units = (Map<?, ?>) w.get("units");
+            assertEquals("cell", units.get("length"));
+            assertEquals(0.05, units.get("meters_per_cell"));
+            Map<?, ?> body = (Map<?, ?>) w.get("body");
+            assertEquals(1.0, body.get("radius"));
+            assertEquals(2.0, body.get("wheel_base"));
+            assertEquals(18.0, body.get("ir_count"));
+            assertEquals(sim.robot.getIrRange(), body.get("ir_range"));
         } finally { sim.engine.stop(); sim.server.close(); }
     }
 
@@ -110,26 +121,29 @@ class RemoteServerTest {
             c.send(Client.msg("type", "hello", "robot", 1));
             assertEquals("welcome", c.receive().get("type"));
             sim.runAsync(2.0);
-            // ogni periodo: sensori → comando con lo stesso seq
+            // every period: sensors → command with the same seq
             while (true) {
                 Map<String, Object> s = c.receive();
                 if (!"sensors".equals(s.get("type"))) continue;
                 times.add((Double) s.get("t"));
-                assertEquals(18, ((List<?>) s.get("ir")).size());
+                List<?> ir = (List<?>) s.get("ir");
+                assertEquals(18, ir.size());
+                for (Object v : ir) assertTrue((Double) v >= 0 && (Double) v <= sim.robot.getIrRange(), "IR in cells: " + ir);
+                for (Object b : (List<?>) s.get("bump")) assertInstanceOf(Boolean.class, b);
                 assertEquals(2, ((List<?>) s.get("floor")).size());
                 c.send(Client.msg("type", "cmd", "robot", 1, "seq", s.get("seq"), "v", 1.0, "w", 0.0));
                 if ((Double) s.get("t") >= 2.0 - 1e-9) break;
             }
             sim.finish();
         }
-        assertEquals(21, times.size(), "sensori a t = 0.0, 0.1, …, 2.0: " + times);
-        assertEquals(12.0, sim.robot.getPosition().x, 1e-6, "1 cella/s per 2 s a partire da x = 10");
+        assertEquals(21, times.size(), "sensors at t = 0.0, 0.1, …, 2.0: " + times);
+        assertEquals(12.0, sim.robot.getPosition().x, 1e-6, "1 cell/s for 2 s starting from x = 10");
         assertTrue(sim.log.stream().noneMatch(m -> m.contains("no reply")), sim.log.toString());
     }
 
     @Test
     @Timeout(20)
-    void wheelCommandsUseMotorUnits() throws Exception {
+    void wheelCommandsAreInCellsPerSecond() throws Exception {
         Sim sim = new Sim(RemoteServer.Mode.LOCKSTEP, 1000);
         try (Client c = new Client(sim.server.getPort())) {
             c.send(Client.msg("type", "hello", "robot", 1));
@@ -138,12 +152,12 @@ class RemoteServerTest {
             while (true) {
                 Map<String, Object> s = c.receive();
                 if (!"sensors".equals(s.get("type"))) continue;
-                c.send(Client.msg("type", "cmd", "robot", 1, "seq", s.get("seq"), "left", 400.0, "right", 400.0));
+                c.send(Client.msg("type", "cmd", "robot", 1, "seq", s.get("seq"), "left", 1.0, "right", 1.0));
                 if ((Double) s.get("t") >= 1.0 - 1e-9) break;
             }
             sim.finish();
         }
-        // setMotorSpeed(400, 400): v = 0.25 * 4 = 1 cella/s
+        // wheels at 1 cell/s: the robot goes straight at 1 cell/s
         assertEquals(11.0, sim.robot.getPosition().x, 1e-6);
     }
 
@@ -154,8 +168,8 @@ class RemoteServerTest {
         long t0 = System.nanoTime();
         sim.runAsync(5.0);
         sim.finish();
-        assertTrue((System.nanoTime() - t0) / 1e9 < 3, "senza client la simulazione non deve aspettare");
-        assertEquals(10.0, sim.robot.getPosition().x, 1e-9, "senza client il robot resta fermo");
+        assertTrue((System.nanoTime() - t0) / 1e9 < 3, "without a client the simulation must not wait");
+        assertEquals(10.0, sim.robot.getPosition().x, 1e-9, "without a client the robot stays still");
     }
 
     @Test
@@ -167,10 +181,10 @@ class RemoteServerTest {
             c.receive();
             sim.runAsync(2.0);
             Map<String, Object> s = c.receive();
-            c.send(Client.msg("type", "cmd", "robot", 1, "seq", s.get("seq"), "v", 1.0));   // un solo comando, poi silenzio
+            c.send(Client.msg("type", "cmd", "robot", 1, "seq", s.get("seq"), "v", 1.0));   // a single command, then silence
             sim.finish();
         }
-        assertEquals(12.0, sim.robot.getPosition().x, 0.11, "continua con l'ultimo comando");
+        assertEquals(12.0, sim.robot.getPosition().x, 0.11, "keeps going with the last command");
         assertEquals(1, sim.log.stream().filter(m -> m.contains("no reply")).count(), sim.log.toString());
     }
 
@@ -181,7 +195,7 @@ class RemoteServerTest {
         try (Client c = new Client(sim.server.getPort())) {
             c.send(Client.msg("type", "hello", "robot", 1));
             c.receive();
-            c.send(Client.msg("type", "cmd", "robot", 1, "v", 1.0));   // senza seq: in tempo reale va bene
+            c.send(Client.msg("type", "cmd", "robot", 1, "v", 1.0));   // no seq: fine in real time
             Thread.sleep(200);
             sim.runAsync(3.0);
             sim.finish();
@@ -205,6 +219,93 @@ class RemoteServerTest {
             assertTrue(((String) c.receive().get("message")).contains("unknown message type"));
             c.send(Client.msg("type", "cmd", "robot", 1, "v", 1.0, "send", List.of(Map.of("data", "no recipient"))));
             assertTrue(((String) c.receive().get("message")).contains("\"send\""));
+        } finally { sim.engine.stop(); sim.server.close(); }
+    }
+
+    @Test
+    @Timeout(20)
+    void clientDrawsDebugShapes() throws Exception {
+        Sim sim = new Sim(RemoteServer.Mode.LOCKSTEP, 1000);
+        try (Client c = new Client(sim.server.getPort())) {
+            c.send(Client.msg("type", "hello", "robot", 1));
+            c.receive();
+            sim.runAsync(0.3);
+            int n = 0;
+            while (true) {
+                Map<String, Object> s = c.receive();
+                if (!"sensors".equals(s.get("type"))) continue;
+                List<Object> draw = new ArrayList<>();
+                draw.add(Client.msg("op", "clear", "layer", "plan"));
+                draw.add(Client.msg("op", "polyline", "layer", "plan", "xs", List.of(1.0, 2.0, 3.0), "ys", List.of(1.0, 1.0, 2.0), "color", "#2060ff"));
+                draw.add(Client.msg("op", "text", "layer", "plan", "x", 3.0, "y", 2.0, "text", "goal", "color", List.of(255.0, 0.0, 0.0)));
+                draw.add(Client.msg("op", "point", "x", 5.0, "y", 5.0));      // default layer, grows at every step
+                c.send(Client.msg("type", "cmd", "robot", 1, "seq", s.get("seq"), "v", 1.0, "draw", draw));
+                n++;
+                if ((Double) s.get("t") >= 0.3 - 1e-9) break;
+            }
+            sim.finish();
+            var d = sim.robot.getDrawings();
+            assertEquals(List.of("plan", "default"), List.copyOf(d.keySet()));
+            assertEquals(2, d.get("plan").size(), "cleared at every step: only the last polyline and text");
+            assertEquals(new java.awt.Color(0x20, 0x60, 0xff), d.get("plan").get(0).color());
+            assertEquals("goal", d.get("plan").get(1).text());
+            assertEquals(java.awt.Color.RED, d.get("plan").get(1).color());
+            assertEquals(n, d.get("default").size(), "never cleared: one point per step");
+            assertEquals(10.3, sim.robot.getPosition().x, 1e-6, "drawing does not change the motion");
+        }
+    }
+
+    @Test
+    @Timeout(20)
+    void clientFeedsTheInspector() throws Exception {
+        Sim sim = new Sim(RemoteServer.Mode.LOCKSTEP, 1000);
+        try (Client c = new Client(sim.server.getPort())) {
+            c.send(Client.msg("type", "hello", "robot", 1));
+            c.receive();
+            sim.runAsync(0.2);
+            while (true) {
+                Map<String, Object> s = c.receive();
+                if (!"sensors".equals(s.get("type"))) continue;
+                double t = (Double) s.get("t");
+                c.send(Client.msg("type", "cmd", "robot", 1, "seq", s.get("seq"), "v", 1.0,
+                    "state", t < 0.15 ? "warming up" : "cruising", "log", List.of("tick " + t),
+                    "watch", Client.msg("t", t, "count", 3.0, "mode", "fast"), "plot", Client.msg("t", t)));
+                if (t >= 0.2 - 1e-9) break;
+            }
+            sim.finish();
+            var snap = sim.robot.inspector().snapshot();
+            assertEquals("cruising", snap.state());
+            assertEquals("3", snap.watched().get("count"), "integral numbers shown without decimals");
+            assertEquals("fast", snap.watched().get("mode"));
+            assertEquals(3, snap.series().get(0).size(), "one point per step: t = 0, 0.1, 0.2");
+            assertTrue(snap.log().stream().anyMatch(e -> e.text().equals("state: warming up")));
+            assertTrue(snap.log().stream().anyMatch(e -> e.text().startsWith("tick 0.1")));
+        }
+    }
+
+    @Test
+    @Timeout(20)
+    void malformedInspectorFieldsAreRejected() throws Exception {
+        Sim sim = new Sim(RemoteServer.Mode.LOCKSTEP, 1000);
+        try (Client c = new Client(sim.server.getPort())) {
+            c.send(Client.msg("type", "cmd", "robot", 1, "plot", Client.msg("e", "high")));
+            assertTrue(((String) c.receive().get("message")).contains("\"plot\": \"e\" must be a number"));
+            c.send(Client.msg("type", "cmd", "robot", 1, "state", 3.0));
+            assertTrue(((String) c.receive().get("message")).contains("\"state\" must be a string"));
+        } finally { sim.engine.stop(); sim.server.close(); }
+    }
+
+    @Test
+    @Timeout(20)
+    void malformedDrawingsAreRejected() throws Exception {
+        Sim sim = new Sim(RemoteServer.Mode.LOCKSTEP, 1000);
+        try (Client c = new Client(sim.server.getPort())) {
+            c.send(Client.msg("type", "cmd", "robot", 1, "v", 1.0, "draw", List.of(Client.msg("op", "line", "x1", 1.0))));
+            assertTrue(((String) c.receive().get("message")).contains("draw[0]: \"y1\" must be a number"));
+            c.send(Client.msg("type", "cmd", "robot", 1, "draw", List.of(Client.msg("op", "spiral"))));
+            assertTrue(((String) c.receive().get("message")).contains("unknown op"));
+            c.send(Client.msg("type", "cmd", "robot", 1, "draw", List.of(Client.msg("op", "point", "x", 1.0, "y", 1.0, "color", "red"))));
+            assertTrue(((String) c.receive().get("message")).contains("\"color\""));
         } finally { sim.engine.stop(); sim.server.close(); }
     }
 
@@ -266,16 +367,16 @@ class RemoteServerTest {
             engine.stop();
             server.close();
         }
-        // il client remoto riceve il ping del robot Java nel campo "inbox"
+        // the remote client receives the Java robot's ping in the "inbox" field
         assertEquals(1, inbox.size(), inbox.toString());
         Map<?, ?> m = (Map<?, ?>) inbox.get(0);
         assertEquals(2.0, m.get("from"));
         assertEquals("all", m.get("to"));
         assertEquals(0.0, m.get("t"));
         assertEquals(Map.of("ping", 2.0), m.get("data"));
-        // il robot Java riceve il broadcast e il messaggio diretto, una volta sola ciascuno
+        // the Java robot receives the broadcast and the direct message, once each
         assertEquals(List.of("1:-1:{hi=from remote}", "1:2:unicast"), gotByJava);
-        // un comando con soli messaggi mantiene la velocità precedente
+        // a command with messages only keeps the previous speed
         assertEquals(11.0, remote.getPosition().x, 1e-6);
         assertTrue(log.stream().noneMatch(s -> s.contains("no reply")), log.toString());
     }
@@ -287,7 +388,7 @@ class RemoteServerTest {
         assertArrayEquals(a, b, 0.0);
     }
 
-    /** Client che sterza in base al tempo: deve dare lo stesso risultato a ogni esecuzione. */
+    /** Client that steers by time: it must give the same result at every run. */
     private static double[] steeringRun() throws Exception {
         Sim sim = new Sim(RemoteServer.Mode.LOCKSTEP, 1000);
         try (Client c = new Client(sim.server.getPort())) {

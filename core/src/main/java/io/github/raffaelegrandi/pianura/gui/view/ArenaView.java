@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.gui.view;
 
 import java.awt.BasicStroke;
@@ -52,32 +55,33 @@ import io.github.raffaelegrandi.pianura.utils.Const;
 import io.github.raffaelegrandi.pianura.utils.Position;
 
 /**
- * Vista dell'arena con zoom, spostamento e modifica della scena.
+ * View of the arena with zoom, panning and scene editing.
  *
- * Tutto è disegnato in coordinate di mondo attraverso un'unica {@link ViewTransform}:
- * pavimento (riquadri della {@link FloorMap} alla risoluzione adatta allo zoom), muri, ostacoli (vettori,
- * dagli stessi contorni delle collisioni), livelli opzionali e robot (rototraslazione).
+ * Everything is drawn in world coordinates through a single {@link ViewTransform}: floor
+ * (tiles of the {@link FloorMap} at the resolution suited to the zoom), walls, obstacles
+ * (vectors, from the same outlines used for collisions), optional layers and robots
+ * (rotation + translation).
  *
- * Mouse — sempre: rotellina = zoom attorno al cursore · trascinamento sul vuoto = spostamento
- * della vista · clic = selezione · doppio clic sul vuoto = adatta alla finestra · doppio clic su
- * un robot = seguilo · puntatore fermo vicino al bordo = scorrimento (se attivo nelle opzioni).
- * Tastiera: W A S D = vola sulla mappa (Maiusc = più veloce) · + / − = zoom · Home = adatta.
- * La vista non si allontana dalla mappa: il suo centro resta sempre dentro l'arena.
- * Mouse — prima dell'avvio o in pausa: trascinare un ostacolo o un robot lo sposta
- * (Ctrl/Cmd = aggancio a mezza cella); Maiusc+rotellina oppure Q/E lo ruotano di 5°;
- * le maniglie dell'ostacolo selezionato lo ridimensionano tenendo fermo il lato opposto.
- * Gli elementi in posizione non valida sono contornati di rosso.
+ * Mouse, always: wheel = zoom around the pointer · drag on empty space = pan · click =
+ * select · double click on empty space = fit to the window · double click on a robot =
+ * follow it · pointer resting near the edge = scroll (if enabled in the options).
+ * Keyboard: W A S D = fly over the map (Shift = faster) · + / − = zoom · Home = fit.
+ * The view does not drift away from the map: its centre always stays inside the arena.
+ * Mouse, before the start or while paused: dragging an obstacle or a robot moves it
+ * (Ctrl/Cmd = snap to half a cell); Shift+wheel or Q/E rotate it by 5°; the handles of the
+ * selected obstacle resize it, keeping the opposite side still.
+ * Elements in an invalid position are outlined in red.
  */
 @SuppressWarnings("serial")
 public class ArenaView extends JPanel {
 
-    /** Collegamento con il motore per la modifica della scena. */
+    /** Link to the engine for scene editing. */
     public interface SceneEditor {
-        /** Si può modificare la scena adesso? (prima dell'avvio o in pausa) */
+        /** Can the scene be edited now? (before the start or while paused) */
         boolean canEdit();
         /**
-         * La scena è cambiata: ricostruire collisioni e sensori e restituire la validazione.
-         * @param finished true al rilascio del mouse / dopo una rotazione da tastiera
+         * The scene changed: rebuild collisions and sensors and return the validation.
+         * @param finished true on mouse release / after a rotation from the keyboard
          */
         CollisionDetector.Validation changed(boolean finished);
     }
@@ -91,7 +95,7 @@ public class ArenaView extends JPanel {
     private static final double ROTATION_STEP = Math.toRadians(5);
     private static final double SNAP_CELLS = 0.5;
     private static final double MIN_SIZE_CELLS = 0.5;
-    private static final double HANDLE_PX = 7;          // lato della maniglia, pixel di schermo
+    private static final double HANDLE_PX = 7;          // side of a handle, screen pixels
 
     private final ViewTransform vt = new ViewTransform();
     private final ViewOptions options;
@@ -113,23 +117,25 @@ public class ArenaView extends JPanel {
     private int selectedObstacle = -1;
     private Consumer<RobotUnit> selectionListener = r -> {};
 
-    // navigazione: tasti tenuti premuti, puntatore al bordo, robot seguito
+    // navigation: keys held down, pointer at the edge, followed robot
     private static final double EDGE_MARGIN_PX = 18;
-    private static final long EDGE_DWELL_NS = 300_000_000L;   // il puntatore deve fermarsi al bordo
-    private final boolean[] panKeys = new boolean[4];         // su, sinistra, giù, destra
+    private static final long EDGE_DWELL_NS = 300_000_000L;   // the pointer must rest at the edge
+    private final boolean[] panKeys = new boolean[4];         // up, left, down, right
     private boolean panFast;
     private Point2D edgePointer;
     private long edgeSince;
     private volatile RobotUnit followed;
     private long lastNavTick;
     private final javax.swing.Timer navTimer = new javax.swing.Timer(16, e -> navTick());
+    /** Tests switch it off and call navigate() themselves: the real timer would move the view concurrently. */
+    boolean navTimerEnabled = true;
     private final Minimap minimap = new Minimap();
     private boolean minimapDrag;
     private Runnable viewListener = () -> {};
 
     /**
-     * @param floor     pavimento (lo stesso letto dai sensori ottici, se c'è il motore)
-     * @param obstacles ostacoli dello scenario (gli stessi oggetti usati dal motore)
+     * @param floor     floor (the same one read by the floor sensors, if there is an engine)
+     * @param obstacles the scenario's obstacles (the same objects the engine uses)
      */
     public ArenaView(FloorMap floor, double arenaWidthPx, double arenaHeightPx,
                      List<Obstacle> obstacles, List<? extends RobotUnit> robots, ViewOptions options) {
@@ -159,7 +165,7 @@ public class ArenaView extends JPanel {
 
     public FloorMap getFloor() { return floor; }
 
-    /** Rettangolo di mondo (pixel) visibile ora nella vista. */
+    /** World rectangle (pixels) visible in the view now. */
     public Rectangle2D visibleWorld() {
         Point2D a = vt.toWorld(0, 0), b = vt.toWorld(getWidth(), getHeight());
         return new Rectangle2D.Double(a.getX(), a.getY(), b.getX() - a.getX(), b.getY() - a.getY());
@@ -172,7 +178,7 @@ public class ArenaView extends JPanel {
     /** Radio network and clock, for the communication layers. */
     public void setNetwork(io.github.raffaelegrandi.pianura.comm.CommNetwork net, io.github.raffaelegrandi.pianura.sim.SimClock clk) { network = net; clock = clk; }
 
-    /** Evidenzia in rosso gli elementi non validi. */
+    /** Highlights invalid elements in red. */
     public void setValidation(CollisionDetector.Validation v) {
         badObstacles = v != null ? v.badObstacles() : Set.of();
         badRobots = v != null ? v.badRobots() : Set.of();
@@ -185,12 +191,12 @@ public class ArenaView extends JPanel {
 
     public void setSelectionListener(Consumer<RobotUnit> l) { selectionListener = l != null ? l : r -> {}; }
 
-    /** Chiamato quando cambiano zoom o spostamento (per aggiornare il pannello). */
+    /** Called when zoom or panning change (to refresh the panel). */
     public void setViewListener(Runnable l) { viewListener = l != null ? l : () -> {}; }
 
     private boolean editable() { return editor != null && editor.canEdit(); }
 
-    /** Rettangolo di mondo da inquadrare: arena + muri. */
+    /** World rectangle to frame: arena + walls. */
     private Rectangle2D worldBounds() {
         double t = CollisionDetector.WALL_THICKNESS_PX;
         return new Rectangle2D.Double(-t, -t, arenaW + 2 * t, arenaH + 2 * t);
@@ -205,7 +211,7 @@ public class ArenaView extends JPanel {
         repaint();
     }
 
-    /** Zoom attorno al centro della vista. */
+    /** Zoom around the centre of the view. */
     public void zoom(double factor) {
         vt.zoomAt(factor, getWidth() / 2.0, getHeight() / 2.0);
         clampView();
@@ -214,7 +220,7 @@ public class ArenaView extends JPanel {
         repaint();
     }
 
-    /** Scala 1:1 (un pixel di mondo = un pixel di schermo), centrata sul centro della vista. */
+    /** 1:1 scale (one world pixel = one screen pixel), centred on the centre of the view. */
     public void actualSize() {
         vt.setScaleAt(1.0, getWidth() / 2.0, getHeight() / 2.0);
         autoFit = false;
@@ -242,8 +248,21 @@ public class ArenaView extends JPanel {
     }
 
     // ------------------------------------------------------------------
-    //  Modifica della scena
+    //  Scene editing
     // ------------------------------------------------------------------
+
+    /**
+     * The obstacles list was replaced (scene opened from file): forget the selection and the
+     * trails, recompute the outlines. On the EDT.
+     */
+    public void obstaclesReplaced() {
+        selectedObstacle = -1;
+        badObstacles = Set.of();
+        badRobots = Set.of();
+        trails.clear();
+        refreshOutlines();
+        repaint();
+    }
 
     private void refreshOutlines() {
         List<Shape> list = new ArrayList<>(obstacles.size());
@@ -253,7 +272,7 @@ public class ArenaView extends JPanel {
 
     private int obstacleAt(Point2D w) {
         List<Shape> ol = outlines;
-        for (int i = ol.size() - 1; i >= 0; i--) {   // l'ultimo disegnato è quello sopra
+        for (int i = ol.size() - 1; i >= 0; i--) {   // the last one drawn is the one on top
             if (ol.get(i) != null && ol.get(i).contains(w)) return i;
         }
         return -1;
@@ -270,7 +289,7 @@ public class ArenaView extends JPanel {
         return best;
     }
 
-    /** Posizione del centro in celle dell'elemento trascinato. */
+    /** Position of the centre, in cells, of the dragged element. */
     private static Position centerOf(Object target) {
         if (target instanceof RobotUnit r) return r.getPosition();
         return ((Obstacle) target).getID().getPos();
@@ -308,7 +327,7 @@ public class ArenaView extends JPanel {
         repaint();
     }
 
-    /** Elemento selezionato da ruotare con Q/E, oppure null. */
+    /** Selected element to rotate with Q/E, or null. */
     private Object selectedTarget() {
         if (selected != null) return selected;
         if (selectedObstacle >= 0 && selectedObstacle < obstacles.size()) return obstacles.get(selectedObstacle);
@@ -316,13 +335,13 @@ public class ArenaView extends JPanel {
     }
 
     // ------------------------------------------------------------------
-    //  Maniglie di ridimensionamento
+    //  Resize handles
     // ------------------------------------------------------------------
 
-    /** Posizioni delle 8 maniglie nel riferimento locale dell'ostacolo, in unità di semi-dimensione. */
+    /** Positions of the 8 handles in the obstacle's local frame, in half-size units. */
     private static final int[][] HANDLES = { {-1,-1}, {0,-1}, {1,-1}, {1,0}, {1,1}, {0,1}, {-1,1}, {-1,0} };
 
-    /** Centro della maniglia k dell'ostacolo i, in pixel di mondo. */
+    /** Centre of handle k of obstacle i, in world pixels. */
     private Point2D handlePos(int i, int k) {
         ObjectID id = obstacles.get(i).getID();
         Position p = id.getPos();
@@ -332,7 +351,7 @@ public class ArenaView extends JPanel {
         return new Point2D.Double(p.x * Const.cellSize + c * lx - s * ly, p.y * Const.cellSize + s * lx + c * ly);
     }
 
-    /** Maniglia sotto il punto di schermo, o -1 (solo per l'ostacolo selezionato). */
+    /** Handle under the screen point, or -1 (selected obstacle only). */
     private int handleAt(double sx, double sy) {
         int i = selectedObstacle;
         if (i < 0 || i >= obstacles.size()) return -1;
@@ -343,17 +362,17 @@ public class ArenaView extends JPanel {
         return -1;
     }
 
-    /** Cursore di ridimensionamento orientato come la maniglia (tiene conto della rotazione). */
+    /** Resize cursor oriented like the handle (rotation included). */
     private Cursor resizeCursor(int i, int k) {
         ObjectID id = obstacles.get(i).getID();
         double a = Math.atan2(HANDLES[k][1], HANDLES[k][0]) + id.getAngle();
-        int oct = (int) Math.round(normalize(a) / (Math.PI / 4)) % 8;   // 0 = est, poi in senso orario (y verso il basso)
+        int oct = (int) Math.round(normalize(a) / (Math.PI / 4)) % 8;   // 0 = east, then clockwise (y down)
         int[] cursors = { Cursor.E_RESIZE_CURSOR, Cursor.SE_RESIZE_CURSOR, Cursor.S_RESIZE_CURSOR, Cursor.SW_RESIZE_CURSOR,
                           Cursor.W_RESIZE_CURSOR, Cursor.NW_RESIZE_CURSOR, Cursor.N_RESIZE_CURSOR, Cursor.NE_RESIZE_CURSOR };
         return Cursor.getPredefinedCursor(cursors[oct]);
     }
 
-    /** Stato iniziale di un ridimensionamento: il lato opposto alla maniglia resta fermo. */
+    /** Initial state of a resize: the side opposite the handle stays still. */
     private record ResizeStart(int obstacle, int handle, double cx, double cy, double angle, double w, double h) {}
 
     private ResizeStart startResize(int i, int k) {
@@ -366,12 +385,12 @@ public class ArenaView extends JPanel {
     private void applyResize(ResizeStart r, Point2D mouseWorld, boolean snap) {
         double c = Math.cos(r.angle()), s = Math.sin(r.angle());
         double dx = mouseWorld.getX() - r.cx(), dy = mouseWorld.getY() - r.cy();
-        double lx = c * dx + s * dy, ly = -s * dx + c * dy;   // mouse nel riferimento locale iniziale
+        double lx = c * dx + s * dy, ly = -s * dx + c * dy;   // mouse in the initial local frame
         int sx = HANDLES[r.handle()][0], sy = HANDLES[r.handle()][1];
         double min = MIN_SIZE_CELLS * Const.cellSize, snapPx = SNAP_CELLS * Const.cellSize;
         double w = r.w(), h = r.h(), cxl = 0, cyl = 0;
         if (sx != 0) {
-            double ox = -sx * r.w() / 2;                       // lato opposto, fermo
+            double ox = -sx * r.w() / 2;                       // opposite side, still
             w = Math.max(min, sx * (lx - ox));
             if (snap) w = Math.max(min, Math.round(w / snapPx) * snapPx);
             cxl = ox + sx * w / 2;
@@ -389,16 +408,16 @@ public class ArenaView extends JPanel {
     }
 
     // ------------------------------------------------------------------
-    //  Mouse e tastiera
+    //  Mouse and keyboard
     // ------------------------------------------------------------------
 
     private void installMouse() {
         MouseAdapter m = new MouseAdapter() {
             private Point2D last;
             private boolean dragged;
-            private Object dragTarget;        // ostacolo o robot trascinato, null = spostamento della vista
-            private double grabDx, grabDy;    // distanza (pixel di mondo) tra il punto preso e il centro
-            private ResizeStart resizing;     // ridimensionamento in corso con una maniglia
+            private Object dragTarget;        // dragged obstacle or robot, null = panning the view
+            private double grabDx, grabDy;    // distance (world pixels) between the grabbed point and the centre
+            private ResizeStart resizing;     // resize in progress with a handle
 
             @Override public void mousePressed(MouseEvent e) {
                 edgePointer = null;
@@ -447,7 +466,7 @@ public class ArenaView extends JPanel {
                 } else {
                     vt.pan(e.getX() - last.getX(), e.getY() - last.getY());
                     clampView();
-                    followed = null;                 // spostare la vista a mano smette di seguire
+                    followed = null;                 // panning by hand stops following
                     autoFit = false;
                     viewListener.run();
                     repaint();
@@ -538,7 +557,7 @@ public class ArenaView extends JPanel {
         });
     }
 
-    /** W A S D: premuto = la vista si muove finché il tasto resta giù (anche con Maiusc). */
+    /** W A S D: held down = the view moves while the key stays down (Shift too). */
     private void bindPan(int key, int dir) {
         for (int mod : new int[] { 0, InputEvent.SHIFT_DOWN_MASK }) {
             boolean fast = mod != 0;
@@ -550,10 +569,10 @@ public class ArenaView extends JPanel {
     }
 
     // ------------------------------------------------------------------
-    //  Navigazione
+    //  Navigation
     // ------------------------------------------------------------------
 
-    /** Segue il robot (null = smette): la vista lo tiene al centro mentre si muove. */
+    /** Follows the robot (null = stop): the view keeps it in the centre while it moves. */
     public void follow(RobotUnit r) {
         followed = r;
         if (r != null) { autoFit = false; startNav(); }
@@ -562,7 +581,7 @@ public class ArenaView extends JPanel {
 
     public RobotUnit getFollowed() { return followed; }
 
-    /** Porta il punto di mondo (pixel) al centro della vista, senza cambiare lo zoom. */
+    /** Brings the world point (pixels) to the centre of the view, without changing the zoom. */
     public void centerOn(double wx, double wy) {
         vt.centerOn(wx, wy, getWidth(), getHeight());
         clampView();
@@ -573,17 +592,17 @@ public class ArenaView extends JPanel {
     }
 
     // ------------------------------------------------------------------
-    //  Minimappa
+    //  Minimap
     // ------------------------------------------------------------------
 
-    /** La minimappa si vede se è attiva e l'arena non sta già tutta nella vista. */
+    /** The minimap shows when it is enabled and the arena does not already fit in the view. */
     public boolean minimapVisible() {
         if (!options.minimap || getWidth() < 3 * Minimap.MAX_SIDE / 2 || getHeight() < Minimap.MAX_SIDE) return false;
         Rectangle2D v = visibleWorld();
         return !(v.getMinX() <= 0 && v.getMinY() <= 0 && v.getMaxX() >= arenaW && v.getMaxY() >= arenaH);
     }
 
-    /** Rettangolo di schermo della minimappa. */
+    /** Screen rectangle of the minimap. */
     public java.awt.Rectangle minimapBounds() { return Minimap.bounds(getWidth(), getHeight(), arenaW, arenaH); }
 
     private boolean overMinimap(double x, double y) {
@@ -593,7 +612,7 @@ public class ArenaView extends JPanel {
         return b.contains(x, y);
     }
 
-    /** Clic o trascinamento sulla minimappa: la vista va lì (stesso zoom). */
+    /** Click or drag on the minimap: the view goes there (same zoom). */
     void centerFromMinimap(double x, double y) {
         Point2D w = Minimap.toWorld(minimapBounds(), x, y, arenaW, arenaH);
         centerOn(w.getX(), w.getY());
@@ -610,7 +629,7 @@ public class ArenaView extends JPanel {
         minimap.paint(g, minimapBounds(), arenaW, arenaH, floor, outlines, pts, hl, visibleWorld());
     }
 
-    /** Il centro della vista resta dentro l'arena. */
+    /** The centre of the view stays inside the arena. */
     private void clampView() {
         if (getWidth() > 0 && getHeight() > 0) vt.clampCenter(new Rectangle2D.Double(0, 0, arenaW, arenaH), getWidth(), getHeight());
     }
@@ -625,10 +644,10 @@ public class ArenaView extends JPanel {
     }
 
     private void startNav() {
-        if (!navTimer.isRunning()) { lastNavTick = 0; navTimer.start(); }
+        if (navTimerEnabled && !navTimer.isRunning()) { lastNavTick = 0; navTimer.start(); }
     }
 
-    /** Un passo di navigazione (~60 al secondo) finché c'è qualcosa che muove la vista. */
+    /** One navigation step (~60 per second) while something moves the view. */
     private void navTick() {
         long now = System.nanoTime();
         double dt = lastNavTick == 0 ? 0.016 : Math.min(0.1, (now - lastNavTick) / 1e9);
@@ -636,7 +655,7 @@ public class ArenaView extends JPanel {
         if (!navigate(now, dt)) { navTimer.stop(); lastNavTick = 0; }
     }
 
-    /** Tasto di spostamento W/A/S/D (0 = su, 1 = sinistra, 2 = giù, 3 = destra) premuto o rilasciato. */
+    /** Panning key W/A/S/D (0 = up, 1 = left, 2 = down, 3 = right) pressed or released. */
     void setPanKey(int dir, boolean down, boolean fast) {
         panKeys[dir] = down;
         panFast = fast;
@@ -644,8 +663,8 @@ public class ArenaView extends JPanel {
     }
 
     /**
-     * Muove la vista di {@code dt} secondi (tasti, bordo, robot seguito).
-     * @return true se c'è ancora qualcosa che la muove
+     * Moves the view by {@code dt} seconds (keys, edge, followed robot).
+     * @return true if something is still moving it
      */
     boolean navigate(long now, double dt) {
         int kx = (panKeys[3] ? 1 : 0) - (panKeys[1] ? 1 : 0);
@@ -662,7 +681,7 @@ public class ArenaView extends JPanel {
         }
         boolean moved = false;
         if (keys || edge) {
-            // velocità in pixel di schermo al secondo: attraversare la vista in poco più di un secondo
+            // speed in screen pixels per second: crossing the view in little more than a second
             double speed = 0.8 * Math.max(getWidth(), getHeight()) * (fast ? 3 : 1);
             double norm = (kx != 0 && ky != 0) ? Math.sqrt(0.5) : 1;
             vt.pan(-kx * speed * norm * dt, -ky * speed * norm * dt);
@@ -696,7 +715,7 @@ public class ArenaView extends JPanel {
     }
 
     // ------------------------------------------------------------------
-    //  Disegno
+    //  Drawing
     // ------------------------------------------------------------------
 
     @Override
@@ -710,9 +729,9 @@ public class ArenaView extends JPanel {
 
         AffineTransform screen = g.getTransform();
         g.transform(vt.asAffine());
-        double px = 1 / vt.getScale();   // un pixel di schermo in unità di mondo
+        double px = 1 / vt.getScale();   // one screen pixel in world units
 
-        // posizioni lette una volta sola per frame: tutti i livelli disegnano lo stesso istante
+        // positions read once per frame: every layer draws the same instant
         List<RobotUnit> rs = robots;
         Position[] pos = new Position[rs.size()];
         for (int i = 0; i < pos.length; i++) pos[i] = rs.get(i).getPosition();
@@ -727,10 +746,13 @@ public class ArenaView extends JPanel {
         if (options.trails) paintTrails(g, rs, px);
         if (options.sensorRange) paintSensorRanges(g, rs, pos, px);
         if (options.sensorRays) paintRays(g, rs, pos, px);
+        List<RobotUnit> drawers = options.drawings ? drawingRobots(rs) : List.of();
+        for (RobotUnit r : drawers) paintDrawings(g, r, px);
         for (int i = 0; i < rs.size(); i++) paintRobot(g, rs.get(i), pos[i], px);
         if (options.floorSensors) paintFloorSensors(g, rs, px);
 
         g.setTransform(screen);
+        for (RobotUnit r : drawers) paintDrawingTexts(g, r);
         if (options.ids) paintLabels(g, rs, pos);
         if (editable()) paintEditHint(g);
         if (minimapVisible()) paintMinimap(g, rs, pos);
@@ -738,9 +760,9 @@ public class ArenaView extends JPanel {
     }
 
     /**
-     * Pavimento: prima la panoramica (sempre pronta), poi, se lo zoom lo richiede, i riquadri
-     * visibili del livello adatto. I riquadri non ancora pronti vengono disegnati in background
-     * e compaiono al frame successivo: nel frattempo si vede la panoramica.
+     * Floor: first the overview (always ready), then, if the zoom calls for it, the visible tiles
+     * of the suitable level. Tiles not ready yet are drawn in the background and appear at the
+     * next frame: meanwhile the overview shows.
      */
     private void paintFloor(Graphics2D g) {
         FloorMap fm = floor;
@@ -749,7 +771,7 @@ public class ArenaView extends JPanel {
         double so = fm.levelScale(top);
         g.drawImage(fm.overview(), AffineTransform.getScaleInstance(1 / so, 1 / so), null);
         int k = fm.levelFor(vt.getScale());
-        fm.cancelPending();                       // servono solo i riquadri di questo frame
+        fm.cancelPending();                       // only this frame's tiles are needed
         if (k == top) return;
         double s = fm.levelScale(k);
         Rectangle2D v = visibleWorld();
@@ -776,7 +798,7 @@ public class ArenaView extends JPanel {
         Rectangle2D v = visibleWorld();
         for (int i = 0; i < ol.size() && i < obstacles.size(); i++) {
             Shape o = ol.get(i);
-            if (o != null && !o.getBounds2D().intersects(v)) continue;   // fuori dalla vista
+            if (o != null && !o.getBounds2D().intersects(v)) continue;   // outside the view
             ArenaFloorPanel.paintObstacle(g, obstacles.get(i), o);
         }
         BasicStroke dashed = new BasicStroke((float) (2.5 * px), BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER,
@@ -794,7 +816,7 @@ public class ArenaView extends JPanel {
     }
 
     private void paintHandles(Graphics2D g, int i, double px) {
-        double hs = HANDLE_PX * px;   // dimensione costante sullo schermo
+        double hs = HANDLE_PX * px;   // constant size on screen
         g.setStroke(new BasicStroke((float) px));
         for (int k = 0; k < HANDLES.length; k++) {
             Point2D h = handlePos(i, k);
@@ -882,10 +904,10 @@ public class ArenaView extends JPanel {
 
     private void paintGrid(Graphics2D g, double px) {
         double c = Const.cellSize;
-        if (c / px < 5) return;   // celle troppo piccole sullo schermo: griglia illeggibile
+        if (c / px < 5) return;   // cells too small on screen: the grid would be unreadable
         g.setColor(new Color(0, 0, 0, 45));
         g.setStroke(new BasicStroke((float) px));
-        Rectangle2D v = visibleWorld();   // solo le linee visibili
+        Rectangle2D v = visibleWorld();   // visible lines only
         double y0 = Math.max(0, v.getMinY()), y1 = Math.min(arenaH, v.getMaxY());
         double x0 = Math.max(0, v.getMinX()), x1 = Math.min(arenaW, v.getMaxX());
         for (double x = Math.max(1, Math.ceil(x0 / c)) * c; x < x1; x += c) g.draw(new Line2D.Double(x, y0, x, y1));
@@ -897,7 +919,7 @@ public class ArenaView extends JPanel {
             ArrayDeque<Point2D> tr = trails.computeIfAbsent(rs.get(i), k -> new ArrayDeque<>());
             Point2D p = new Point2D.Double(pos[i].x * Const.cellSize, pos[i].y * Const.cellSize);
             Point2D lastP = tr.peekLast();
-            if (lastP != null && lastP.distance(p) > 3 * Const.cellSize) tr.clear();   // robot spostato a mano
+            if (lastP != null && lastP.distance(p) > 3 * Const.cellSize) tr.clear();   // robot moved by hand
             if (lastP == null || lastP.distance(p) >= 1.5) {
                 tr.addLast(p);
                 if (tr.size() > TRAIL_MAX) tr.removeFirst();
@@ -924,7 +946,7 @@ public class ArenaView extends JPanel {
     private static Color trailColor(RobotUnit r) {
         Color c = r.getUnitObject().getID().getColor();
         if (c == null || (c.getRed() + c.getGreen() + c.getBlue()) < 120) {
-            // robot neri: colore distinto per robot, così le scie si distinguono
+            // black robots: a distinct color per robot, so the trails can be told apart
             return Color.getHSBColor((r.getIDnum() * 0.137f) % 1f, 0.75f, 0.85f);
         }
         return c;
@@ -966,7 +988,72 @@ public class ArenaView extends JPanel {
         }
     }
 
-    /** Robot: disco, anello e marcatore di direzione, posati con traslazione + rotazione. */
+    // ------------------------------------------------------------------ debug drawings (robot.viz)
+
+    private List<RobotUnit> drawingRobots(List<RobotUnit> rs) {
+        if (!options.drawingsSelectedOnly) return rs;
+        RobotUnit s = selected;
+        return s == null ? List.of() : List.of(s);
+    }
+
+    private static final Font DRAWING_FONT = new Font(Font.SANS_SERIF, Font.PLAIN, 11);
+
+    /** Shapes of every layer of the robot, in world coordinates (text apart: see paintDrawingTexts). */
+    private void paintDrawings(Graphics2D g, RobotUnit r, double px) {
+        double k = Const.cellSize;
+        for (List<io.github.raffaelegrandi.pianura.viz.Shape> layer : r.getDrawings().values()) {
+            for (io.github.raffaelegrandi.pianura.viz.Shape s : layer) {
+                g.setColor(s.color());
+                g.setStroke(new BasicStroke((float) (s.width() * px), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                switch (s.kind()) {
+                    case POINT -> {
+                        double d = Math.max(2.5 * px, s.width() * 1.5 * px);
+                        g.fill(new Ellipse2D.Double(s.c(0) * k - d, s.c(1) * k - d, 2 * d, 2 * d));
+                    }
+                    case LINE -> g.draw(new Line2D.Double(s.c(0) * k, s.c(1) * k, s.c(2) * k, s.c(3) * k));
+                    case ARROW -> {
+                        Point2D a = new Point2D.Double(s.c(0) * k, s.c(1) * k), b = new Point2D.Double(s.c(2) * k, s.c(3) * k);
+                        double head = Math.max(7, 4 * s.width()) * px;
+                        double len = a.distance(b);
+                        if (len > head) {   // the line stops at the base of the head, so the tip stays sharp
+                            double f = (len - head * 0.8) / len;
+                            g.draw(new Line2D.Double(a.getX(), a.getY(), a.getX() + (b.getX() - a.getX()) * f, a.getY() + (b.getY() - a.getY()) * f));
+                        }
+                        paintArrowHead(g, a, b, 0, Math.min(head, len));
+                    }
+                    case CIRCLE -> g.draw(new Ellipse2D.Double((s.c(0) - s.c(2)) * k, (s.c(1) - s.c(2)) * k, 2 * s.c(2) * k, 2 * s.c(2) * k));
+                    case DISC -> g.fill(new Ellipse2D.Double((s.c(0) - s.c(2)) * k, (s.c(1) - s.c(2)) * k, 2 * s.c(2) * k, 2 * s.c(2) * k));
+                    case RECT -> g.fill(new Rectangle2D.Double(s.c(0) * k, s.c(1) * k, s.c(2) * k, s.c(3) * k));
+                    case POLYLINE, POLYGON -> {
+                        Path2D p = new Path2D.Double();
+                        p.moveTo(s.c(0) * k, s.c(1) * k);
+                        for (int i = 2; i + 1 < s.size(); i += 2) p.lineTo(s.c(i) * k, s.c(i + 1) * k);
+                        if (s.kind() == io.github.raffaelegrandi.pianura.viz.Shape.Kind.POLYGON) p.closePath();
+                        g.draw(p);
+                    }
+                    case TEXT -> {}   // in screen coordinates, after the robots
+                }
+            }
+        }
+    }
+
+    /** Text of the drawings, in screen coordinates: readable at any zoom, with a light halo. */
+    private void paintDrawingTexts(Graphics2D g, RobotUnit r) {
+        g.setFont(DRAWING_FONT);
+        for (List<io.github.raffaelegrandi.pianura.viz.Shape> layer : r.getDrawings().values()) {
+            for (io.github.raffaelegrandi.pianura.viz.Shape s : layer) {
+                if (s.kind() != io.github.raffaelegrandi.pianura.viz.Shape.Kind.TEXT) continue;
+                Point2D p = vt.toScreen(s.c(0) * Const.cellSize, s.c(1) * Const.cellSize);
+                float x = (float) p.getX(), y = (float) p.getY();
+                g.setColor(new Color(255, 255, 255, 170));
+                for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) if (dx != 0 || dy != 0) g.drawString(s.text(), x + dx, y + dy);
+                g.setColor(s.color());
+                g.drawString(s.text(), x, y);
+            }
+        }
+    }
+
+    /** Robot: disc, ring and heading marker, placed with translation + rotation. */
     private void paintRobot(Graphics2D g, RobotUnit r, Position p, double px) {
         double R = Const.unitRadius;
         AffineTransform saved = g.getTransform();
@@ -974,7 +1061,7 @@ public class ArenaView extends JPanel {
         g.rotate(p.theta);
 
         Color body = r.getUnitObject().getID().getColor();
-        if (!r.isActive()) body = blend(body, Color.GRAY, 0.6);   // fermo / guasto
+        if (!r.isActive()) body = blend(body, Color.GRAY, 0.6);   // stopped / faulty
         if (r == selected || badRobots.contains(r.getUnitObject())) {
             g.setColor(r == selected ? SELECTION : INVALID);
             g.setStroke(new BasicStroke((float) Math.max(2.5 * px, 1.2)));
@@ -986,11 +1073,11 @@ public class ArenaView extends JPanel {
         g.setTransform(saved);
     }
 
-    /** Sensori ottici: pallino con il colore letto, contorno bianco e nero per vederlo su qualsiasi fondo. */
+    /** Floor sensors: a dot with the color read, white and black outline to see it on any floor. */
     private void paintFloorSensors(Graphics2D g, List<RobotUnit> rs, double px) {
         for (RobotUnit r : rs) {
             io.github.raffaelegrandi.pianura.units.sensors.FloorSensorArray fs = r.getUnitObject().getFloorSensors();
-            double d = Math.max(fs.getLayout().footprintPx(), 1.0);   // pallino = area sensibile reale
+            double d = Math.max(fs.getLayout().footprintCells() * Const.cellSize, 1.0);   // dot = real sensitive area
             for (int k = 0; k < fs.count(); k++) {
                 Point2D p = fs.getPosition(k);
                 if (p == null) continue;
@@ -1008,12 +1095,12 @@ public class ArenaView extends JPanel {
     }
 
     /**
-     * Etichette dei robot in coordinate di schermo: restano dritte e leggibili a qualsiasi zoom.
-     * Stanno in alto a sinistra a 45°, a {@code ViewOptions.labelDistanceFromCenter} raggi dal centro.
+     * Robot labels in screen coordinates: upright and readable at any zoom. They sit at the
+     * top left at 45°, {@code ViewOptions.labelDistanceFromCenter} radii from the centre.
      */
     private void paintLabels(Graphics2D g, List<RobotUnit> rs, Position[] pos) {
         double rScreen = Const.unitRadius * vt.getScale();
-        if (rScreen < 4) return;   // robot troppo piccoli: le etichette coprirebbero tutto
+        if (rScreen < 4) return;   // robots too small: the labels would cover everything
         double dist = options.labelDistanceFromCenter;
         for (int i = 0; i < rs.size(); i++) {
             double cx = pos[i].x * Const.cellSize, cy = pos[i].y * Const.cellSize;
@@ -1042,7 +1129,7 @@ public class ArenaView extends JPanel {
                          (int) (a.getBlue() * (1 - t) + b.getBlue() * t));
     }
 
-    /** Solo per i test: stato della vista. */
+    /** Tests only: state of the view. */
     Set<Integer> badObstaclesForTest() { return Collections.unmodifiableSet(badObstacles); }
 
 }

@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.examples.obstacles;
 
 import java.awt.Point;
@@ -10,7 +13,7 @@ public class Main {
 	public static void main(String[] args) {
 		scenario = new ObstaclesScenario();
 		Simulator simManager = new Simulator(new Point(30,30), "Pianura - obstacles", scenario);
-		simManager.startSimPaused();	// parte in pausa: sistemare la scena, poi Run (o Spazio)
+		simManager.startSimPaused();	// starts paused: arrange the scene, then Run (or Space)
 	}//end main
 
 }//end class

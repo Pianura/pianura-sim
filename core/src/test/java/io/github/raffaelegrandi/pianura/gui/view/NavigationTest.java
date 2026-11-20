@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.gui.view;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,6 +32,7 @@ class NavigationTest {
         ArenaView v = new ArenaView(new FloorMap(FloorStyle.plain(Color.WHITE), W, H, 1), W, H, List.of(),
             r == null ? List.of() : List.of(r), new ViewOptions());
         v.setSize(800, 600);
+        v.navTimerEnabled = false;   // the test drives navigate() with its own clock
         v.getTransform().setScaleAt(1, 0, 0);
         v.centerOn(W / 2, H / 2);
         return v;

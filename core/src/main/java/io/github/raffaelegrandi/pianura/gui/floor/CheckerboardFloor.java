@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.gui.floor;
 
 import java.awt.Color;
@@ -6,8 +9,7 @@ import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 
 /**
- * Pavimento a scacchiera. Il quadrato in alto a sinistra ha il colore {@code c2}
- * (come nella versione originale di JUSE).
+ * Checkerboard floor. The top-left square has color {@code c2} (as in the original JUSE).
  */
 public class CheckerboardFloor implements FloorStyle {
 
@@ -23,7 +25,7 @@ public class CheckerboardFloor implements FloorStyle {
         this.banner = banner;
     }
 
-    /** Colore del quadrato in riga {@code row}, colonna {@code col}. */
+    /** Color of the square at row {@code row}, column {@code col}. */
     public Color colorAt(int row, int col) {
         return ((row + col) % 2 == 0) ? c2 : c1;
     }
@@ -45,7 +47,7 @@ public class CheckerboardFloor implements FloorStyle {
         for (int r = r0; r <= r1; r++) {
             for (int c = c0; c <= c1; c++) {
                 g.setColor(colorAt(r, c));
-                // arrotondamento sui bordi: niente fessure tra quadrati con lato non intero
+                // rounding on the edges: no gaps between squares with a non-integer side
                 int qx0 = (int) Math.round(c * s), qy0 = (int) Math.round(r * s);
                 int qx1 = (int) Math.round((c + 1) * s), qy1 = (int) Math.round((r + 1) * s);
                 g.fillRect(qx0, qy0, qx1 - qx0, qy1 - qy0);
@@ -55,7 +57,7 @@ public class CheckerboardFloor implements FloorStyle {
         g.dispose();
     }
 
-    /** "PIANURA" nella penultima riga, una lettera per quadrato, nel colore opposto al quadrato. */
+    /** "PIANURA" on the second-to-last row, one letter per square, in the square's opposite color. */
     private void paintBanner(Graphics2D g, int rows, int cols, double s) {
         String text = "PIANURA";
         int row = rows - 2, firstCol = cols - 1 - text.length();

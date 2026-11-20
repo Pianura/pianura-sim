@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.gui.view;
 
 import java.util.Locale;
@@ -66,10 +69,10 @@ public class ConnectivityWindow extends JFrame {
     private final Timer timer;
 
     private ConnectivityGraph shown = ConnectivityGraph.empty();
-    // celle che lampeggiano: chiave "da>a" (id dei robot) → [istante di fine (ms), 1 = nato / 0 = rotto]
+    // blinking cells: key "from>to" (robot ids) → [end instant (ms), 1 = new / 0 = broken]
     private final Map<String, long[]> flashes = new HashMap<>();
     private Set<String> previousLinks = new HashSet<>();
-    private final Map<String, Long> newLinkFlash = new HashMap<>();   // colonne di incidenza nuove
+    private final Map<String, Long> newLinkFlash = new HashMap<>();   // new incidence columns
 
     public ConnectivityWindow(CommNetwork network, SimClock clock, List<? extends RobotUnit> robots,
                               double arenaWidthPx, double arenaHeightPx) {
@@ -117,7 +120,7 @@ public class ConnectivityWindow extends JFrame {
         refresh();
     }
 
-    // ------------------------------------------------------------------ aggiornamento
+    // ------------------------------------------------------------------ update
 
     private static String key(int from, int to) { return from + ">" + to; }
 
@@ -165,7 +168,7 @@ public class ConnectivityWindow extends JFrame {
         return g;
     }
 
-    // ------------------------------------------------------------------ grafo
+    // ------------------------------------------------------------------ graph
 
     private class GraphPanel extends JPanel {
         GraphPanel() {
@@ -202,7 +205,7 @@ public class ConnectivityWindow extends JFrame {
             Graphics2D g = smooth(g0);
             ConnectivityGraph gr = shown;
             Point2D[] p = layoutNodes(gr);
-            if (layout.getSelectedIndex() == 0) {   // contorno dell'arena
+            if (layout.getSelectedIndex() == 0) {   // outline of the arena
                 double w = getWidth(), h = getHeight(), m = 30;
                 double s = Math.min((w - 2 * m) / arenaW, (h - 2 * m) / arenaH);
                 g.setColor(new Color(220, 220, 220));
@@ -251,7 +254,7 @@ public class ConnectivityWindow extends JFrame {
         }
     }
 
-    // ------------------------------------------------------------------ matrice
+    // ------------------------------------------------------------------ matrix
 
     private class MatrixPanel extends JPanel {
         static final int CELL = 24, HEAD = 34;
@@ -284,7 +287,7 @@ public class ConnectivityWindow extends JFrame {
             int[][] m = incidence() ? gr.incidence() : gr.adjacency();
             final int TOP = top();
 
-            // intestazioni
+            // headers
             g.setColor(new Color(70, 70, 70));
             for (int i = 0; i < n; i++) {
                 String t = String.valueOf(gr.id(i));
@@ -310,7 +313,7 @@ public class ConnectivityWindow extends JFrame {
                     }
                     g.setColor(bg);
                     g.fillRect(x, y, CELL, CELL);
-                    // lampeggio delle celle cambiate
+                    // blinking of the changed cells
                     long[] f = null;
                     if (!incidence()) f = flashes.get(key(gr.id(i), gr.id(c)));
                     else {

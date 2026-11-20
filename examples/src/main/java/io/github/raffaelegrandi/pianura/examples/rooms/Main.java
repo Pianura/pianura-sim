@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.examples.rooms;
 
 import java.awt.Point;
@@ -8,7 +11,7 @@ public class Main {
 
 	public static void main(String[] args) {
 		Simulator sim = new Simulator(new Point(30, 30), "Pianura - arena 80x50", new RoomsScenario());
-		sim.startSimPaused();	// parte in pausa: sistemare la scena, poi Run (o Spazio)
+		sim.startSimPaused();	// starts paused: arrange the scene, then Run (or Space)
 	}
 
 }

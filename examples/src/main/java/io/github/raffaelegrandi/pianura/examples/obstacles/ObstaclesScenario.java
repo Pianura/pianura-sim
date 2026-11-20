@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.examples.obstacles;
 
 import io.github.raffaelegrandi.pianura.algorithms.iravoidance.IrAvoider;
@@ -19,38 +22,39 @@ public class ObstaclesScenario extends ScenarioManager {
 	private void buildRobotsVector(){
 		addRobot(new IrAvoider(1,new Position(7,17,Math.toRadians(90)),2));
 		addRobot(new IrAvoider(2,new Position(10,20,0),2));
-		addRobot(new IrAvoider(3,new Position(11,12,0),2));
+		// was (11,12): with the yellow square turned by 30 degrees its corner reaches y = 11.8
+		addRobot(new IrAvoider(3,new Position(11,13,0),2));
 		addRobot(new IrAvoider(4,new Position(5,15,0),2));
 		addRobot(new IrAvoider(5,new Position(17,19,0),2));
 		addRobot(new IrAvoider(6,new Position(21,30,0),2));
 		addRobot(new IrAvoider(7,new Position(30,18,0),2));
 		addRobot(new IrAvoider(8,new Position(31,12,0),2));
-		// era (33,12): a contatto con il robot 8 (centri a 2 celle = somma dei raggi)
+		// was (33,12): touching robot 8 (centres 2 cells apart = sum of the radii)
 		addRobot(new IrAvoider(9,new Position(34,12,0),2));
 	}//buildRobotsVector
 
 	private void buildObstaclesVector(){
-		// Rettangoli: la posizione era già il centro, invariati
-		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_RECT,Color.YELLOW,new Position(10,5,30),new Dimension(10,10)));
+		// Rectangles: the position was already the centre, unchanged
+		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_RECT,Color.YELLOW,new Position(10,5,Math.toRadians(30)),new Dimension(10,10)));
 
-		// Ovali: posizione aggiornata a centro (vecchio top-left + dim/2)
-		// ex (30,5) dim(3,3)  → centro (31.5, 6.5)
+		// Ovals: position moved to the centre (old top-left + dim/2)
+		// ex (30,5) dim(3,3)  → centre (31.5, 6.5)
 		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_OVAL,Color.WHITE,new Position(31.5,6.5,0),new Dimension(3,3)));
-		// ex (20,5) dim(3,3)  → centro (21.5, 6.5)
+		// ex (20,5) dim(3,3)  → centre (21.5, 6.5)
 		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_OVAL,Color.WHITE,new Position(21.5,6.5,0),new Dimension(3,3)));
-		// ex (20,15) dim(4,4) → centro (22.0, 17.0)
+		// ex (20,15) dim(4,4) → centre (22.0, 17.0)
 		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_OVAL,Color.WHITE,new Position(22.0,17.0,0),new Dimension(4,4)));
-		// ex (11,15) dim(3,3) → centro (12.5, 16.5)
+		// ex (11,15) dim(3,3) → centre (12.5, 16.5)
 		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_OVAL,Color.WHITE,new Position(12.5,16.5,0),new Dimension(3,3)));
-		// ex (30,5) dim(3,3)  → centro (31.5, 6.5)  [duplicato del primo oval]
+		// ex (30,5) dim(3,3)  → centre (31.5, 6.5)  [duplicate of the first oval]
 		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_OVAL,Color.WHITE,new Position(31.5,6.5,0),new Dimension(3,3)));
 
-		// Rettangoli: invariati
-		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_RECT,Color.WHITE,new Position(20,35,20),new Dimension(5,8)));
-		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_RECT,Color.RED,new Position(30,37,30),new Dimension(2,15)));
-		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_RECT,Color.BLUE,new Position(30,25,10),new Dimension(7,7)));
+		// Rectangles: unchanged
+		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_RECT,Color.WHITE,new Position(20,35,Math.toRadians(20)),new Dimension(5,8)));
+		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_RECT,Color.RED,new Position(30,37,Math.toRadians(30)),new Dimension(2,15)));
+		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_RECT,Color.BLUE,new Position(30,25,Math.toRadians(10)),new Dimension(7,7)));
 
-		// ex (8,28) dim(6,3)  → centro (11.0, 29.5)
+		// ex (8,28) dim(6,3)  → centre (11.0, 29.5)
 		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_OVAL,Color.WHITE,new Position(11.0,29.5,0),new Dimension(6,3)));
 	}//buildObstaclesVector
 

@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.gui.floor;
 
 import java.awt.Color;
@@ -5,9 +8,8 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 
 /**
- * Piastrelle quadrate con tonalità leggermente diverse, un po' di grana e fughe scure.
- * Generato proceduralmente: con lo stesso seed il pavimento è sempre identico,
- * e si può disegnare a riquadri senza giunture.
+ * Square tiles in slightly different tones, with some grain and dark grout. Procedural:
+ * with the same seed the floor is always identical, and it can be drawn in tiles without seams.
  */
 public class RandomTilesFloor implements FloorStyle {
 
@@ -17,10 +19,10 @@ public class RandomTilesFloor implements FloorStyle {
     private final long seed;
 
     /**
-     * @param base      colore medio delle piastrelle
-     * @param tileCells lato della piastrella in celle
-     * @param variation variazione massima di luminosità tra piastrelle (0–255)
-     * @param seed      seme del generatore casuale
+     * @param base      average color of the tiles
+     * @param tileCells side of a tile in cells
+     * @param variation largest brightness variation between tiles (0–255)
+     * @param seed      seed of the random generator
      */
     public RandomTilesFloor(Color base, double tileCells, int variation, long seed) {
         if (!(tileCells > 0)) throw new IllegalArgumentException("tileCells must be > 0");
@@ -36,8 +38,8 @@ public class RandomTilesFloor implements FloorStyle {
     }
 
     /**
-     * Ogni pixel dipende solo dalla sua posizione e dal seme: tonalità della piastrella,
-     * grana (~4% dei pixel) e fughe larghe 2 pixel sui bordi delle piastrelle.
+     * Every pixel depends only on its position and on the seed: tile tone, grain (~4% of the
+     * pixels) and 2-pixel grout on the tiles' edges.
      */
     @Override
     public void paintRegion(Graphics2D g, int x0, int y0, int w, int h, int fullW, int fullH, double cellSizePx) {
@@ -61,7 +63,7 @@ public class RandomTilesFloor implements FloorStyle {
                     if (col[x] != lastCol) { lastCol = col[x]; tileDelta = FloorHash.symmetric(seed, lastCol, row, 1, variation); }
                     int d = tileDelta;
                     long hg = FloorHash.mix(seed, x0 + x, py, 2);
-                    if ((hg & 0xffff) < 65536 / 25) d += (int) Math.floorMod(hg >>> 16, 31L) - 15;   // grana
+                    if ((hg & 0xffff) < 65536 / 25) d += (int) Math.floorMod(hg >>> 16, 31L) - 15;   // grain
                     rgb = FloorHash.shade(baseRgb, d);
                 }
                 buf[y * w + x] = rgb;
@@ -70,14 +72,14 @@ public class RandomTilesFloor implements FloorStyle {
         g.drawImage(img, 0, 0, null);
     }
 
-    /** Fuga: i due pixel attorno a ogni bordo di piastrella (round(k * s) - 1 e round(k * s)). */
+    /** Grout: the two pixels around every tile edge (round(k * s) - 1 and round(k * s)). */
     private static boolean isGrout(int v, double s) {
         long k = Math.round(v / s);
         long b = Math.round(k * s);
         return v == b || v == b - 1;
     }
 
-    /** Schiarisce/scurisce un colore di {@code d} livelli su tutti i canali. */
+    /** Lightens/darkens a color by {@code d} levels on all channels. */
     static Color shade(Color c, int d) {
         return new Color(clamp(c.getRed() + d), clamp(c.getGreen() + d), clamp(c.getBlue() + d));
     }

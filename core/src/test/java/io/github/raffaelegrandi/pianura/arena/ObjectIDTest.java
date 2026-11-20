@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.arena;
 
 import org.junit.jupiter.api.Test;
@@ -72,6 +75,20 @@ class ObjectIDTest {
         ObjectID id = makeObstacle();
         assertEquals(3, id.getDim().width);
         assertEquals(3, id.getDim().height);
+    }
+
+    @Test
+    void aPublishedPoseIsNeverChangedAfterwards() {
+        Position mine = new Position(4, 4, 0);
+        ObjectID id = new ObjectID(ArenaObjectType.OBSTACLE_RECT, java.awt.Color.RED, mine, new java.awt.Dimension(1, 1));
+        mine.setPosition(9, 9, 9);                       // the caller reuses its object
+        assertEquals(4, id.getPos().x, "the object keeps its own copy");
+        Position seen = id.getPos();
+        id.setLoc(new Point2D.Double(5, 6));
+        id.setAngle(1);
+        id.setPos(new Position(7, 8, 2));
+        assertEquals(new Position(4, 4, 0).toString(), seen.toString(), "a reader's snapshot does not move");
+        assertEquals(new Position(7, 8, 2).toString(), id.getPos().toString());
     }
 
     @Test

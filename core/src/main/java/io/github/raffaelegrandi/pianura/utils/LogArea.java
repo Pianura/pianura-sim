@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.utils;
 
 import javax.swing.*;
@@ -16,7 +19,7 @@ public class LogArea extends JTextArea{
 		init();
 	}
 
-	/** Righe lunghe a capo sulle parole: niente barra orizzontale. */
+	/** Long lines wrap on words: no horizontal scroll bar. */
 	private void init(){
 		setEditable(false);
 		setLineWrap(true);

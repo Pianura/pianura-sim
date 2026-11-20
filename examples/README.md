@@ -13,8 +13,13 @@ From the repository root:
 ./gradlew run -Pexample=braitenberg # any other example, by name
 ```
 
-An unknown name stops the build with the list of the available ones. Examples open paused:
-arrange the scene if you like, then press **Run** (or Space).
+An unknown name stops the build with the list of the available ones. The same examples are
+in the runnable jar: `./gradlew :examples:runnableJar`, then `java -jar build/pianura.jar`
+opens a window to pick one (`java -jar build/pianura.jar <name>` starts it directly). A new
+example needs its line in `Launcher.EXAMPLES` too; a test checks it. Examples open paused:
+arrange the scene if you like, then press **Run** (or Space). **Save…** (Ctrl+S) keeps the
+arrangement in a file and **Open…** (Ctrl+O) brings it back, also in a later run of the same
+example; see [Scene files](../README.md#scene-files).
 
 ## The examples
 
@@ -27,7 +32,8 @@ arrange the scene if you like, then press **Run** (or Space).
 | `remote` | Two robots driven from outside over UDP, waiting for a client from Python or MATLAB (see [`../clients`](../clients/README.md)) | remote | added 2026 |
 | `radio` | Fourteen robots exchanging radio beacons, with the connectivity window | `BeaconWanderer` | added 2026 |
 | `largemap` | A 300×200 building generated from a seed, explored by 60 robots: fly over it with the minimap | `BeaconWanderer` | added 2026 |
-| `braitenberg` | Five Braitenberg vehicles with trails on | `BraitenbergVehicle` | added 2026 |
+| `braitenberg` | Five Braitenberg vehicles with trails on; each draws an arrow with its intention | `BraitenbergVehicle` | added 2026 |
+| `planning` | An RRT grows under your eyes, the simulation pauses when the path is found, then the robot follows it; the inspector opens by itself | `RrtPlanner` | added 2026 |
 
 | ![obstacles](../docs/img/obstacles.png) | ![braitenberg](../docs/img/braitenberg.png) |
 |---|---|

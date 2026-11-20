@@ -10,6 +10,7 @@ Reference robot controllers, one package each under
 | [`iravoidance`](src/main/java/io/github/raffaelegrandi/pianura/algorithms/iravoidance) | `IrAvoider` | control loop | JUSE, 2008–2011 (was `TestDummy04`) | `obstacles`, `rooms` |
 | [`beaconwanderer`](src/main/java/io/github/raffaelegrandi/pianura/algorithms/beaconwanderer) | `BeaconWanderer` | periodic controller | added 2026 | `radio`, `largemap` |
 | [`braitenberg`](src/main/java/io/github/raffaelegrandi/pianura/algorithms/braitenberg) | `BraitenbergVehicle` | periodic controller | added 2026 | `braitenberg` |
+| [`planning`](src/main/java/io/github/raffaelegrandi/pianura/algorithms/planning) | `RrtPlanner`, `FreeSpace` | periodic controller | added 2026 | `planning` |
 
 *Control loop*: a `RobotDummy` subclass whose `executeLoop()` runs in its own thread and waits
 with `sleepSim()`. *Periodic controller*: a `RobotController` called by a `ControllerRobot` at a
@@ -20,21 +21,23 @@ fixed period of simulated time. Both styles are described in the [main README](.
 *From JUSE.* Open-loop motion: the robot runs a fixed sequence of wheel speeds, each for a fixed
 time, then stops. No sensor is read.
 
-| Step | left / right wheel | duration |
+| Step | left / right wheel (cells/s) | duration |
 |---|---|---|
-| 1 | 1.5 / 1.5 | 2 s |
-| 2 | 1.5 / 6 | 2 s |
-| 3 | 2 / 6 | 1 s |
-| 4 | 2 / 2 | 4 s |
+| 1 | 0.75 / 0.75 | 2 s |
+| 2 | 0.75 / 3 | 2 s |
+| 3 | 1 / 3 | 1 s |
+| 4 | 1 / 1 | 4 s |
 
 In JUSE the durations were real time; here they are simulated time, so the result does not
-depend on the computer.
+depend on the computer. The wheel speeds keep JUSE's ratios (1.5 / 1.5, 1.5 / 6, 2 / 6, 2 / 2):
+in JUSE's motor units they were so low that the robot barely moved, so each unit is now half a
+cell per second.
 
 ## iravoidance: `IrAvoider`
 
 *From JUSE.* Reactive obstacle avoidance on the infrared sensors, every 0.2 s:
 
-- an obstacle closer than 25 px on sensors 0–4 (front right) makes the robot turn
+- an obstacle closer than 1.67 cells (25 px in JUSE) on sensors 0–4 (front right) makes the robot turn
   counter-clockwise, one on sensors 14–17 (front left) clockwise;
 - once a turn has started, it keeps the same direction until the way is clear, so it does not
   hesitate between left and right;
@@ -61,6 +64,9 @@ fixed weight, and the behaviour comes from the wiring alone.
 - frontal wiring: an obstacle ahead slows the vehicle down;
 - after a contact the vehicle turns on the spot for a moment.
 
+It draws its intention (layer `steer`): an arrow from the body towards where it is heading half a
+second from now, longer when it goes faster, red while it turns away from a contact.
+
 Give it a sensing range of about 4 cells. In the example `braitenberg`, five vehicles run for
 120 s without touching anything. The constants at the top of the class (`CRUISE`,
 `STEER_GAIN`, `BRAKE_GAIN`, `SKEW`, `ESCAPE_SPEED`, `ESCAPE_TICKS`) can be changed to see how
@@ -68,6 +74,27 @@ the behaviour follows the wiring.
 
 First written for the historical edition of [JUSE](https://github.com/raffaeleGrandi/JUSE)
 and then adapted to Pianura's periodic controller API.
+
+## planning: `RrtPlanner`
+
+*Added in 2026.* Path planning with an RRT (Rapidly-exploring Random Tree, LaValle 1998) on a
+known map, then path following.
+
+- **Map**: `FreeSpace` holds the obstacles in cells with a clearance (robot radius plus a
+  margin); a segment is free if every point along it, a quarter cell apart, is free. It is built
+  when the planner starts, so obstacles moved with the mouse before Run count.
+- **Search**: a few iterations per control step, so the tree grows on screen (layer `tree`,
+  the last random sample in `sample`). One iteration: a random point (the goal with
+  probability `goalBias`), the nearest node, a step of `stepCells` towards the point, a new
+  node if the segment is free. When a node sees the goal, the path is read back through the
+  parents and shortened greedily (layer `path`); with `pauseWhenFound` the simulation pauses.
+- **Drive**: a proportional controller on heading and remaining path length, waypoint by
+  waypoint (layer `aim`).
+- **Inspector**: state (searching, following the path, arrived), iterations, nodes, closest node
+  to the goal, path length, waypoint, speed; plots of the tree's size, the closest distance, the
+  heading error and the remaining path; a log of the decisions.
+
+The sensors are not used: the planner knows the map. Same seed, same tree.
 
 ## Adding an algorithm
 

@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.arena;
 
 import java.awt.Color;
@@ -6,13 +9,12 @@ import java.awt.Dimension;
 import io.github.raffaelegrandi.pianura.utils.Position;
 
 /**
- * Ostacolo statico (rettangolo ruotato o ovale), posizione = centro, in celle.
+ * Static obstacle (rotated rectangle or oval); position = centre, in cells.
  *
- * Bordo: per default è una tonalità più scura del colore di riempimento, così
- * anche un ostacolo chiaro resta visibile su un pavimento chiaro. Per un colore
- * diverso usare {@link #withBorder(Color)}; per non avere bordo, passare lo
- * stesso colore dell'ostacolo. Il bordo è disegnato all'interno della forma:
- * l'ostacolo visibile coincide con quello usato per le collisioni.
+ * Border: by default a darker shade of the fill color, so that even a light obstacle stays
+ * visible on a light floor. For another color use {@link #withBorder(Color)}; for no border,
+ * pass the obstacle's own color. The border is drawn inside the shape: the visible obstacle
+ * is exactly the one used for collisions.
  *
  * <pre>
  *   addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_RECT, Color.WHITE,
@@ -21,17 +23,17 @@ import io.github.raffaelegrandi.pianura.utils.Position;
  */
 public class Obstacle extends ArenaObjectABS {
 
-	/** Spessore predefinito del bordo in pixel. */
+	/** Default border width in pixels. */
 	public static final double DEFAULT_BORDER_WIDTH = 1.5;
 
-	private Color borderColor;          // null = automatico (più scuro del riempimento)
+	private Color borderColor;          // null = automatic (darker than the fill)
 	private double borderWidth = DEFAULT_BORDER_WIDTH;
 
 	public Obstacle(ArenaObjectType obstType, Color color, Position obstPos, Dimension obstDim ){
 		super(new ObjectID(obstType, color, obstPos, obstDim));
 	}
 
-	/** Ostacolo con dimensioni non intere: larghezza e altezza in celle. */
+	/** Obstacle with non-integer size: width and height in cells. */
 	public Obstacle(ArenaObjectType obstType, Color color, Position obstPos, double widthCells, double heightCells){
 		super(new ObjectID(obstType, color, obstPos, widthCells, heightCells));
 	}
@@ -41,27 +43,30 @@ public class Obstacle extends ArenaObjectABS {
 		this.borderColor = borderColor;
 	}
 
-	/** Imposta il colore del bordo (stesso colore dell'ostacolo = nessun bordo visibile). */
+	/** Sets the border color (the obstacle's own color = no visible border). */
 	public Obstacle withBorder(Color color){
 		this.borderColor = color;
 		return this;
 	}
 
-	/** Imposta colore e spessore del bordo in pixel. */
+	/** Sets border color and width in pixels. */
 	public Obstacle withBorder(Color color, double widthPx){
 		this.borderColor = color;
 		this.borderWidth = Math.max(0, widthPx);
 		return this;
 	}
 
-	/** Colore effettivo del bordo (quello impostato, o quello automatico). */
+	/** Actual border color (the one set, or the automatic one). */
 	public Color getBorderColor(){
 		return borderColor != null ? borderColor : autoBorder(objectID.getColor());
 	}
 
 	public double getBorderWidth(){ return borderWidth; }
 
-	/** Bordo automatico: il colore di riempimento scurito; per colori molto scuri, schiarito. */
+	/** Border color set with withBorder, or null if automatic. */
+	public Color getCustomBorderColor(){ return borderColor; }
+
+	/** Automatic border: the fill color darkened; for very dark colors, lightened. */
 	public static Color autoBorder(Color fill){
 		if (fill == null) return Color.DARK_GRAY;
 		double lum = 0.299 * fill.getRed() + 0.587 * fill.getGreen() + 0.114 * fill.getBlue();

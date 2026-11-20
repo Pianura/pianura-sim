@@ -1,4 +1,9 @@
 // Settings shared by all modules (core, algorithms, examples).
+allprojects {
+    group = "io.github.raffaelegrandi.pianura"
+    version = "0.1.0"
+}
+
 subprojects {
     apply(plugin = "java")
 

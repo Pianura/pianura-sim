@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.examples.rooms;
 
 import java.awt.Color;
@@ -11,8 +14,8 @@ import io.github.raffaelegrandi.pianura.utils.Position;
 import io.github.raffaelegrandi.pianura.algorithms.iravoidance.IrAvoider;
 
 /**
- * Arena grande (80 x 50 celle) con pavimento in pietra, stanze e corridoi:
- * esempio per zoom, spostamento della vista e pannello laterale.
+ * Large arena (80 x 50 cells) with a stone floor, rooms and corridors: an example for zoom,
+ * panning and the side panel.
  */
 public class RoomsScenario extends ScenarioManager {
 
@@ -32,13 +35,13 @@ public class RoomsScenario extends ScenarioManager {
 	}
 
 	private void buildObstacles(){
-		// tramezzi che dividono l'arena in tre zone, con varchi
+		// partitions dividing the arena into three zones, with gaps
 		wall(27, 10, 1, 20);
 		wall(27, 43, 1, 14);
 		wall(54, 8, 1, 16);
 		wall(54, 38, 1, 24);
 		wall(64, 25, 20, 1);
-		// casse ruotate e pilastri
+		// rotated boxes and pillars
 		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_RECT, BOX, new Position(12, 12, Math.toRadians(20)), new Dimension(5, 3)));
 		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_RECT, BOX, new Position(40, 30, Math.toRadians(-35)), new Dimension(6, 4)));
 		addObstacle(new Obstacle(ArenaObjectType.OBSTACLE_RECT, BOX, new Position(68, 40, Math.toRadians(10)), new Dimension(4, 4)));

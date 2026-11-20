@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.algorithms.iravoidance;
 
 import io.github.raffaelegrandi.pianura.units.RobotDummy;
@@ -14,8 +17,13 @@ import io.github.raffaelegrandi.pianura.utils.Position;
 public class IrAvoider extends RobotDummy {
 
 	UnitObject tempUObj = this.getUnitObject();
-	double wlk_init = 500;
-	double wrk_init = 500;
+	/** Cruise speed of each wheel, cells/s (500 in JUSE's motor units). */
+	double wlk_init = 1.25;
+	double wrk_init = 1.25;
+	/** Increase of the outer wheel at each step of an avoidance turn, cells/s (+0.5 in JUSE's units). */
+	static final double TURN_STEP = 0.00125;
+	/** An obstacle closer than this to the body, in cells, triggers a turn (25 px in JUSE). */
+	static final double NEAR = 25.0 / 15;
 	boolean active = true;
 	int lastRotDir = -1;
 	boolean avoiding = false;
@@ -27,7 +35,7 @@ public class IrAvoider extends RobotDummy {
 	@Override
 	public void executeLoop() {
 		System.out.println("IrAvoider #"+this.getIDnum()+" started");
-		setMotorSpeed(wlk_init,wrk_init);
+		setWheelSpeeds(wlk_init, wrk_init);
 		navigationManager();
 		setActive(false);
 		System.out.println("EndLoop - Disable Unit");
@@ -48,7 +56,7 @@ public class IrAvoider extends RobotDummy {
 			switch(rotDir){
 				case -1 :{
 					if(Const.debugEnabled)System.out.println("TD #"+this.getIDnum()+">Increasing CCW rotation");
-					wrk += 0.5;
+					wrk += TURN_STEP;
 					wlk = 0;
 				} break;
 				case 0 :{
@@ -59,24 +67,24 @@ public class IrAvoider extends RobotDummy {
 				case 1 :{
 					if(Const.debugEnabled)System.out.println("TD #"+this.getIDnum()+">Increasing CW rotation");
 					wrk = 0;
-					wlk += 0.5;
+					wlk += TURN_STEP;
 				} break;
 			}
-			setMotorSpeed(wlk,wrk);
+			setWheelSpeeds(wlk, wrk);
 			sleepSimTime(0.2);
 		}
 	}
 
-	private int[] readSensors(){
-		int[] sensVal = tempUObj.getIrSensors().getSensors();
+	private double[] readSensors(){
+		double[] sensVal = getIr();
 		String sensString = "";
 		for(int i=0; i<sensVal.length;i++) sensString += sensVal[i]+",";
 		if(Const.debugEnabled)System.out.println("TD #"+this.getIDnum()+" sensArr:"+sensString);
 		return sensVal;
 	}
 
-	private int evalSensors(int[] sensVal){
-		int delta = 25;
+	private int evalSensors(double[] sensVal){
+		double delta = NEAR;
 		boolean rightObstacle = (sensVal[0] < delta) || (sensVal[1] < delta) || (sensVal[2] < delta) || (sensVal[3] < delta) || (sensVal[4] < delta);
 		boolean leftObstacle = (sensVal[17] < delta) || (sensVal[16] < delta) || (sensVal[15] < delta) || (sensVal[14] < delta);
 
@@ -97,7 +105,7 @@ public class IrAvoider extends RobotDummy {
 	}
 
 	private void sleepSimTime(double st_val){
-		// tempo simulato: rispetta pausa, passo singolo e velocità
+		// simulated time: respects pause, single step and speed
 		sleepSim(st_val);
 	}
 

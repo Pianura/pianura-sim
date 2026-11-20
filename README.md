@@ -8,8 +8,13 @@ swarms. You write a robot in a few lines of plain Java, or drive it from any lan
 UDP, and watch it move in a 2D arena.
 
 It is meant for students, teachers and researchers who want something that starts with a
-single command and can be read and modified in an afternoon. If you need full 3D physics
-or ROS 2 integration, a heavier simulator such as Gazebo is a better fit.
+single command and can be read and modified in an afternoon, in Java, Python or MATLAB.
+
+Pianura is complementary to full robot simulators such as **Webots** and **Gazebo**, not a
+replacement: it trades 3D physics, cameras and detailed robot models for a flat world where
+an algorithm is quick to write, to watch and to repeat, even with dozens of robots. Learn and
+prototype here; when you need realistic physics, real sensor models or ROS 2, move to one of
+them.
 
 Pianura is the evolution of **JUSE** (Java UniBot Simulation Environment), a simulator
 written in 2008 and used for years at the University of Bologna; see [Origins](#origins).
@@ -31,7 +36,11 @@ written in 2008 and used for years at the University of Bologna; see [Origins](#
 - **Two ways to program a robot**: a sequential control loop, or a controller called
   at a fixed period
 - **Reference algorithms and examples** to start from: obstacle avoidance, a Braitenberg
-  vehicle, radio beacons, line following, remote control
+  vehicle, radio beacons, line following, RRT path planning, remote control
+- **Debug drawings**: a robot's code draws what its algorithm thinks (paths, targets, trees,
+  estimated maps) in named layers over the arena, from Java, Python or MATLAB
+- **Inspector**: a separate window with a robot's state, watched values, time plots and log of
+  decisions; a robot can pause the simulation on a decision
 - **Radio between robots**: range, losses and latency, plus a live connectivity window
   (graph, adjacency and incidence matrices)
 - **Remote control over UDP + JSON**, with ready-made Python and MATLAB clients; lockstep
@@ -40,9 +49,10 @@ written in 2008 and used for years at the University of Bologna; see [Origins](#
   move the view
 - **Floors**: checkerboard, grid, random tiles, Voronoi tiles, a line-following track,
   or any image
-- **Scene editing**: before starting, drag, resize and rotate obstacles and robots
-  with the mouse
-- No dependencies beyond the JDK
+- **Scene editing**: before starting or while paused, drag, resize and rotate obstacles and
+  robots with the mouse; save the scene to a file and open it again, or load it from code
+- No dependencies beyond the JDK; with [FlatLaf](https://www.formdev.com/flatlaf/) on the
+  classpath the window takes a modern look (the examples include it)
 
 ---
 
@@ -56,8 +66,8 @@ written in 2008 and used for years at the University of Bologna; see [Origins](#
 ## Quick start
 
 ```bash
-git clone https://github.com/raffaeleGrandi/Pianura.git
-cd Pianura
+git clone https://github.com/Pianura/pianura-sim.git
+cd pianura-sim
 ./gradlew run
 ```
 
@@ -71,9 +81,32 @@ To run another example, pass its name:
 ```
 
 The available examples are `timedmotion`, `obstacles`, `rooms`, `linefollowing`, `remote`,
-`radio`, `largemap` and `braitenberg`. [`examples/README.md`](examples/README.md) says what
+`radio`, `largemap`, `braitenberg` and `planning`. [`examples/README.md`](examples/README.md) says what
 each one shows, with screenshots; the controllers they use are described in
 [`algorithms/README.md`](algorithms/README.md).
+
+**Look of the window.** The examples use FlatLaf's light theme. For the dark theme, or for the
+classic Swing look of JUSE:
+
+```bash
+./gradlew run -Dpianura.laf=flat-dark     # or metal, or system (the operating system's look)
+```
+
+Pianura itself does not depend on FlatLaf: in your own project the window uses Swing's
+standard look unless you add `com.formdev:flatlaf` to the runtime classpath.
+
+**One runnable jar.** Each [release](https://github.com/Pianura/pianura-sim/releases) has the
+examples in a single jar: download `pianura-<version>.jar` and run `java -jar
+pianura-<version>.jar` (Java 21 or later, nothing else). To build it yourself:
+
+```bash
+./gradlew :examples:runnableJar          # writes build/pianura.jar (about 1.3 MB)
+java -jar build/pianura.jar              # a small window to pick an example
+java -jar build/pianura.jar planning     # one example directly; --list prints them all
+```
+
+The jar holds Pianura, the algorithms, the examples and FlatLaf; `-Dpianura.laf=...` works
+here too (`java -Dpianura.laf=flat-dark -jar build/pianura.jar`).
 
 ---
 
@@ -97,12 +130,12 @@ public class MyRobot extends RobotDummy {
 
     @Override
     public void executeLoop() {
-        forward(500);                         // both wheels forward
+        forward(1.0);                         // 1 cell/s straight ahead
         while (isActive()) {
-            int[] ir = getAllSens();          // 18 IR readings: 0 = contact, 255 = clear
-            if (ir[0] < 30) {                 // obstacle ahead (sensor 0 = front)
+            double[] ir = getIr();            // 18 IR readings, cells from the body (getIrRange() = clear)
+            if (ir[0] < 1.5) {                // obstacle ahead (sensor 0 = front)
                 rotateBy(45, 50);             // turn 45° on the spot
-                forward(500);
+                forward(1.0);
             }
             sleepSim(0.2);                    // 0.2 s of simulated time
         }
@@ -119,7 +152,7 @@ scenario constructor (see below):
 ```java
 addRobot(new ControllerRobot(1, new Position(5, 5, 0), 2, 0.1,
         (robot, t) -> {
-            boolean blocked = robot.getOneSen(0) < 30;
+            boolean blocked = robot.getIr(0) < 1.5;                      // cells from the body
             robot.setRobotSpeed(blocked ? 0 : 1.0, blocked ? 1.5 : 0);   // cells/s, rad/s
         }));
 ```
@@ -128,16 +161,75 @@ Main methods available on a robot:
 
 | Method | Description |
 |--------|-------------|
-| `forward(speed)` / `backward(speed)` | Both wheels at the same speed |
-| `setMotorSpeed(left, right)` | Wheel speeds (differential drive) |
+| `forward(speed)` / `backward(speed)` | Straight on or back, cells/s |
+| `setWheelSpeeds(left, right)` | Wheel speeds, cells/s (differential drive) |
 | `setRobotSpeed(v, w)` | Linear (cells/s) and angular (rad/s) speed |
 | `rotateBy(angleDeg, stepMs)` | Turn on the spot, blocking |
-| `getAllSens()` / `getOneSen(i)` | IR readings, 0 (contact) to 255 (nothing in range) |
+| `getIr()` / `getIr(i)` | IR readings: cells from the body to the nearest obstacle, `getIrRange()` when nothing is in range |
 | `hasCollision()` | Whether the robot is touching an obstacle |
 | `getFloorGrays()` | Floor sensor readings, 0 = black, 255 = white |
 | `broadcast(data)` / `send(id, data)` / `receive()` | Radio messages |
 | `getPosition()` | Pose (x, y in cells, theta in radians) |
 | `sleepSim(seconds)` / `getSimTime()` | Simulated time |
+| `getMetersPerCell()` | Scale of the scenario, meters per cell |
+
+### Units
+
+Pianura measures lengths in **cells**, time in seconds and angles in radians. The robot is a
+disc of radius 1 cell with its two wheels 2 cells apart; speeds are in cells/s. Each scenario
+declares how big a cell is with `setMetersPerCell(m)` (default 0.05: the robot is 10 cm across,
+and 3 cells/s are 15 cm/s). The scale is shown in the side panel and sent to remote clients;
+the simulation itself stays in cells. The y axis grows downwards and positive angles turn
+clockwise, as on screen.
+
+### Debug drawings
+
+A robot can draw over the arena what its algorithm thinks: the planned path, the target, a
+search tree, an estimated map. Drawings live in named layers, in world coordinates (cells),
+and never affect the simulation:
+
+```java
+Position p = robot.getPosition();
+robot.viz("plan").clear()                      // redrawn at every step
+     .color(Color.BLUE).polyline(xs, ys)
+     .color(Color.RED).disc(goalX, goalY, 0.3).text(goalX + 0.5, goalY, "goal")
+     .arrow(p.x, p.y, goalX, goalY);
+robot.viz("trail").point(p.x, p.y);            // never cleared: it grows
+```
+
+Shapes: `point`, `line`, `arrow`, `circle`, `disc`, `rect` (filled, for map cells), `polyline`,
+`polygon`, `text`; `color(...)` and `width(px)` apply to the shapes that follow. A layer keeps its
+shapes until `clear()`. What a robot draws appears at its next `sleepSim()`, all at once, so the
+picture is always consistent. In the side panel, **Robot drawings** shows or hides them and
+**Selected robot only** keeps just the selected robot's. Remote clients draw in the
+same way (`draw` in the protocol); the [`BraitenbergVehicle`](algorithms/README.md#braitenberg-braitenbergvehicle)
+and the MATLAB example `gotogoal.m` show how.
+
+![Debug drawings: the MATLAB example gotogoal draws its route and an arrow to the current waypoint](docs/img/drawings.png)
+
+### The inspector
+
+The **Inspector** button on the toolbar opens a separate window about the selected robot: what
+its algorithm is doing (state), a few values it watches, time plots, and a log of its decisions,
+all stamped with the simulated time. The robot's code fills it:
+
+```java
+Inspector in = robot.inspector();
+in.state("searching");                       // a change of state is also logged
+in.watch("nodes", tree.size());
+in.plot("distance to goal", d);              // one plot per name, against simulated time
+in.log("path found, length " + len);
+robot.pauseSimulation("path found");         // pauses everything, as the Pause button does
+```
+
+Plots show the last 10, 30 or 60 seconds or the whole run. Nothing of this affects the
+simulation, and memory is bounded. From Python and MATLAB the same goes through
+`robot.inspect.state(...)` / `robot.inspectState(...)` and friends (see
+[`clients/README.md`](clients/README.md#inspector)). The example `planning` shows it at work:
+an RRT grows under your eyes, the simulation pauses when the path is found, and the inspector
+follows the search and the drive.
+
+![The planning example: the RRT tree, the path found, and the inspector](docs/img/planning.png)
 
 ---
 
@@ -183,6 +275,40 @@ public class Main {
 }
 ```
 
+### Scene files
+
+A scene is the stage without the actors: arena size and scale, obstacles, and where each
+robot stands (by id). Arrange it with the mouse, then **Save…** in the toolbar (Ctrl+S)
+writes it to a JSON file; **Open…** (Ctrl+O) loads one back, before the start or while
+paused, replacing the obstacles and moving the robots it lists. The file is short and can be
+edited by hand:
+
+```json
+{
+  "pianura_scene": 1,
+  "arena": {"width": 40, "height": 40, "meters_per_cell": 0.05},
+  "obstacles": [
+    {"shape": "rect", "x": 20, "y": 8, "theta": 0, "width": 30, "height": 1, "color": "#505050"},
+    {"shape": "oval", "x": 20, "y": 20, "theta": 0.6, "width": 8, "height": 4, "color": "#3060d0"}
+  ],
+  "robots": [
+    {"id": 1, "x": 4, "y": 4, "theta": 0}
+  ]
+}
+```
+
+A scenario can start from a scene file: the robots' code stays in Java, the layout in the
+file. Handy for exercises, where the same robots face different arenas:
+
+```java
+public MyScenario() throws IOException {
+    addRobot(new MyRobot(1, new Position(0, 0, 0), 2));      // placed where the scene says
+    loadScene(Path.of("arena-1.json"));                       // or getClass().getResourceAsStream(...)
+}
+```
+
+The floor is not part of the scene: it comes from the scenario (`setFloor`) or the side panel.
+
 ---
 
 ## Remote control
@@ -226,6 +352,9 @@ algorithms/    reference robot controllers, one package each        → algorith
 examples/      example scenarios, run with ./gradlew run -Pexample=  → examples/README.md
 clients/       Python and MATLAB clients for remote control over UDP
 docs/img/      screenshots
+CHANGELOG.md   what changed in each version
+docs/brand/    logo and avatar of the Pianura organization
+CITATION.cff   how to cite Pianura (GitHub's "Cite this repository")
 ```
 
 Inside `core`, under `src/main/java/io/github/raffaelegrandi/pianura/`:
@@ -240,8 +369,10 @@ Inside `core`, under `src/main/java/io/github/raffaelegrandi/pianura/`:
 ├── structures/        ScenarioManager
 ├── comm/              radio network between robots
 ├── remote/            UDP + JSON remote control
+├── viz/               debug drawings of the robots (named layers)
+├── inspect/           what a robot shows in the inspector window (state, values, plots, log)
 ├── gui/               Swing user interface
-│   ├── view/          arena view, minimap, side panel, connectivity window
+│   ├── view/          arena view, minimap, side panel, connectivity and inspector windows
 │   └── floor/         floor styles
 └── utils/             constants, Position, log
 ```
@@ -278,8 +409,12 @@ If you use Pianura in academic work, please cite the paper that describes the or
 JUSE and the UniBot project:
 
 > R. Grandi, R. Falconi, C. Melchiorri, *"UniBot Remote Laboratory: A Scalable Web-Based
-> Set-up for Education and Experimental Activities in Robotics"*, IFAC World Congress 2011,
-> Milan, Italy. DOI: [10.3182/20110828-6-IT-1002.03103](https://doi.org/10.3182/20110828-6-IT-1002.03103)
+> Set-up for Education and Experimental Activities in Robotics"*, Proceedings of the 18th IFAC
+> World Congress, Milan, Italy, 2011, pp. 8521–8526.
+> DOI: [10.3182/20110828-6-IT-1002.03103](https://doi.org/10.3182/20110828-6-IT-1002.03103)
+
+The same data are in [`CITATION.cff`](CITATION.cff), which GitHub turns into the
+**Cite this repository** button (APA and BibTeX).
 
 ---
 
@@ -290,7 +425,17 @@ documentation, open an issue or a pull request.
 
 ## License
 
-Pianura is released under the [MIT License](LICENSE).
+Pianura is released under the [MIT License](LICENSE). Every source file carries the
+notice in two lines (`SPDX-License-Identifier: MIT`).
+
+Third-party software:
+
+| Component | Used by | License |
+|---|---|---|
+| [FlatLaf](https://www.formdev.com/flatlaf/) | `examples`, at run time, for the modern look (optional for `core`) | Apache License 2.0 |
+| [JUnit 5](https://junit.org/junit5/) | tests only, not distributed | Eclipse Public License 2.0 |
+
+`core` and `algorithms` depend on the JDK only.
 
 ---
 

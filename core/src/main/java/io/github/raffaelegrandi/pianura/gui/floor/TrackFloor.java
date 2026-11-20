@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.gui.floor;
 
 import java.awt.BasicStroke;
@@ -7,9 +10,9 @@ import java.awt.RenderingHints;
 import java.awt.geom.Path2D;
 
 /**
- * Pista per il line-following: un anello scuro su fondo chiaro, con una curva a "S"
- * nel lato inferiore per rendere il percorso meno banale.
- * Lo spessore della linea è in celle (2/3 di cella ≈ distanza tra i due sensori ottici predefiniti).
+ * Line-following track: a dark loop on a light background, with an "S" bend on the bottom side
+ * to make the path less trivial. The line width is in cells (2/3 of a cell ≈ the distance
+ * between the two default floor sensors).
  */
 public class TrackFloor implements FloorStyle {
 
@@ -34,7 +37,7 @@ public class TrackFloor implements FloorStyle {
         double m = marginCells * cellSizePx;
         double w = width - 2 * m, h = height - 2 * m;
         double r = Math.min(w, h) * 0.35;
-        // anello con angoli arrotondati: lato superiore e laterali
+        // loop with rounded corners: top and sides
         Path2D p = new Path2D.Double();
         double x0 = m, y0 = m, x1 = m + w, y1 = m + h;
         p.moveTo(x0 + r, y0);
@@ -42,7 +45,7 @@ public class TrackFloor implements FloorStyle {
         p.quadTo(x1, y0, x1, y0 + r);
         p.lineTo(x1, y1 - r);
         p.quadTo(x1, y1, x1 - r, y1);
-        // lato inferiore con una "S"
+        // bottom side with an "S"
         double sx = (x0 + x1) / 2, amp = h * 0.18;
         p.curveTo(sx + w * 0.15, y1, sx + w * 0.1, y1 - amp, sx, y1 - amp);
         p.curveTo(sx - w * 0.1, y1 - amp, sx - w * 0.15, y1, x0 + r, y1);
@@ -50,12 +53,12 @@ public class TrackFloor implements FloorStyle {
         p.lineTo(x0, y0 + r);
         p.quadTo(x0, y0, x0 + r, y0);
         p.closePath();
-        // linea → poligono in coordinate assolute, poi riempito: il risultato non dipende dal ritaglio,
-        // quindi la pista si può disegnare a riquadri senza giunture
+        // line → polygon in absolute coordinates, then filled: the result does not depend on the
+        // clip, so the track can be drawn in tiles without seams
         g.fill(flatten(stroke.createStrokedShape(flatten(p))));
     }
 
-    /** Spezzata equivalente alla forma (tolleranza 0.05 pixel). */
+    /** Polyline equivalent to the shape (tolerance 0.05 pixels). */
     private static Path2D flatten(java.awt.Shape shape) {
         Path2D out = new Path2D.Double();
         out.append(new java.awt.geom.FlatteningPathIterator(shape.getPathIterator(null), 0.05, 16), false);

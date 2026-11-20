@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.units.sensors;
 
 import java.awt.Color;
@@ -5,32 +8,31 @@ import java.awt.geom.Point2D;
 import java.util.Arrays;
 
 /**
- * Sensori ottici rivolti verso il pavimento (riflettanza / colore), sotto il robot.
+ * Optical sensors facing the floor (reflectance / color), under the robot.
  *
- * Ogni sensore sta a una distanza dal centro pari a {@code radiusFraction} del raggio
- * del robot e a un angolo rispetto alla direzione di marcia (gradi, positivo = verso
- * destra, cioè in senso orario sullo schermo). Legge il colore medio del pavimento
- * in un'area circolare di raggio {@code footprintPx} (pixel di mondo): con un'area
- * più grande il passaggio sul bordo di una linea è più graduale, come per un sensore
- * a riflessione reale.
+ * Each sensor sits at {@code radiusFraction} of the robot's radius from the centre, at an
+ * angle from the direction of travel (degrees, positive = to the right, i.e. clockwise on
+ * screen). It reads the average color of the floor in a circular area of radius
+ * {@code footprintCells} (cells): with a larger area the crossing of a line's edge is more
+ * gradual, as for a real reflective sensor.
  *
- * Predefinito: due sensori a 97% del raggio, a −20° (sinistra, indice 0) e +20° (destra, indice 1),
- * distanti tra loro circa 2/3 di cella; impronta di raggio 1.5 px.
+ * Default: two sensors at 97% of the radius, at −20° (left, index 0) and +20° (right,
+ * index 1), about 2/3 of a cell apart; footprint radius 0.1 cells (5 mm at the default scale).
  *
- * Thread-safety: come {@code SensorArray}, le letture sono pubblicate in blocco
- * (snapshot immutabile) dal motore e lette dal thread del robot.
+ * Thread-safety: as for {@code SensorArray}, the readings are published as a whole
+ * (immutable snapshot) by the engine and read by the robot's thread.
  */
 public class FloorSensorArray {
 
     public static final double DEFAULT_RADIUS_FRACTION = 0.97;
     public static final double[] DEFAULT_ANGLES_DEG = { -20, 20 };
-    public static final double DEFAULT_FOOTPRINT_PX = 1.5;
+    public static final double DEFAULT_FOOTPRINT_CELLS = 0.1;
 
-    /** Configurazione: posizioni e area sensibile. */
-    public record Layout(double radiusFraction, double footprintPx, double[] anglesDeg) {
+    /** Configuration: positions and sensitive area. */
+    public record Layout(double radiusFraction, double footprintCells, double[] anglesDeg) {
         public Layout {
             if (radiusFraction < 0) throw new IllegalArgumentException("radiusFraction must be >= 0");
-            if (footprintPx < 0) throw new IllegalArgumentException("footprintPx must be >= 0");
+            if (footprintCells < 0) throw new IllegalArgumentException("footprintCells must be >= 0");
             anglesDeg = anglesDeg.clone();
         }
         public int count() { return anglesDeg.length; }
@@ -43,14 +45,14 @@ public class FloorSensorArray {
     private volatile Reading reading;
 
     public FloorSensorArray() {
-        this(new Layout(DEFAULT_RADIUS_FRACTION, DEFAULT_FOOTPRINT_PX, DEFAULT_ANGLES_DEG));
+        this(new Layout(DEFAULT_RADIUS_FRACTION, DEFAULT_FOOTPRINT_CELLS, DEFAULT_ANGLES_DEG));
     }
 
     public FloorSensorArray(Layout layout) {
         setLayout(layout);
     }
 
-    /** Cambia numero, posizione o area dei sensori (le letture ripartono da zero). */
+    /** Changes number, position or area of the sensors (the readings start again from zero). */
     public void setLayout(Layout l) {
         layout = l;
         reading = new Reading(new int[l.count()], new Point2D[l.count()]);
@@ -60,21 +62,21 @@ public class FloorSensorArray {
 
     public int count() { return layout.count(); }
 
-    /** Pubblica in blocco le nuove letture (chiamato dal motore). */
+    /** Publishes the new readings as a whole (called by the engine). */
     public void publish(int[] rgb, Point2D[] positionsCells) {
         reading = new Reading(Arrays.copyOf(rgb, rgb.length), Arrays.copyOf(positionsCells, positionsCells.length));
     }
 
-    /** Colore letto dal sensore i. */
+    /** Color read by sensor i. */
     public Color getColor(int i) { return FloorMap.color(reading.rgb()[i]); }
 
-    /** RGB impacchettato (0xRRGGBB) letto dal sensore i. */
+    /** Packed RGB (0xRRGGBB) read by sensor i. */
     public int getRGB(int i) { return reading.rgb()[i]; }
 
-    /** Luminosità letta dal sensore i: 0 = nero (linea), 255 = bianco. */
+    /** Brightness read by sensor i: 0 = black (line), 255 = white. */
     public int getGray(int i) { return FloorMap.gray(reading.rgb()[i]); }
 
-    /** Luminosità di tutti i sensori (copia). */
+    /** Brightness of all the sensors (copy). */
     public int[] getGrays() {
         int[] rgb = reading.rgb();
         int[] out = new int[rgb.length];
@@ -82,7 +84,7 @@ public class FloorSensorArray {
         return out;
     }
 
-    /** Posizione (in celle) del sensore i all'ultima lettura, o null se non ancora letto. */
+    /** Position (cells) of sensor i at the last reading, or null if not read yet. */
     public Point2D getPosition(int i) { return reading.positionsCells()[i]; }
 
 }

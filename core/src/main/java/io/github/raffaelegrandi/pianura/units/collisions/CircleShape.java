@@ -1,9 +1,11 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.units.collisions;
 
 /**
- * Cerchio per il rilevamento collisioni geometrico (pixel).
- * Usato per rappresentare i corpi dei robot: il campo {@code owner}
- * permette al detector di escludere il robot stesso dal proprio ray casting.
+ * Circle for geometric collision detection (pixels). Represents the robots' bodies: the
+ * {@code owner} field lets the detector skip the robot itself in its own ray casting.
  */
 public class CircleShape implements CollidableShape {
 
@@ -43,8 +45,8 @@ public class CircleShape implements CollidableShape {
         double t1 = (-B - sqrtDisc) / 2.0;
         double t2 = (-B + sqrtDisc) / 2.0;
 
-        if (t2 < 0) return -1;      // cerchio dietro l'origine
-        if (t1 < 0) return 0;       // origine dentro il cerchio
+        if (t2 < 0) return -1;      // circle behind the origin
+        if (t1 < 0) return 0;       // origin inside the circle
         return (t1 <= maxDist) ? t1 : -1;
     }
 

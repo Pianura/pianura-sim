@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.gui;
 
 import java.util.Locale;
@@ -18,10 +21,10 @@ import javax.swing.KeyStroke;
 import io.github.raffaelegrandi.pianura.sim.SimEngine;
 
 /**
- * Barra dei controlli della simulazione.
+ * Simulation toolbar.
  *
- * Run/Pause (Spazio), Step (freccia destra: avanza di {@value #STEP_SECONDS} s di tempo
- * simulato), velocità, tempo simulato e velocità effettiva misurata.
+ * Run/Pause (Space), Step (Right arrow: advances {@value #STEP_SECONDS} s of simulated
+ * time), speed, simulated time and the measured actual speed.
  */
 @SuppressWarnings("serial")
 public class SimControlBar extends JToolBar {
@@ -32,15 +35,15 @@ public class SimControlBar extends JToolBar {
     private static final double[] SPEED_VALUES = { 0.25, 0.5, 1, 2, 5, 10, SimEngine.MAX_SPEED };
 
     private final SimEngine engine;
-    private final JButton runPause = new JButton("Run");
+    private final JButton runPause = new JButton("\u25B6 Run");
     private final JButton step = new JButton("Step");
-    private final JButton stop = new JButton("Stop");
+    private final JButton stop = new JButton("\u25A0 Stop");
     private Runnable stopAction;
-    private boolean syncing;   // aggiornamento del menu velocità da codice: non rimandarlo al motore
+    private boolean syncing;   // speed menu updated from code: do not send it back to the engine
     private final JComboBox<String> speed = new JComboBox<>(SPEED_LABELS);
     private final JLabel timeLabel = new JLabel();
 
-    // misura della velocità effettiva (tempo simulato / tempo reale)
+    // measurement of the actual speed (simulated time / real time)
     private long lastWall = System.nanoTime();
     private double lastSim = 0;
     private double effective = 0;
@@ -50,7 +53,7 @@ public class SimControlBar extends JToolBar {
         this.stopAction = engine::stop;
         setFloatable(false);
 
-        // i pulsanti non prendono il focus: Spazio va alla scorciatoia e non "clicca" il pulsante
+        // the buttons do not take the focus: Space goes to the shortcut and does not "click" the button
         runPause.setFocusable(false);
         step.setFocusable(false);
         stop.setFocusable(false);
@@ -80,7 +83,7 @@ public class SimControlBar extends JToolBar {
         refresh();
     }
 
-    /** Registra le scorciatoie da tastiera sul componente indicato (valide in tutta la finestra). */
+    /** Registers the keyboard shortcuts on the given component (valid in the whole window). */
     public void installKeyBindings(JComponent target) {
         target.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0), "pianura-toggle");
         target.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0), "pianura-step");
@@ -92,7 +95,7 @@ public class SimControlBar extends JToolBar {
         });
     }
 
-    /** Azione eseguita da Stop (Simulator la sostituisce con stopSim, che ferma anche i robot e scrive nel log). */
+    /** Action run by Stop (Simulator replaces it with stopSim, which also stops the robots and writes to the log). */
     public void setStopAction(Runnable action) { stopAction = action != null ? action : engine::stop; }
 
     private void confirmStop() {
@@ -116,17 +119,17 @@ public class SimControlBar extends JToolBar {
         refresh();
     }
 
-    /** Aggiorna etichette e stato dei pulsanti (chiamato dal timer di ridisegno). */
+    /** Refreshes labels and button states (called by the repaint timer). */
     public void refresh() {
         boolean stopped = engine.isStopped();
         boolean started = engine.isRunning() || stopped;
         boolean paused = engine.isPaused();
-        runPause.setText(paused || stopped ? "Run" : "Pause");
+        runPause.setText(paused || stopped ? "\u25B6 Run" : "\u275A\u275A Pause");
         runPause.setEnabled(!stopped && started);
         step.setEnabled(paused && !stopped && started);
         stop.setEnabled(started && !stopped);
 
-        // il menu segue la velocità anche se impostata da codice (setSpeed)
+        // the menu follows the speed even when set from code (setSpeed)
         double sp = engine.getSpeed();
         for (int i = 0; i < SPEED_VALUES.length; i++) {
             if (SPEED_VALUES[i] == sp && speed.getSelectedIndex() != i) { syncing = true; speed.setSelectedIndex(i); syncing = false; }
@@ -146,7 +149,7 @@ public class SimControlBar extends JToolBar {
         else if (!started)    state = "<font color='#7f8c8d'>&#9675; READY</font>";
         else if (paused)      state = "<font color='#d35400'>&#10074;&#10074; PAUSED</font>";
         else                  state = String.format(Locale.ROOT, "<font color='#1e8449'>&#9654; RUNNING &times;%.1f</font>", effective);
-        String time = String.format(Locale.ROOT, "t = %8.2f s", sim).replace(" ", "&nbsp;");   // larghezza fissa
+        String time = String.format(Locale.ROOT, "t = %8.2f s", sim).replace(" ", "&nbsp;");   // fixed width
         timeLabel.setText("<html><tt>" + time + "</tt>&nbsp;&nbsp;&nbsp;<b>" + state + "</b>&nbsp;</html>");
     }
 

@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.gui;
 
 import java.awt.BorderLayout;
@@ -7,7 +10,7 @@ import javax.swing.JFrame;
 import io.github.raffaelegrandi.pianura.sim.SimEngine;
 import io.github.raffaelegrandi.pianura.structures.ScenarioManager;
 
-/** Finestra principale: ridimensionabile, la vista dell'arena si adatta. */
+/** Main window: resizable, the arena view adapts. */
 @SuppressWarnings("serial")
 public class MainFrame extends JFrame{
 

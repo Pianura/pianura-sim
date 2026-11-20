@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.comm;
 
 import java.util.ArrayList;
@@ -38,7 +41,7 @@ public final class ConnectivityGraph {
                 if (this.reach[a][b] || this.reach[b][a]) l.add(new Link(a, b, this.reach[a][b], this.reach[b][a]));
         this.links = List.copyOf(l);
 
-        // componenti debolmente connesse (union-find)
+        // weakly connected components (union-find)
         int[] parent = new int[n];
         for (int i = 0; i < n; i++) parent[i] = i;
         for (Link k : links) union(parent, k.a(), k.b());

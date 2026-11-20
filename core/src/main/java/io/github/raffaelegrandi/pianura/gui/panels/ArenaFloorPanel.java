@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.gui.panels;
 
 import java.awt.*;
@@ -15,9 +18,9 @@ import io.github.raffaelegrandi.pianura.units.collisions.RectShape;
 import io.github.raffaelegrandi.pianura.utils.Const;
 
 /**
- * Sfondo statico dell'arena: pavimento + ostacoli, in pixel di mondo (celle x Const.cellSize).
- * Viene disegnato una volta in un'immagine; la vista (ArenaView) la scala e la sposta.
- * I muri dell'arena non sono qui: li disegna la vista, fuori dal pavimento.
+ * Static background of the arena: floor + obstacles, in world pixels (cells x Const.cellSize).
+ * Drawn once into an image; the view (ArenaView) scales and moves it. The arena walls are
+ * not here: the view draws them, outside the floor.
  */
 @SuppressWarnings("serial")
 public class ArenaFloorPanel extends JPanel{
@@ -43,7 +46,7 @@ public class ArenaFloorPanel extends JPanel{
 
 	public ArenaFloorPanel(List<ArenaObjectABS> obstacles){ this(obstacles, FloorStyle.checkerboard()); }
 
-	/** Disegna pavimento e ostacoli in una nuova immagine delle dimensioni indicate (pixel di mondo). */
+	/** Draws floor and obstacles into a new image of the given size (world pixels). */
 	public static BufferedImage renderBackground(List<? extends Obstacle> obstacles, FloorStyle floor, int widthPx, int heightPx){
 		ArenaFloorPanel p = new ArenaFloorPanel(new ArrayList<ArenaObjectABS>(obstacles), floor, widthPx, heightPx);
 		BufferedImage img = new BufferedImage(widthPx, heightPx, BufferedImage.TYPE_INT_RGB);
@@ -74,10 +77,9 @@ public class ArenaFloorPanel extends JPanel{
 	}
 
 	/**
-	 * Disegna un ostacolo usando lo stesso contorno delle collisioni
-	 * (RectShape/OvalShape.outline()): grafica e fisica non possono divergere.
-	 * Il bordo è tracciato all'interno della forma (clip + tratto di spessore doppio).
-	 * Usato anche dalla vista, che disegna gli ostacoli come vettori a ogni frame.
+	 * Draws an obstacle with the same outline used for collisions (RectShape/OvalShape.outline()):
+	 * graphics and physics cannot diverge. The border is drawn inside the shape (clip + a stroke
+	 * of double width). Also used by the view, which draws the obstacles as vectors at every frame.
 	 */
 	public static void paintObstacle(Graphics2D g, Obstacle obst, Shape shape){
 		if (shape == null) return;
@@ -97,8 +99,8 @@ public class ArenaFloorPanel extends JPanel{
 	}
 
 	/**
-	 * Solo pavimento, renderizzato a {@code scale} volte la risoluzione del mondo
-	 * (es. 2 = due pixel di immagine per pixel di mondo): resta nitido quando la vista ingrandisce.
+	 * Floor only, rendered at {@code scale} times the world resolution (e.g. 2 = two image
+	 * pixels per world pixel): it stays sharp when the view zooms in.
 	 */
 	public static BufferedImage renderFloor(FloorStyle floor, int widthPx, int heightPx, double scale){
 		int w = (int) Math.round(widthPx * scale), h = (int) Math.round(heightPx * scale);
@@ -109,7 +111,7 @@ public class ArenaFloorPanel extends JPanel{
 		return img;
 	}
 
-	/** Contorno in pixel dell'ostacolo, identico a quello usato da CollisionDetector. */
+	/** Outline in pixels of the obstacle, identical to the one used by CollisionDetector. */
 	public static Shape outlineOf(Obstacle obst){
 		ObjectID id = obst.getID();
 		double cell = Const.cellSize;

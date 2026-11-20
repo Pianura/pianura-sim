@@ -1,21 +1,24 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.gui.view;
 
-/** Livelli di visualizzazione attivabili dal pannello laterale. Letti dal thread di disegno. */
+/** Display layers switched from the side panel. Read by the drawing thread. */
 public final class ViewOptions {
-    /** Cerchio del campo dei sensori IR (come nella versione originale). */
+    /** Circle of the IR sensors' range (as in the original version). */
     public volatile boolean sensorRange = true;
-    /** Raggi dei 18 sensori con il punto colpito. */
+    /** Rays of the 18 sensors with the point hit. */
     public volatile boolean sensorRays = false;
-    /** Percorso seguito dai robot. */
+    /** Path followed by the robots. */
     public volatile boolean trails = false;
-    /** Numero del robot (etichetta a fumetto). */
+    /** Robot number (speech-bubble label). */
     public volatile boolean ids = true;
     /**
-     * Distanza dell'etichetta dal centro del robot, in raggi del robot, in alto a sinistra a 45°:
-     * 0 = sopra il centro, 1 = sul bordo, 2 = staccata come un fumetto.
+     * Distance of the label from the robot's centre, in robot radii, top left at 45°:
+     * 0 = over the centre, 1 = on the edge, 2 = detached like a speech bubble.
      */
     public volatile double labelDistanceFromCenter = 2.0;
-    /** Sensori ottici di pavimento, colorati con il valore letto. */
+    /** Floor sensors, colored with the value they read. */
     public volatile boolean floorSensors = true;
     /** Radio links between robots (color = connected component, dashed + arrow = one way) and messages in flight. */
     public volatile boolean commLinks = false;
@@ -25,6 +28,10 @@ public final class ViewOptions {
     public volatile boolean minimap = true;
     /** The view scrolls when the pointer rests near its border (like strategy games). */
     public volatile boolean edgeScroll = true;
-    /** Griglia delle celle sopra il pavimento. */
+    /** Debug drawings made by the robots' code (robot.viz(...)). */
+    public volatile boolean drawings = true;
+    /** Only the drawings of the selected robot (useful with many robots). */
+    public volatile boolean drawingsSelectedOnly = false;
+    /** Grid of the cells over the floor. */
     public volatile boolean grid = false;
 }

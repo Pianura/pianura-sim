@@ -1,27 +1,28 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.units.collisions;
 
 /**
- * Rettangolo ruotato per il rilevamento collisioni geometrico.
- * La posizione è il centro del rettangolo (in pixel).
- * L'angolo di rotazione è in radianti.
+ * Rotated rectangle for geometric collision detection. The position is the rectangle's
+ * centre (pixels); the rotation angle is in radians.
  *
- * Usa il metodo degli slab (AABB nel frame locale del rettangolo):
- * il raggio viene trasformato nel sistema di riferimento del rettangolo
- * (centrato nell'origine, asse-allineato), poi testato contro i due slab.
+ * Slab method (AABB in the rectangle's local frame): the ray is transformed into the
+ * rectangle's frame (centred at the origin, axis-aligned), then tested against the two slabs.
  */
 public class RectShape implements CollidableShape {
 
-    private final double cx, cy;  // centro in pixel
-    private final double hw, hh;  // semi-larghezza e semi-altezza in pixel
-    private final double cosA, sinA;  // cos(-angle), sin(-angle) per trasformazione inversa
+    private final double cx, cy;  // centre in pixels
+    private final double hw, hh;  // half width and half height in pixels
+    private final double cosA, sinA;  // cos(-angle), sin(-angle) for the inverse transformation
     private final double angle;
 
     /**
-     * @param cx     centro X in pixel
-     * @param cy     centro Y in pixel
-     * @param width  larghezza in pixel
-     * @param height altezza in pixel
-     * @param angle  angolo di rotazione in radianti
+     * @param cx     centre X in pixels
+     * @param cy     centre Y in pixels
+     * @param width  width in pixels
+     * @param height height in pixels
+     * @param angle  rotation angle in radians
      */
     public RectShape(double cx, double cy, double width, double height, double angle) {
         this.cx = cx;
@@ -36,13 +37,13 @@ public class RectShape implements CollidableShape {
     @Override
     public java.awt.Shape outline() {
         java.awt.geom.AffineTransform at = java.awt.geom.AffineTransform.getTranslateInstance(cx, cy);
-        at.rotate(angle);   // coordinate schermo: angolo positivo = orario, come i robot
+        at.rotate(angle);   // screen coordinates: positive angle = clockwise, as for the robots
         return at.createTransformedShape(new java.awt.geom.Rectangle2D.Double(-hw, -hh, 2 * hw, 2 * hh));
     }
 
     @Override
     public double rayIntersect(double ox, double oy, double dx, double dy, double maxDist) {
-        // Trasformiamo il raggio nel frame locale del rettangolo (rotazione inversa)
+        // Transform the ray into the rectangle's local frame (inverse rotation)
         double rx = ox - cx;
         double ry = oy - cy;
         double lox = cosA * rx - sinA * ry;
@@ -50,7 +51,7 @@ public class RectShape implements CollidableShape {
         double ldx = cosA * dx - sinA * dy;
         double ldy = sinA * dx + cosA * dy;
 
-        // Metodo degli slab contro AABB [-hw, hw] x [-hh, hh]
+        // Slab method against the AABB [-hw, hw] x [-hh, hh]
         double tmin = -Double.MAX_VALUE;
         double tmax =  Double.MAX_VALUE;
 
@@ -78,12 +79,12 @@ public class RectShape implements CollidableShape {
             if (tmin > tmax) return -1;
         }
 
-        // La forma è completamente dietro al raggio
+        // The shape is entirely behind the ray
         if (tmax < 0) return -1;
 
-        // Origine dentro il rettangolo: contatto immediato, qualunque sia la distanza del punto di uscita
-        // (prima veniva scartato se l'uscita era oltre maxDist: un robot col centro dentro un rettangolo
-        // grande risultava "libero" sia per i sensori sia per la validazione)
+        // Origin inside the rectangle: immediate contact, wherever the exit point is
+        // (it used to be discarded when the exit was beyond maxDist: a robot with its centre inside
+        // a large rectangle looked "free" both to its sensors and to the validation)
         if (tmin < 0) return 0;
 
         return (tmin <= maxDist) ? tmin : -1;

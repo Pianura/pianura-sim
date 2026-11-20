@@ -1,35 +1,38 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.units;
 
 /**
- * Logica di controllo di un robot, separata dal robot stesso.
+ * Control logic of a robot, separate from the robot itself.
  *
- * Il simulatore chiama {@link #control(RobotUnit, double)} a intervalli regolari di
- * tempo simulato: il controllore legge i sensori dal robot e imposta i motori.
- * È l'alternativa "a callback" allo stile sequenziale di RobotDummy.executeLoop():
+ * The simulator calls {@link #control(RobotUnit, double)} at regular intervals of
+ * simulated time: the controller reads the sensors from the robot and sets the motors.
+ * It is the "callback" alternative to the sequential style of RobotDummy.executeLoop():
  *
  * <pre>
  *   addRobot(new ControllerRobot(1, new Position(5, 5, 0), 2, 0.1,
- *       (robot, t) -&gt; robot.forward(500)));
+ *       (robot, t) -&gt; robot.forward(1.0)));   // 1 cell/s straight ahead
  * </pre>
  *
- * Lo stesso contratto vale per i controllori remoti (es. un programma esterno
- * collegato via rete): chi implementa questa interfaccia può inoltrare i sensori
- * e ricevere i comandi da un altro processo.
+ * Remote controllers follow the same contract (e.g. an external program connected over
+ * the network): an implementation can forward the sensors to another process and receive
+ * the commands from it.
  */
 @FunctionalInterface
 public interface RobotController {
 
     /**
-     * Un ciclo di controllo.
-     * @param robot   il robot controllato (sensori in lettura, motori in scrittura)
-     * @param simTime tempo simulato corrente in secondi
+     * One control cycle.
+     * @param robot   the controlled robot (sensors to read, motors to set)
+     * @param simTime current simulated time in seconds
      */
     void control(RobotUnit robot, double simTime);
 
-    /** Chiamato una volta prima del primo ciclo. */
+    /** Called once before the first cycle. */
     default void onStart(RobotUnit robot) {}
 
-    /** Chiamato quando il robot si ferma (fine simulazione, guasto, errore). */
+    /** Called when the robot stops (end of the simulation, fault, error). */
     default void onStop(RobotUnit robot) {}
 
 }

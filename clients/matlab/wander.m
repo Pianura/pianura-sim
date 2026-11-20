@@ -1,3 +1,6 @@
+% Copyright (c) 2008-2026 Raffaele Grandi
+% SPDX-License-Identifier: MIT
+
 function wander(ids, host, port)
 % WANDER  Robots that wander around and steer away from obstacles, driven from MATLAB.
 %
@@ -18,7 +21,7 @@ if nargin < 3 || isempty(port), port = 5555; end
 p.front = [0 1 2 16 17] + 1;      % IR sensors around the heading (+1: MATLAB indices start at 1)
 p.leftSide = (13:17) + 1;
 p.rightSide = (1:5) + 1;
-p.near = 18;                      % IR value (px from the body) under which an obstacle is "near"
+p.near = 1.2;                     % IR value (cells from the body) under which an obstacle is "near"
 p.beaconPeriod = 1.0;             % s between two radio beacons
 p.forgetAfter = 2.5;              % s of silence after which a neighbour is forgotten
 

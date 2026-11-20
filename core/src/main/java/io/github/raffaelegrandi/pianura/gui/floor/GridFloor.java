@@ -1,9 +1,12 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.gui.floor;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
 
-/** Sfondo uniforme con linee di griglia sottili, stile "carta millimetrata". */
+/** Plain background with thin grid lines, "graph paper" style. */
 public class GridFloor implements FloorStyle {
 
     private final Color background, lines;

@@ -1,3 +1,6 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.algorithms.beaconwanderer;
 
 import java.util.HashMap;
@@ -16,17 +19,18 @@ import io.github.raffaelegrandi.pianura.units.RobotUnit;
 public class BeaconWanderer implements RobotController {
 
 	private static final int[] FRONT = { 0, 1, 2, 16, 17 };
-	private static final int NEAR = 18;
+	/** Obstacle ahead closer than this to the body, cells. */
+	private static final double NEAR = 1.2;
 
 	private final Random rnd;
-	private final Map<Integer, Double> lastHeard = new HashMap<>();   // id del vicino → ultimo beacon ricevuto
+	private final Map<Integer, Double> lastHeard = new HashMap<>();   // neighbour id → last beacon received
 	private double nextBeacon;
 	private int turning = 0;
 	private double turnDir = 1;
 
 	public BeaconWanderer(long seed) {
 		rnd = new Random(seed);
-		nextBeacon = rnd.nextDouble();            // i beacon non partono tutti nello stesso istante
+		nextBeacon = rnd.nextDouble();            // the beacons do not all start at the same instant
 	}
 
 	/** Neighbours currently known from their beacons. */
@@ -42,14 +46,14 @@ public class BeaconWanderer implements RobotController {
 			nextBeacon = t + 1.0;
 		}
 
-		int[] ir = r.getAllSens();
-		int front = Integer.MAX_VALUE;
+		double[] ir = r.getIr();
+		double front = Double.MAX_VALUE;
 		for (int i : FRONT) front = Math.min(front, ir[i]);
 		if (turning > 0) {
 			turning--;
 			r.setRobotSpeed(0, 2.0 * turnDir);
 		} else if (front < NEAR || r.hasCollision()) {
-			int left = ir[13] + ir[14] + ir[15] + ir[16] + ir[17], right = ir[1] + ir[2] + ir[3] + ir[4] + ir[5];
+			double left = ir[13] + ir[14] + ir[15] + ir[16] + ir[17], right = ir[1] + ir[2] + ir[3] + ir[4] + ir[5];
 			turnDir = left > right ? -1 : 1;
 			turning = 4 + rnd.nextInt(7);
 			r.setRobotSpeed(0, 2.0 * turnDir);

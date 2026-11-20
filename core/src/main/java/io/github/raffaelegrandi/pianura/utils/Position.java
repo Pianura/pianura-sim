@@ -1,9 +1,20 @@
+// Copyright (c) 2008-2026 Raffaele Grandi
+// SPDX-License-Identifier: MIT
+
 package io.github.raffaelegrandi.pianura.utils;
 
 import java.awt.geom.Point2D;
 
 	
 
+/**
+ * A pose: x and y in cells, theta in radians.
+ *
+ * <p>The poses Pianura publishes ({@code getPosition()}, {@code ObjectID.getPos()}) are
+ * snapshots: Pianura never changes them after handing them out, so they can be kept and read
+ * from any thread. The setters below are for one's own copies; changing a published pose does
+ * not move the robot (use {@code setPos} with a new object) and confuses other readers.
+ */
 @SuppressWarnings("serial")
 public class Position extends Point2D.Double {
 	

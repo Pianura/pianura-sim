@@ -32,4 +32,24 @@ Radio messages:
         robot.drive(1.0, 0.0)                # the messages leave with this command
 ```
 
-`wander.py` sends a beacon every second and prints which robots it can hear.
+Debug drawings over the arena, in named layers (coordinates in cells; colors by name,
+`"#rrggbb"` or `(r, g, b)`):
+
+```python
+        robot.layer("plan").clear().polyline(xs, ys, color="blue").disc(gx, gy, 0.3, color="red")
+        robot.layer("trail").point(s.x, s.y)            # never cleared: it grows
+        robot.drive(1.0, 0.0)                           # the drawings leave with this command
+```
+
+Shapes: `point`, `line`, `arrow`, `circle`, `disc`, `rect`, `polyline`, `polygon`, `text`;
+`robot.clear_drawings()` clears every layer.
+
+Pianura's **Inspector** window shows the algorithm's state, values, time plots and log:
+
+```python
+        robot.inspect.state("searching").watch("nodes", n).plot("error", e).log("goal seen")
+```
+
+`wander.py` sends a beacon every second with its position, prints which robots it can hear and
+draws a line to where it believes each neighbour is (layer `radio`); in the Inspector it shows
+whether it is cruising or turning away, its front IR reading and how many neighbours it hears.
