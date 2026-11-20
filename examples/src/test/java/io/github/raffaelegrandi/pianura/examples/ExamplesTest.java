@@ -28,7 +28,7 @@ import io.github.raffaelegrandi.pianura.utils.Position;
  */
 class ExamplesTest {
 
-    /** Crea clock+motore, collega e avvia i robot (motore non ancora avviato). */
+    /** Creates clock + engine, connects and starts the robots (engine not started yet). */
     private static SimEngine setup(List<RobotDummy> robots, List<Obstacle> obstacles) {
         SimClock clock = new SimClock(Const.physicsStep);
         SimEngine engine = new SimEngine(clock, new CollisionDetector(obstacles), robots);

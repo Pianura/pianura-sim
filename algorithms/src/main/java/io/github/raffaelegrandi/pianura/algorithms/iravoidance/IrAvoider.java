@@ -102,7 +102,7 @@ public class IrAvoider extends RobotDummy {
 	}
 
 	private void sleepSimTime(double st_val){
-		// tempo simulato: rispetta pausa, passo singolo e velocità
+		// simulated time: respects pause, single step and speed
 		sleepSim(st_val);
 	}
 

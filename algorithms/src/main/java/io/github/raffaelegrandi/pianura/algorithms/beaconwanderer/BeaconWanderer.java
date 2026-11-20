@@ -20,14 +20,14 @@ public class BeaconWanderer implements RobotController {
 	private static final double NEAR = 1.2;
 
 	private final Random rnd;
-	private final Map<Integer, Double> lastHeard = new HashMap<>();   // id del vicino → ultimo beacon ricevuto
+	private final Map<Integer, Double> lastHeard = new HashMap<>();   // neighbour id → last beacon received
 	private double nextBeacon;
 	private int turning = 0;
 	private double turnDir = 1;
 
 	public BeaconWanderer(long seed) {
 		rnd = new Random(seed);
-		nextBeacon = rnd.nextDouble();            // i beacon non partono tutti nello stesso istante
+		nextBeacon = rnd.nextDouble();            // the beacons do not all start at the same instant
 	}
 
 	/** Neighbours currently known from their beacons. */

@@ -36,15 +36,15 @@ public class LargeMapScenario extends ScenarioManager {
 		setFloor(FloorStyle.voronoiTiles(new Color(196, 186, 168), 3, seed));
 		getCommSettings().setRange(8);
 		Random rnd = new Random(seed);
-		List<Rectangle2D> taken = new ArrayList<>();      // ingombri già usati (in celle)
+		List<Rectangle2D> taken = new ArrayList<>();      // bounds already taken (cells)
 
-		// --- edificio: stanze di 40 x 40 celle separate da muri con porte larghe 6 celle ---
+		// --- building: rooms of 40 x 40 cells separated by walls with 6-cell doors ---
 		Color wall = new Color(112, 104, 96);
 		int room = 40, door = 6;
 		for (int x = room; x < widthCells; x += room) wallWithDoors(true, x, heightCells, room, door, rnd, wall, taken);
 		for (int y = room; y < heightCells; y += room) wallWithDoors(false, y, widthCells, room, door, rnd, wall, taken);
 
-		// --- casse e colonne sparse, mai sovrapposte ---
+		// --- scattered boxes and columns, never overlapping ---
 		Color[] crate = { new Color(70, 110, 160), new Color(150, 95, 60), new Color(95, 130, 85) };
 		int items = widthCells * heightCells / 220;
 		for (int i = 0, tries = 0; i < items && tries < items * 30; tries++) {
@@ -52,7 +52,7 @@ public class LargeMapScenario extends ScenarioManager {
 			boolean oval = rnd.nextDouble() < 0.3;
 			double w = oval ? 2 + rnd.nextDouble() * 2 : 1.5 + rnd.nextDouble() * 4;
 			double h = oval ? w : 1.5 + rnd.nextDouble() * 3;
-			double reach = Math.hypot(w, h) / 2 + 1.2;          // anche ruotata, più un margine per passare
+			double reach = Math.hypot(w, h) / 2 + 1.2;          // rotated too, plus a margin to pass by
 			Rectangle2D box = new Rectangle2D.Double(x - reach, y - reach, 2 * reach, 2 * reach);
 			if (overlaps(box, taken)) continue;
 			taken.add(box);
@@ -73,13 +73,13 @@ public class LargeMapScenario extends ScenarioManager {
 		}
 	}
 
-	/** Muro lungo tutta l'arena con una porta in ogni tratto tra due incroci. */
+	/** Wall across the whole arena with a door in every stretch between two crossings. */
 	private void wallWithDoors(boolean vertical, double at, double length, int room, int door, Random rnd, Color c, List<Rectangle2D> taken) {
 		double t = 1;
 		for (double start = 0; start < length; start += room) {
 			double end = Math.min(length, start + room);
 			double d0 = start + 4 + rnd.nextDouble() * Math.max(0, end - start - door - 8);   // porta
-			// i muri orizzontali si fermano contro quelli verticali (si toccano, non si sovrappongono)
+			// horizontal walls stop against the vertical ones (they touch, they do not overlap)
 			double a = !vertical && start > 0 ? start + t / 2 : start;
 			double b = !vertical && end < length ? end - t / 2 : end;
 			addSegment(vertical, at, a, d0, t, c, taken);
