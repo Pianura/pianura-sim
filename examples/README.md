@@ -9,17 +9,18 @@ obstacles, robots) plus a `Main` that starts it. The robot controllers are in
 From the repository root:
 
 ```bash
-./gradlew run                       # obstacles, the default demo
-./gradlew run -Pexample=braitenberg # any other example, by name
+./gradlew run                       # the start screen: recent, favourites, all the examples
+./gradlew run -Pexample=braitenberg # one example directly, by name
 ```
 
-An unknown name stops the build with the list of the available ones. The same examples are
-in the runnable jar: `./gradlew :examples:runnableJar`, then `java -jar build/pianura.jar`
-opens a window to pick one (`java -jar build/pianura.jar <name>` starts it directly). A new
-example needs its line in `Launcher.EXAMPLES` too; a test checks it. Examples open paused:
-arrange the scene if you like, then press **Run** (or Space). **Save…** (Ctrl+S) keeps the
-arrangement in a file and **Open…** (Ctrl+O) brings it back, also in a later run of the same
-example; see [Scene files](../README.md#scene-files).
+An unknown name stops the build with the list of the available ones. The same goes for the
+runnable jar: `./gradlew :examples:runnableJar`, then `java -jar build/pianura.jar` opens the
+start screen and `java -jar build/pianura.jar <name>` one example. A new example needs its line
+in `Launcher.EXAMPLES` too (name, description, tag, and how to build its scenario for the
+picture); a test checks it. Examples open paused: arrange the scene if you like, then press
+**Run** (or Space). **Save** (Ctrl+S) keeps the arrangement in a file and **Open** (Ctrl+O)
+brings it back, also in a later run of the same example; see
+[Scene files](../README.md#scene-files).
 
 ## The examples
 
@@ -35,6 +36,7 @@ example; see [Scene files](../README.md#scene-files).
 | `braitenberg` | Five Braitenberg vehicles with trails on; each draws an arrow with its intention | `BraitenbergVehicle` | added 2026 |
 | `planning` | An RRT grows under your eyes, the simulation pauses when the path is found, then the robot follows it; the inspector opens by itself | `RrtPlanner` | added 2026 |
 | `brains` | One brain per robot: eight remote robots, each driven by a separate program (`clients/python/swarm.py`) that knows only its sensors and the radio; they gather in groups. `--args=12` for twelve robots | remote, `brain.py` | added 2026 |
+| `sandbox` | A scene of your own: an empty arena with one wandering robot, or a scene file (`--args=my-scene.json`) with a wandering robot wherever the file puts one. The start screen opens new scenes and scene files here | `IrAvoider` | added 2026 |
 
 | ![obstacles](../docs/img/obstacles.png) | ![braitenberg](../docs/img/braitenberg.png) |
 |---|---|

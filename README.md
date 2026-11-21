@@ -71,17 +71,21 @@ cd pianura-sim
 ./gradlew run
 ```
 
-This opens the example `obstacles`: nine robots avoiding rectangular and oval obstacles.
-Examples open paused: arrange the scene if you like, then press **Run** (or Space).
+This opens the start screen: the scenes and examples you opened last, your favourites, all the
+examples, and the scene files of a folder of yours. Click one to open it; the **Home** button
+of a simulation brings you back. Simulations open paused: arrange the scene if you like, then
+press **Run** (or Space).
 
-To run another example, pass its name:
+![The start screen: recent items, favourites, examples, my scenes](docs/img/start.png)
+
+To start one example directly, pass its name:
 
 ```bash
 ./gradlew run -Pexample=braitenberg
 ```
 
 The available examples are `timedmotion`, `obstacles`, `rooms`, `linefollowing`, `remote`,
-`radio`, `largemap`, `braitenberg`, `planning` and `brains`. [`examples/README.md`](examples/README.md) says what
+`radio`, `largemap`, `braitenberg`, `planning`, `brains` and `sandbox`. [`examples/README.md`](examples/README.md) says what
 each one shows, with screenshots; the controllers they use are described in
 [`algorithms/README.md`](algorithms/README.md).
 
@@ -101,12 +105,38 @@ pianura-<version>.jar` (Java 21 or later, nothing else). To build it yourself:
 
 ```bash
 ./gradlew :examples:runnableJar          # writes build/pianura.jar (about 1.3 MB)
-java -jar build/pianura.jar              # a small window to pick an example
+java -jar build/pianura.jar              # the start screen
 java -jar build/pianura.jar planning     # one example directly; --list prints them all
 ```
 
 The jar holds Pianura, the algorithms, the examples and FlatLaf; `-Dpianura.laf=...` works
 here too (`java -Dpianura.laf=flat-dark -jar build/pianura.jar`).
+
+---
+
+## The window
+
+The buttons carry icons; their names and keyboard shortcuts appear when the pointer rests on
+them. The same simulation can be shown in two views, switched from the right end of the
+toolbar or with **F**:
+
+- **Studio**, to build and tune. Around the arena: the toolbar (run or pause with Space, step
+  with the right arrow, stop, speed, time; open and save a scene), tools on the left to add and
+  delete obstacles and to zoom, a side panel with the view options and the selected robot
+  (state, body, watched values), and at the bottom the timeline and the log. Each part can be
+  hidden from the toolbar.
+- **Focus**, to show. The arena takes the whole window and the controls float over it: run,
+  step and speed at the bottom, time at the top left, layers at the top right, a card that
+  follows the selected robot. `sim.setCaption("...")` adds a sentence that explains what is
+  going on, and `sim.setView(WorkspaceView.FOCUS)` starts in this view. **Esc** comes back.
+
+The **timeline** gives a lane to every robot that declares what it is doing with
+`robot.inspector().state("searching")`: coloured by state, from the start to now, it shows at a
+glance what each robot did and when. A click on a lane selects the robot.
+
+![The Studio view on the planning example: tools, the robot's panel, the timeline](docs/img/studio.png)
+
+![The Focus view: the arena and floating controls, with a caption](docs/img/focus.png)
 
 ---
 
@@ -288,9 +318,11 @@ public class Main {
 ### Scene files
 
 A scene is the stage without the actors: arena size and scale, obstacles, and where each
-robot stands (by id). Arrange it with the mouse, then **Save…** in the toolbar (Ctrl+S)
-writes it to a JSON file; **Open…** (Ctrl+O) loads one back, before the start or while
-paused, replacing the obstacles and moving the robots it lists. The file is short and can be
+robot stands (by id). Arrange it with the mouse (the tools on the left add and delete
+obstacles), then **Save** in the toolbar (Ctrl+S) writes it to a JSON file; **Open** (Ctrl+O)
+loads one back, before the start or while paused, replacing the obstacles and moving the robots
+it lists. The start screen lists the scenes saved and opened last, and opens a scene file in
+the example `sandbox`, with a robot that wanders wherever the file puts one. The file is short and can be
 edited by hand:
 
 ```json
