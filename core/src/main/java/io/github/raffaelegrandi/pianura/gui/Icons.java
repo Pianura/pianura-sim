@@ -26,7 +26,7 @@ public final class Icons {
     /** The icons. Each is a simple, common sign: a triangle to run, two bars to pause, ... */
     public enum Kind {
         PLAY, PAUSE, STEP, STOP, OPEN, SAVE, INSPECT, SIDEBAR, HOME, FOCUS, STUDIO, SELECT, RECT, OVAL,
-        TRASH, LOG, TIMELINE, FIT, ZOOM_IN, ZOOM_OUT, CLOSE, LAYERS, NEW
+        TRASH, LOG, TIMELINE, FIT, ZOOM_IN, ZOOM_OUT, CLOSE, LAYERS, NEW, CHEVRON_RIGHT, CHEVRON_DOWN, STAR, STAR_FILLED
     }
 
     private Icons() {}
@@ -156,6 +156,19 @@ public final class Icons {
             case LAYERS -> {
                 g.draw(closed(12, 4, 21, 9, 12, 14, 3, 9));
                 g.draw(path(3, 13, 12, 18, 21, 13));
+            }
+            case CHEVRON_RIGHT -> g.draw(path(9, 5, 16, 12, 9, 19));
+            case CHEVRON_DOWN -> g.draw(path(5, 9, 12, 16, 19, 9));
+            case STAR, STAR_FILLED -> {
+                Path2D star = new Path2D.Double();
+                for (int i = 0; i < 10; i++) {
+                    double a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 == 0 ? 9 : 4;
+                    if (i == 0) star.moveTo(12 + r * Math.cos(a), 12.5 + r * Math.sin(a));
+                    else star.lineTo(12 + r * Math.cos(a), 12.5 + r * Math.sin(a));
+                }
+                star.closePath();
+                if (k == Kind.STAR_FILLED) g.fill(star);
+                g.draw(star);
             }
             case NEW -> {
                 g.draw(closed(5, 3.5, 14, 3.5, 19, 8.5, 19, 20.5, 5, 20.5));

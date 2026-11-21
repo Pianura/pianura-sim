@@ -345,6 +345,7 @@ public class SimPanel extends JPanel implements ActionListener{
 				JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.OK_OPTION) return;
 		lastSceneDir = f.getParentFile();
 		try {
+			rememberScene(f);
 			SceneFile.write(f.toPath(), scenario.getArenaWidth(), scenario.getArenaHeight(), scenario.getMetersPerCell(),
 				scenario.getObstacles(), robots);
 			showMSG(false, "Scene saved: " + f.getName() + " (" + scenario.getNumObstacles() + " obstacles, " + robots.size() + " robots)");
@@ -366,9 +367,17 @@ public class SimPanel extends JPanel implements ActionListener{
 		lastSceneDir = f.getParentFile();
 		try {
 			applyScene(SceneFile.read(f.toPath()), f.getName());
+			rememberScene(f);
 		} catch (java.io.IOException | IllegalArgumentException ex) {
 			JOptionPane.showMessageDialog(this, "Cannot open " + f.getName() + ":\n" + ex.getMessage(), "Open scene", JOptionPane.ERROR_MESSAGE);
 		}
+	}
+
+	/** The start screen lists the scenes opened and saved last. */
+	private static void rememberScene(java.io.File f) {
+		io.github.raffaelegrandi.pianura.gui.start.StartStore store = io.github.raffaelegrandi.pianura.gui.start.StartStore.user();
+		store.touch(io.github.raffaelegrandi.pianura.gui.start.StartStore.Item.scene(f.toPath()));
+		if (store.scenesFolder() == null && f.getParentFile() != null) store.setScenesFolder(f.getParentFile().toPath());
 	}
 
 	/** Applies a scene read from file to the running scenario (EDT, simulation editable). */
@@ -480,6 +489,13 @@ public class SimPanel extends JPanel implements ActionListener{
 	public SimControlBar getControlBar(){ return controlBar; }
 
 	public void startRefresh(){repainter.start();}
+
+	/** Stops the refresh and closes the windows opened from here (inspector, connectivity). */
+	public void dispose() {
+		repainter.stop();
+		if (inspector != null) inspector.dispose();
+		if (connectivity != null) connectivity.dispose();
+	}
 
 	@Override
 	public void actionPerformed(ActionEvent arg0) {

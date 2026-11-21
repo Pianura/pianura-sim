@@ -22,4 +22,25 @@ class LauncherTest {
         for (Launcher.Example e : Launcher.EXAMPLES)
             assertNotNull(Class.forName(e.mainClass()).getMethod("main", String[].class));
     }
+
+    @Test
+    void everyExampleHasAPictureForTheStartScreen() {
+        for (Launcher.Example e : Launcher.EXAMPLES) {
+            var img = io.github.raffaelegrandi.pianura.gui.start.Thumbnails.ofScenario(e.preview().get(), 208, 112);
+            assertEquals(208, img.getWidth(), e.name());
+            assertFalse(e.tag().isBlank(), e.name());
+        }
+    }
+
+    @Test
+    void theSandboxOpensASceneFileWithItsRobots(@org.junit.jupiter.api.io.TempDir java.nio.file.Path dir) throws Exception {
+        java.nio.file.Path f = dir.resolve("scene.json");
+        new io.github.raffaelegrandi.pianura.examples.planning.PlanningScenario().saveScene(f);
+        var sandbox = new io.github.raffaelegrandi.pianura.examples.sandbox.SandboxScenario(f);
+        assertEquals(40, sandbox.getArenaWidth());
+        assertEquals(1, sandbox.getNumRobots());
+        assertEquals(4, sandbox.getRobots().get(0).getPosition().x, 1e-9, "where the file puts it");
+        assertTrue(sandbox.getNumObstacles() > 3);
+        assertEquals(1, new io.github.raffaelegrandi.pianura.examples.sandbox.SandboxScenario().getNumRobots());
+    }
 }

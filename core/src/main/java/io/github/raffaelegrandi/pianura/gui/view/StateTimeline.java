@@ -102,7 +102,8 @@ public class StateTimeline extends JComponent {
 
     @Override
     public Dimension getPreferredSize() {
-        return new Dimension(400, TOP + Math.max(1, lanes.size()) * (LANE + GAP) + AXIS + 4);
+        if (lanes.isEmpty()) return new Dimension(400, TOP + 10);       // only the line that says what it is
+        return new Dimension(400, TOP + lanes.size() * (LANE + GAP) + AXIS + 4);
     }
 
     private int laneAt(int y) {

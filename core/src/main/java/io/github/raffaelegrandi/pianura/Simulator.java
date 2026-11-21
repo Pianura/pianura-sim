@@ -55,6 +55,8 @@ public class Simulator {
 		io.github.raffaelegrandi.pianura.gui.LookAndFeelSetup.install();   // FlatLaf if present, else Metal
 		mainFrame = new MainFrame(Const.guiFrameTitle, frameLoc, logInitStr, scenarioMngRef, engine);
 		mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		java.util.function.Consumer<Simulator> home = homeHandler;
+		if (home != null) mainFrame.simPanel.setHomeAction(() -> home.accept(this));
 		engine.setLogger(msg -> printLogMsg(false, msg));
 		if (mainFrame.simPanel.getControlBar() != null) mainFrame.simPanel.getControlBar().setStopAction(this::stopSim);
 
@@ -65,6 +67,25 @@ public class Simulator {
 			printLogMsg(false, "WARNING: " + problem);
 		}
 	}
+
+	private static volatile java.util.function.Consumer<Simulator> homeHandler;
+
+	/**
+	 * Gives a Home button to every simulation window created from now on: pressed, it calls the
+	 * handler with its simulator. The start screen uses it to close the simulation and come
+	 * back ({@link #close()}). Null removes it.
+	 */
+	public static void setHomeHandler(java.util.function.Consumer<Simulator> handler) { homeHandler = handler; }
+
+	/** Stops the simulation, if it is not stopped yet, and closes its windows. The program goes on. */
+	public void close() {
+		if (!engine.isStopped()) stopSim();
+		Runnable r = () -> { mainFrame.simPanel.dispose(); mainFrame.dispose(); };
+		if (SwingUtilities.isEventDispatchThread()) r.run(); else SwingUtilities.invokeLater(r);
+	}
+
+	/** The simulation's window. */
+	public JFrame getWindow() { return mainFrame; }
 
 	public void setNewScenario(ScenarioManager newScenario){
 		mainFrame.simPanel.configureGUI(newScenario.getRobots(), newScenario.getObstacles());

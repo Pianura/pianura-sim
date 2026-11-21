@@ -53,6 +53,12 @@ public final class LookAndFeelSetup {
         return UIManager.getLookAndFeel().getName();
     }
 
+    /** The theme's accent colour (the blue of the main buttons), with a fallback for Metal. */
+    public static java.awt.Color accentColor() {
+        java.awt.Color c = UIManager.getColor("Component.accentColor");
+        return c != null ? c : new java.awt.Color(0x2B63D9);
+    }
+
     /** True if FlatLaf is on the classpath. */
     public static boolean flatLafAvailable() {
         try {

@@ -12,17 +12,18 @@ dependencies {
 }
 
 // Every folder in the examples package is one example, started by its Main class:
-//   ./gradlew run                    -> obstacles, the default demo
-//   ./gradlew run -Pexample=radio    -> any other example (list in examples/README.md)
+//   ./gradlew run                    -> the start screen: recent scenes, favourites, all the examples
+//   ./gradlew run -Pexample=radio    -> one example directly (list in examples/README.md)
 val examplesDir = file("src/main/java/io/github/raffaelegrandi/pianura/examples")
 val available = examplesDir.listFiles { f -> f.isDirectory }.orEmpty().map { it.name }.sorted()
-val example = providers.gradleProperty("example").getOrElse("obstacles")
-require(example in available) {
+val example = providers.gradleProperty("example").orNull
+require(example == null || example in available) {
     "Unknown example '$example'. Available: ${available.joinToString(", ")}"
 }
 
 application {
-    mainClass.set("io.github.raffaelegrandi.pianura.examples.$example.Main")
+    mainClass.set(if (example == null) "io.github.raffaelegrandi.pianura.examples.Launcher"
+                  else "io.github.raffaelegrandi.pianura.examples.$example.Main")
 }
 
 // Pass -Dpianura.laf=... from the Gradle command line to the example
@@ -32,7 +33,7 @@ tasks.named<JavaExec>("run") {
 
 // One runnable jar with Pianura, the algorithms, the examples and FlatLaf:
 //   ./gradlew :examples:runnableJar   -> build/pianura.jar
-//   java -jar build/pianura.jar             (a window to pick an example)
+//   java -jar build/pianura.jar             (the start screen)
 //   java -jar build/pianura.jar planning    (one example directly; --list prints them)
 val runnableJar by tasks.registering(Jar::class) {
     group = "distribution"
