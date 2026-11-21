@@ -122,6 +122,17 @@ public class Simulator {
 	/** Opens the inspector window (as the Inspector button does). */
 	public void openInspector() { SwingUtilities.invokeLater(() -> mainFrame.simPanel.setInspectorVisible(true)); }
 
+	/**
+	 * Chooses the view of the window: Studio (tools and panels around the arena) or Focus (the
+	 * arena takes the whole window, for lessons and demos). The user switches with the toolbar or F.
+	 */
+	public void setView(io.github.raffaelegrandi.pianura.gui.WorkspaceView view) {
+		SwingUtilities.invokeLater(() -> mainFrame.simPanel.setView(view));
+	}
+
+	/** A sentence shown over the arena in the Focus view, to explain what is going on (null = none). */
+	public void setCaption(String text) { SwingUtilities.invokeLater(() -> mainFrame.simPanel.setCaption(text)); }
+
 	/** View options, e.g. {@code getViewOptions().labelDistanceFromCenter = 0}. */
 	public io.github.raffaelegrandi.pianura.gui.view.ViewOptions getViewOptions() { return mainFrame.simPanel.getViewOptions(); }
 

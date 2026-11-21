@@ -28,8 +28,12 @@ import io.github.raffaelegrandi.pianura.units.collisions.CollisionDetector;
 import io.github.raffaelegrandi.pianura.utils.LogArea;
 
 /**
- * Main panel: toolbar (top), arena view (centre), view side panel (right, can be hidden),
- * log (bottom).
+ * The simulation window's content, in two views (see {@link WorkspaceView}).
+ *
+ * <p>Studio: toolbar with icons (top), tools to build the scene (left), the arena (centre), a
+ * side panel with the view options and the selected robot (right), the timeline of the robots'
+ * states and the log (bottom); each part can be hidden. Focus: only the arena, with floating
+ * controls ({@link FocusOverlay}).
  */
 @SuppressWarnings("serial")
 public class SimPanel extends JPanel implements ActionListener{
@@ -46,7 +50,18 @@ public class SimPanel extends JPanel implements ActionListener{
 	private List<RobotDummy> robots;
 	private io.github.raffaelegrandi.pianura.gui.view.ConnectivityWindow connectivity;
 	private io.github.raffaelegrandi.pianura.gui.view.InspectorWindow inspector;
-	private JToggleButton inspectorToggle;
+	private JToggleButton inspectorToggle, studioToggle, focusToggle;
+	private JButton homeButton;
+	private Runnable homeAction;
+	private JToolBar toolRail;
+	private final JTabbedPane dock;
+	private final JPanel bottom;
+	private final JScrollPane timelineScroll, logScroll;
+	private final io.github.raffaelegrandi.pianura.gui.view.RobotPanel robotPanel;
+	private final io.github.raffaelegrandi.pianura.gui.view.StateTimeline timeline;
+	private FocusOverlay overlay;
+	private WorkspaceView view = WorkspaceView.STUDIO;
+	private static final Color NEW_OBSTACLE = new Color(112, 124, 140);
 	private final ScenarioManager scenario;
 	private static java.io.File lastSceneDir;   // folder of the last scene opened or saved
 
@@ -55,7 +70,7 @@ public class SimPanel extends JPanel implements ActionListener{
 		arenaHpx = (int) Math.round(scenario.getArenaHeightPx());
 		this.engine = engine;
 		this.scenario = scenario;
-
+		this.robots = scenario.getRobots();
 		logArea = new LogArea(logAreaInit, 4, 5);
 		repainter = new Timer(Const.repaintTime, this);
 		setLayout(new BorderLayout());
@@ -64,6 +79,7 @@ public class SimPanel extends JPanel implements ActionListener{
 		FloorMap floorMap = engine != null ? engine.getFloorMap() : newFloorMap(scenario.getFloor());
 		arena = new ArenaView(floorMap, arenaWpx, arenaHpx, scenario.getObstacles(), scenario.getRobots(), options);
 		add(arena, BorderLayout.CENTER);
+
 		if (engine != null) {
 			arena.setSceneEditor(new ArenaView.SceneEditor() {
 				@Override public boolean canEdit() { return engine.isEditable(); }
@@ -74,60 +90,224 @@ public class SimPanel extends JPanel implements ActionListener{
 					return v;
 				}
 			});
+			arena.setNetwork(engine.getNetwork(), engine.getClock());
 		}
 
-		if (engine != null) arena.setNetwork(engine.getNetwork(), engine.getClock());
+		// right: the selected robot and the view options, in two tabs
 		sidePanel = new ViewSidePanel(arena, options, scenario.getFloor(), this::changeFloor,
 			ViewSidePanel.arenaInfo(scenario.getArenaWidth(), scenario.getArenaHeight(), scenario.getMetersPerCell(),
 				scenario.getNumObstacles(), scenario.getNumRobots()),
 			engine != null ? engine.getNetwork() : null, this::openConnectivityWindow);
-		this.robots = scenario.getRobots();
 		JScrollPane sideScroll = new JScrollPane(sidePanel, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
 			ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-		sideScroll.setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.LIGHT_GRAY));
-		add(sideScroll, BorderLayout.EAST);
+		sideScroll.setBorder(null);
+		robotPanel = new io.github.raffaelegrandi.pianura.gui.view.RobotPanel(this::inspect);
+		dock = new JTabbedPane();
+		dock.setFocusable(false);
+		dock.addTab("View", sideScroll);
+		dock.addTab("Robot", robotPanel);
+		dock.setToolTipTextAt(0, "Zoom, layers, floor, radio and arena");
+		dock.setToolTipTextAt(1, "The selected robot: state, body and watched values");
+		dock.setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.LIGHT_GRAY));
+		add(dock, BorderLayout.EAST);
+
+		// bottom: the timeline of the robots' states, and the log
+		timeline = new io.github.raffaelegrandi.pianura.gui.view.StateTimeline(robots,
+			() -> engine != null ? engine.getClock().now() : 0, arena::select);
+		timelineScroll = new JScrollPane(timeline, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+			ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER) {
+			@Override public java.awt.Dimension getPreferredSize() {
+				java.awt.Dimension d = super.getPreferredSize();
+				return new java.awt.Dimension(d.width, Math.min(d.height, 172));
+			}
+		};
+		timelineScroll.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY));
+		timelineScroll.getVerticalScrollBar().setUnitIncrement(21);
+		logScroll = new JScrollPane(logArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
+			ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		bottom = new JPanel(new BorderLayout());
+		bottom.add(timelineScroll, BorderLayout.NORTH);
+		bottom.add(logScroll, BorderLayout.CENTER);
+		add(bottom, BorderLayout.SOUTH);
+
 		arena.setSelectionListener(r -> {
 			sidePanel.refresh();
+			robotPanel.show(r);
+			timeline.setSelected(r);
+			if (r != null && view == WorkspaceView.STUDIO) dock.setSelectedIndex(1);
 			if (inspector != null) inspector.arenaSelectionChanged(r);
 		});
 		arena.setViewListener(sidePanel::refresh);
 		arena.setInspectHandler(this::inspect);
 
 		if (engine != null) {
-			controlBar = new SimControlBar(engine);
-			controlBar.installKeyBindings(this);
-			JToggleButton panelToggle = new JToggleButton("Panel", true);
-			panelToggle.setFocusable(false);
-			panelToggle.setToolTipText("Show/hide the view panel");
-			panelToggle.addActionListener(e -> { sideScroll.setVisible(panelToggle.isSelected()); revalidate(); });
-			JButton openScene = new JButton("Open…");
-			JButton saveScene = new JButton("Save…");
-			openScene.setFocusable(false);
-			saveScene.setFocusable(false);
-			openScene.setToolTipText("Open a scene: obstacles and robot positions (Ctrl+O; before the start or paused)");
-			saveScene.setToolTipText("Save the scene as it is now: obstacles and robot positions (Ctrl+S)");
-			openScene.addActionListener(e -> openScene());
-			saveScene.addActionListener(e -> saveScene());
-			controlBar.addSeparator();
-			controlBar.add(openScene);
-			controlBar.add(saveScene);
-			inspectorToggle = new JToggleButton("Inspector", false);
-			inspectorToggle.setFocusable(false);
-			inspectorToggle.setToolTipText("Open/close the inspector: state, values, plots and log of the selected robot");
-			inspectorToggle.addActionListener(e -> setInspectorVisible(inspectorToggle.isSelected()));
-			controlBar.addSeparator();
-			controlBar.add(inspectorToggle);
-			controlBar.add(panelToggle);
-			int menu = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();   // Ctrl, or Cmd on macOS
-			getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, menu), "pianura-open");
-			getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, menu), "pianura-save");
-			getActionMap().put("pianura-open", new AbstractAction() { public void actionPerformed(ActionEvent e) { openScene(); } });
-			getActionMap().put("pianura-save", new AbstractAction() { public void actionPerformed(ActionEvent e) { saveScene(); } });
-			add(controlBar, BorderLayout.NORTH);
+			buildToolbar();
+			buildToolRail();
+			overlay = new FocusOverlay(arena, engine, controlBar, options, () -> setView(WorkspaceView.STUDIO), this::inspect);
+			bindKey(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F, 0), "pianura-focus",
+				() -> setView(view == WorkspaceView.FOCUS ? WorkspaceView.STUDIO : WorkspaceView.FOCUS));
+			bindKey(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0), "pianura-studio",
+				() -> { if (view == WorkspaceView.FOCUS) setView(WorkspaceView.STUDIO); });
+			bindKey(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0), "pianura-delete", this::deleteSelectedObstacle);
 		}
-		JScrollPane logScroll = new JScrollPane(logArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
-			ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-		add(logScroll, BorderLayout.SOUTH);
+	}
+
+	private void bindKey(KeyStroke k, String name, Runnable r) {
+		getInputMap(WHEN_IN_FOCUSED_WINDOW).put(k, name);
+		getActionMap().put(name, new AbstractAction() { public void actionPerformed(ActionEvent e) { r.run(); } });
+	}
+
+	/** Top bar: run, step, stop, speed and time; scene files; what to show; the views. */
+	private void buildToolbar() {
+		controlBar = new SimControlBar(engine);
+		controlBar.installKeyBindings(this);
+
+		homeButton = SimControlBar.iconButton(Icons.Kind.HOME, "Back to the start screen: examples and recent scenes");
+		homeButton.setVisible(false);
+		homeButton.addActionListener(e -> { if (homeAction != null) homeAction.run(); });
+		controlBar.add(homeButton, 0);
+
+		JButton openScene = SimControlBar.iconButton(Icons.Kind.OPEN, "Open a scene: obstacles and robot positions (Ctrl+O; before the start or paused)");
+		JButton saveScene = SimControlBar.iconButton(Icons.Kind.SAVE, "Save the scene as it is now: obstacles and robot positions (Ctrl+S)");
+		openScene.addActionListener(e -> openScene());
+		saveScene.addActionListener(e -> saveScene());
+		controlBar.addSeparator();
+		controlBar.add(openScene);
+		controlBar.add(saveScene);
+
+		inspectorToggle = SimControlBar.iconToggle(Icons.Kind.INSPECT, "Inspector: plots, views and log of the selected robot, in its own window", false);
+		inspectorToggle.addActionListener(e -> setInspectorVisible(inspectorToggle.isSelected()));
+		JToggleButton timelineToggle = SimControlBar.iconToggle(Icons.Kind.TIMELINE, "Show/hide the timeline of the robots' states", true);
+		timelineToggle.addActionListener(e -> { timelineScroll.setVisible(timelineToggle.isSelected()); revalidate(); });
+		JToggleButton logToggle = SimControlBar.iconToggle(Icons.Kind.LOG, "Show/hide the log", true);
+		logToggle.addActionListener(e -> { logScroll.setVisible(logToggle.isSelected()); revalidate(); });
+		JToggleButton dockToggle = SimControlBar.iconToggle(Icons.Kind.SIDEBAR, "Show/hide the side panel (view options and selected robot)", true);
+		dockToggle.addActionListener(e -> { dock.setVisible(dockToggle.isSelected()); revalidate(); });
+		controlBar.addSeparator();
+		controlBar.add(inspectorToggle);
+		controlBar.add(timelineToggle);
+		controlBar.add(logToggle);
+		controlBar.add(dockToggle);
+
+		studioToggle = SimControlBar.iconToggle(Icons.Kind.STUDIO, "Studio view: tools and panels around the arena", true);
+		focusToggle = SimControlBar.iconToggle(Icons.Kind.FOCUS, "Focus view: the arena takes the whole window (F; Esc to come back)", false);
+		ButtonGroup views = new ButtonGroup();
+		views.add(studioToggle);
+		views.add(focusToggle);
+		studioToggle.addActionListener(e -> setView(WorkspaceView.STUDIO));
+		focusToggle.addActionListener(e -> setView(WorkspaceView.FOCUS));
+		controlBar.addSeparator();
+		controlBar.add(studioToggle);
+		controlBar.add(focusToggle);
+
+		int menu = GraphicsEnvironment.isHeadless() ? java.awt.event.InputEvent.CTRL_DOWN_MASK
+			: Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();          // Ctrl, or Cmd on macOS
+		bindKey(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, menu), "pianura-open", this::openScene);
+		bindKey(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, menu), "pianura-save", this::saveScene);
+		add(controlBar, BorderLayout.NORTH);
+	}
+
+	/** Left rail: tools to build the scene and to move around it. */
+	private void buildToolRail() {
+		toolRail = new JToolBar(JToolBar.VERTICAL);
+		toolRail.setFloatable(false);
+		toolRail.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Color.LIGHT_GRAY));
+		JButton addRect = SimControlBar.iconButton(Icons.Kind.RECT, "Add a rectangle in the middle of the view (before the start or paused)");
+		JButton addOval = SimControlBar.iconButton(Icons.Kind.OVAL, "Add an oval in the middle of the view (before the start or paused)");
+		JButton delete = SimControlBar.iconButton(Icons.Kind.TRASH, "Delete the selected obstacle (Delete)");
+		JButton zoomIn = SimControlBar.iconButton(Icons.Kind.ZOOM_IN, "Zoom in (+)");
+		JButton zoomOut = SimControlBar.iconButton(Icons.Kind.ZOOM_OUT, "Zoom out (-)");
+		JButton fit = SimControlBar.iconButton(Icons.Kind.FIT, "Fit the arena to the window (Home)");
+		addRect.addActionListener(e -> addObstacle(io.github.raffaelegrandi.pianura.arena.ArenaObjectType.OBSTACLE_RECT));
+		addOval.addActionListener(e -> addObstacle(io.github.raffaelegrandi.pianura.arena.ArenaObjectType.OBSTACLE_OVAL));
+		delete.addActionListener(e -> deleteSelectedObstacle());
+		zoomIn.addActionListener(e -> arena.zoom(1.25));
+		zoomOut.addActionListener(e -> arena.zoom(1 / 1.25));
+		fit.addActionListener(e -> arena.fitToWindow());
+		toolRail.add(addRect);
+		toolRail.add(addOval);
+		toolRail.add(delete);
+		toolRail.addSeparator();
+		toolRail.add(zoomIn);
+		toolRail.add(zoomOut);
+		toolRail.add(fit);
+		add(toolRail, BorderLayout.WEST);
+	}
+
+	// ------------------------------------------------------------------ views
+
+	/** Switches between the Studio and the Focus view (EDT). */
+	public void setView(WorkspaceView v) {
+		if (engine == null || v == null) return;
+		view = v;
+		boolean studio = v == WorkspaceView.STUDIO;
+		controlBar.setVisible(studio);
+		toolRail.setVisible(studio);
+		dock.setVisible(studio);
+		bottom.setVisible(studio);
+		studioToggle.setSelected(studio);
+		focusToggle.setSelected(!studio);
+		overlay.setVisible(!studio);
+		arena.setEditHintVisible(studio);
+		revalidate();
+		repaint();
+	}
+
+	public WorkspaceView getView() { return view; }
+
+	/** A sentence shown over the arena in the Focus view, to explain what is going on (null = none). */
+	public void setCaption(String text) { if (overlay != null) overlay.setCaption(text); }
+
+	/** Shows a Home button on the toolbar that runs this action (null = no button). */
+	public void setHomeAction(Runnable action) {
+		homeAction = action;
+		if (homeButton != null) homeButton.setVisible(action != null);
+	}
+
+	// ------------------------------------------------------------------ building the scene
+
+	private boolean editableOrExplain() {
+		if (engine != null && engine.isEditable()) return true;
+		showMSG(false, "Pause the simulation to change the scene");
+		return false;
+	}
+
+	/** Adds an obstacle in the middle of the view; it can then be moved and resized with the mouse. */
+	public void addObstacle(io.github.raffaelegrandi.pianura.arena.ArenaObjectType type) {
+		if (!editableOrExplain()) return;
+		java.awt.geom.Point2D c = arena.getTransform().center(arena.getWidth(), arena.getHeight());
+		boolean oval = type == io.github.raffaelegrandi.pianura.arena.ArenaObjectType.OBSTACLE_OVAL;
+		double w = oval ? 3 : 4, h = oval ? 3 : 2;
+		double x = Math.max(w / 2, Math.min(scenario.getArenaWidth() - w / 2, c.getX() / Const.cellSize));
+		double y = Math.max(h / 2, Math.min(scenario.getArenaHeight() - h / 2, c.getY() / Const.cellSize));
+		Obstacle o = new Obstacle(type, NEW_OBSTACLE, new io.github.raffaelegrandi.pianura.utils.Position(x, y, 0), w, h);
+		List<Obstacle> list = new java.util.ArrayList<>(scenario.getObstacles());
+		list.add(o);
+		replaceObstacles(list);
+		arena.selectObstacleAt(list.size() - 1);
+		showMSG(false, "Added " + (oval ? "an oval" : "a rectangle") + ": drag it to move it, its handles to resize or turn it");
+	}
+
+	/** Deletes the obstacle selected in the arena, if any. */
+	public void deleteSelectedObstacle() {
+		int i = arena.getSelectedObstacle();
+		if (i < 0 || i >= scenario.getObstacles().size() || !editableOrExplain()) return;
+		List<Obstacle> list = new java.util.ArrayList<>(scenario.getObstacles());
+		list.remove(i);
+		replaceObstacles(list);
+		showMSG(false, "Obstacle deleted");
+	}
+
+	private void replaceObstacles(List<Obstacle> list) {
+		engine.replaceScene(list, java.util.Map.of());
+		scenario.getObstacles().clear();
+		scenario.getObstacles().addAll(list);
+		arena.obstaclesReplaced();
+		sidePanel.setArenaInfo(ViewSidePanel.arenaInfo(scenario.getArenaWidth(), scenario.getArenaHeight(),
+			scenario.getMetersPerCell(), scenario.getNumObstacles(), scenario.getNumRobots()));
+		CollisionDetector.Validation v = engine.validate();
+		arena.setValidation(v);
+		if (!v.isOk()) reportValidation(v);
 	}
 
 	/** Changes the floor: view and floor sensors. */
@@ -304,10 +484,20 @@ public class SimPanel extends JPanel implements ActionListener{
 	@Override
 	public void actionPerformed(ActionEvent arg0) {
 		arena.repaint();
-		// labels and panel do not need 60 Hz
+		boolean focus = view == WorkspaceView.FOCUS;
+		// labels and panels do not need 60 Hz
 		if (++refreshCounter % 6 == 0) {
-			if (controlBar != null) controlBar.refresh();
-			sidePanel.refresh();
+			if (focus) {
+				overlay.refresh();
+			} else {
+				if (controlBar != null) controlBar.refresh();
+				if (dock.isVisible()) {
+					if (dock.getSelectedIndex() == 0) sidePanel.refresh(); else robotPanel.refresh();
+				}
+				if (timelineScroll.isVisible()) timeline.refresh();
+			}
+		} else if (focus) {
+			overlay.follow();   // the card keeps up with its robot
 		}
 	}
 

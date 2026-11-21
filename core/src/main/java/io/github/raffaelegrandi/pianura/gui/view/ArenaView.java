@@ -265,6 +265,14 @@ public class ArenaView extends JPanel {
         repaint();
     }
 
+    private boolean editHint = true;
+
+    /** Shows or hides the line of editing hints at the top left (hidden in the Focus view). */
+    public void setEditHintVisible(boolean on) { editHint = on; repaint(); }
+
+    /** Selects an obstacle by its index in the scenario's list (-1 = none). */
+    public void selectObstacleAt(int i) { selectObstacle(i >= 0 && i < obstacles.size() ? i : -1); }
+
     private void selectObstacle(int i) {
         selectedObstacle = i;
         if (i >= 0) { selected = null; selectionListener.accept(null); }
@@ -780,7 +788,7 @@ public class ArenaView extends JPanel {
         g.setTransform(screen);
         for (RobotUnit r : drawers) paintDrawingTexts(g, r);
         if (options.ids) paintLabels(g, rs, pos);
-        if (editable()) paintEditHint(g);
+        if (editHint && editable()) paintEditHint(g);
         if (minimapVisible()) paintMinimap(g, rs, pos);
         g.dispose();
     }

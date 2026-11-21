@@ -80,6 +80,7 @@ public final class Inspector {
     }
 
     private final DoubleSupplier clock;
+    private final ArrayDeque<Entry> states = new ArrayDeque<>();   // every change: (time, new state)
     private String state = "";
     private double stateSince = 0;
     private final Map<String, String> watched = new LinkedHashMap<>();
@@ -103,6 +104,8 @@ public final class Inspector {
             double t = clock.getAsDouble();
             state = s;
             stateSince = t;
+            if (states.size() >= MAX_LOG) states.removeFirst();
+            states.addLast(new Entry(t, s));
             addLog(t, "state: " + s);
             version++;
         }
@@ -193,6 +196,12 @@ public final class Inspector {
         version++;
         return this;
     }
+
+    /**
+     * The history of the state: one entry per change, with the time it began (the last one is
+     * the current state). The timeline draws it as a lane of coloured segments.
+     */
+    public synchronized List<Entry> states() { return List.copyOf(states); }
 
     /** Forgets plots, watched values, views and log; keeps the state. */
     public synchronized void clear() {
