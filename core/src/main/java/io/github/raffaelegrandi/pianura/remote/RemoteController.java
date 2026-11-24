@@ -72,11 +72,6 @@ public final class RemoteController implements RobotController {
     // ------------------------------------------------------------------ from the network
 
     void connect(SocketAddress from) {
-        lock.lock();
-        try {
-            client = from;
-            lagging = false;
-        } finally { lock.unlock(); }
         Map<String, Object> w = new LinkedHashMap<>();
         w.put("type", "welcome");
         w.put("protocol", RemoteServer.PROTOCOL_VERSION);
@@ -107,7 +102,16 @@ public final class RemoteController implements RobotController {
             w.put("description", describe(r));
             w.put("capabilities", capabilities(r));
         }
-        server.send(from, w);
+        // Registered and welcomed in one step, with the lock held. The robot's thread reads the
+        // client under the same lock, so it cannot send a sensor reading before the welcome (the
+        // client would miss it while it waits for the welcome, and the simulation would wait for
+        // an answer that never comes); and whoever has received the welcome is already registered.
+        lock.lock();
+        try {
+            client = from;
+            lagging = false;
+            server.send(from, w);
+        } finally { lock.unlock(); }
         server.log("Remote client for robot #" + robotId + " connected from " + from);
     }
 
