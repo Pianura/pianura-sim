@@ -68,6 +68,8 @@ other in the same loop, as `wander.m` does.
 | `robot.inspectWatch(name, value)` / `robot.inspectPlot(name, value)` | A named value to show, a point for the time plot `name`; all leave with the next `drive`/`wheels` |
 | `robot.inspectBars(name, v [, labels])` / `robot.inspectMatrix(name, M)` | A vector as bars (labels: cell array of names), a matrix as a heat map |
 | `robot.inspectNetwork(name, {a0, a1, ...} [, {W1, ...} [, labels]])` | A layered network: activations per layer (inputs first), optional weights `W{l}` out x in, optional names per layer |
+| `robot.Kind`, `robot.Description`, `robot.Capabilities` | What the robot is and has, from the welcome: `'sim'` or `'bot'`, a sentence, and the declared sensors, actuators and features (see [the protocol page](../README.md#what-the-robot-is-and-has)) |
+| `robot.has(name)` | True if the robot declares the feature (`'radio'`, `'draw'`, `'inspector'`) or sensor (`'bump'`, `'floor'`, `'pose'`, ...). Missing sensors read as empty or NaN; drawings and inspector data are left out where they do not exist; a radio message without a radio is `Pianura:noRadio` |
 | `robot.close()` | Stops driving the robot (it keeps its last command) and releases the socket |
 
 The reading `s` is a struct:
@@ -109,6 +111,7 @@ Catch them with `try`/`catch` and look at `err.identifier`:
 | `Pianura:timeout` | No message within the timeout: is Pianura running, and is the robot id right? |
 | `Pianura:error` | Pianura answered with an error (unknown robot, malformed command, ...) |
 | `Pianura:protocol` | The server speaks another protocol version: update the client together with Pianura |
+| `Pianura:noRadio` | `broadcast` or `send` for a robot that has no radio: check `robot.has('radio')` first |
 
 ## Notes
 

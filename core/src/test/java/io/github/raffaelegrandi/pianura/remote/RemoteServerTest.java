@@ -93,6 +93,87 @@ class RemoteServerTest {
 
     @Test
     @Timeout(20)
+    void theWelcomeDescribesTheRobot() throws Exception {
+        Sim sim = new Sim(RemoteServer.Mode.LOCKSTEP, 1000);
+        try (Client c = new Client(sim.server.getPort())) {
+            c.send(Client.msg("type", "hello", "robot", 1));
+            Map<String, Object> w = c.receive();
+            assertEquals(3.0, w.get("protocol"), "the descriptor adds fields: the version stays 3");
+            assertEquals("sim", w.get("kind"));
+            String d = (String) w.get("description");
+            assertTrue(d.contains("18 infrared") && d.contains("2 cells across (10 cm)"), d);
+            Map<?, ?> caps = (Map<?, ?>) w.get("capabilities");
+            Map<?, ?> sensors = (Map<?, ?>) caps.get("sensors");
+            assertEquals(List.of("pose", "ir", "bump", "contact", "floor", "wheels"), List.copyOf(sensors.keySet()));
+            assertEquals("truth", ((Map<?, ?>) sensors.get("pose")).get("source"));
+            Map<?, ?> ir = (Map<?, ?>) sensors.get("ir");
+            assertEquals(18.0, ir.get("count"));
+            assertEquals(sim.robot.getIrRange(), ir.get("range"));
+            List<?> angles = (List<?>) ir.get("angles");
+            assertEquals(18, angles.size());
+            assertEquals(0.0, angles.get(0));
+            assertEquals(Math.toRadians(20), (Double) angles.get(1), 1e-4, "sensor 1 is 20 degrees clockwise of the heading");
+            Map<?, ?> floor = (Map<?, ?>) sensors.get("floor");
+            assertEquals(2.0, floor.get("count"));
+            assertEquals(255.0, floor.get("max"));
+            assertEquals(Math.toRadians(-20), (Double) ((List<?>) floor.get("angles")).get(0), 1e-4, "sensor 0 is on the left");
+            Map<?, ?> drive = (Map<?, ?>) ((Map<?, ?>) caps.get("actuators")).get("drive");
+            assertEquals(List.of("v_w", "wheels"), drive.get("modes"));
+            assertFalse(drive.containsKey("v_max"), "the simulator has no speed limits: none declared");
+            assertEquals(List.of("radio", "draw", "inspector"), caps.get("features"));
+
+            // every sensor declared is a key of the readings, and the sizes agree
+            sim.runAsync(0.1);
+            Map<String, Object> s;
+            do { s = c.receive(); } while (!"sensors".equals(s.get("type")));
+            for (Object name : sensors.keySet()) assertTrue(s.containsKey(name), "declared and sent: " + name);
+            assertEquals(18, ((List<?>) s.get("ir")).size());
+            assertEquals(18, ((List<?>) s.get("bump")).size());
+            assertEquals(2, ((List<?>) s.get("floor")).size());
+            c.send(Client.msg("type", "bye", "robot", 1));
+            sim.finish();
+        }
+    }
+
+    /**
+     * The same check a physical robot will have to pass, run against the simulator: the Python
+     * script connects, reads the descriptor and drives. Skipped where there is no python3.
+     */
+    @Test
+    @Timeout(60)
+    void theSimulatorPassesTheConformanceCheck() throws Exception {
+        java.io.File script = new java.io.File("../clients/python/conformance.py");
+        org.junit.jupiter.api.Assumptions.assumeTrue(script.isFile() && hasPython(), "needs python3 and the clients folder");
+        Sim sim = new Sim(RemoteServer.Mode.LOCKSTEP, 5000);
+        Process p = new ProcessBuilder("python3", script.getPath(), "--port", String.valueOf(sim.server.getPort()), "--timeout", "20")
+            .redirectErrorStream(true).start();
+        try {
+            long t0 = System.currentTimeMillis();
+            while (!sim.server.controller(1).isConnected() && System.currentTimeMillis() - t0 < 15000) Thread.sleep(20);
+            assertTrue(sim.server.controller(1).isConnected(), "the check said hello");
+            sim.runAsync(30);
+            assertTrue(p.waitFor(40, java.util.concurrent.TimeUnit.SECONDS), "the check ends");
+            String out = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(0, p.exitValue(), out);
+            assertTrue(out.contains("0 failed: CONFORMS"), out);
+            assertTrue(out.contains("ok    drive mode \"wheels\" is accepted"), out);
+            assertEquals(0, sim.robot.getLinearSpeed(), 1e-9, "the check leaves the robot still");
+        } finally {
+            p.destroyForcibly();
+            sim.finish();
+        }
+    }
+
+    private static boolean hasPython() {
+        try {
+            return new ProcessBuilder("python3", "--version").redirectErrorStream(true).start().waitFor() == 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @Test
+    @Timeout(20)
     void helloGetsWelcome() throws Exception {
         Sim sim = new Sim(RemoteServer.Mode.LOCKSTEP, 1000);
         try (Client c = new Client(sim.server.getPort())) {

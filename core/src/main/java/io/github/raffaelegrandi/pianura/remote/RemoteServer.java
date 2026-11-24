@@ -27,7 +27,8 @@ import io.github.raffaelegrandi.pianura.utils.Position;
  * Units: lengths in cells (the welcome says how many meters a cell is), time in s, angles in rad:
  * <pre>
  *   client → Pianura   {"type":"hello","robot":1}
- *   Pianura → client   {"type":"welcome","protocol":3,"robot":1,"mode":"lockstep","period":0.1,"units":{...},"body":{...}}
+ *   Pianura → client   {"type":"welcome","protocol":3,"robot":1,"mode":"lockstep","period":0.1,"units":{...},"body":{...},
+ *                      "kind":"sim","description":"...","capabilities":{"sensors":{...},"actuators":{...},"features":[...]}}
  *   Pianura → client   {"type":"sensors","robot":1,"seq":7,"t":0.7,"pose":{...},"ir":[...],"bump":[...],"floor":[...],
  *                    ...,"inbox":[{"from":2,"to":"all","t":0.6,"data":{...}}]}
  *   client → Pianura   {"type":"cmd","robot":1,"seq":7,"v":1.0,"w":0.3}      (or "left"/"right" wheel speeds, cells/s)
@@ -68,8 +69,10 @@ public final class RemoteServer implements AutoCloseable {
      * 3 = units in cells everywhere: "ir" in cells from the body ("ir_range" when nothing is in range),
      * "bump" as booleans, wheel commands in cells/s; the welcome carries "meters_per_cell" and the
      * robot's geometry ("body"); optional "draw" (debug drawings) and "state"/"log"/"watch"/"plot"
-     * (inspector) in cmd. Version 2 added radio
-     * messages, version 1 was the first one.
+     * (inspector) in cmd; the descriptor in the welcome ("kind", "description", "capabilities": the
+     * robot's sensors, actuators and features), so that a client can run on another robot that speaks
+     * this protocol. Version 2 added radio messages, version 1 was the first one. The number changes
+     * when a message changes meaning, not when optional fields are added.
      */
     public static final int PROTOCOL_VERSION = 3;
     public static final int DEFAULT_PORT = 5555;

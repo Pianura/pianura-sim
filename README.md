@@ -362,6 +362,12 @@ describes the protocol and contains two ready-made clients:
 - [`clients/matlab`](clients/matlab): MATLAB with no toolbox (or GNU Octave), with a
   go-to-goal example that plots its errors.
 
+When a client connects, Pianura tells it what the robot is and has: its sensors with their
+number and directions, how it can be driven, whether the pose is the true one, and which extras
+exist (radio, drawings, inspector). A program that asks instead of assuming can run unchanged
+on a physical robot that speaks the same protocol; `clients/python/conformance.py` checks that
+a simulator or a robot does what it declares.
+
 ---
 
 ## Sensor layout

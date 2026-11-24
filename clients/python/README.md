@@ -59,6 +59,27 @@ light up in the Inspector with their activations, its connections are coloured b
 draws a line to where it believes each neighbour is (layer `radio`); in the Inspector it shows
 whether it is cruising or turning away, its front IR reading and how many neighbours it hears.
 
+## The same program on the simulator and on a robot
+
+After `connect()` the robot says what it is and has, from Pianura's welcome message:
+
+```python
+robot.kind            # "sim" for the simulator, "bot" for a physical robot
+robot.description     # a sentence about it
+robot.has("radio")    # a feature ("radio", "draw", "inspector") or a sensor ("bump", "floor", "pose", ...)
+robot.pose_source     # "truth" in the simulator; "odometry" or "none" on a robot
+robot.ir_angles       # where each IR sensor points: radians from the heading, clockwise
+robot.capabilities    # everything, as declared
+```
+
+A program that uses these instead of "18 sensors every 20 degrees" and "the pose is true" runs
+unchanged on a physical robot that speaks the protocol. Readings of sensors the robot does not
+have are empty lists or `nan`; drawings and inspector data are quietly left out where they do
+not exist; `broadcast()` and `send()` raise `PianuraError` on a robot without a radio.
+
+`conformance.py` checks that a simulator or a robot does what it declares:
+`python3 conformance.py` (then press Run), see [the protocol page](../README.md#conformance-check).
+
 ## One brain per robot
 
 Each robot can have a program of its own: its brain. `brain.py` is the brain of one robot and

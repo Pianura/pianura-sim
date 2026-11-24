@@ -58,7 +58,7 @@ angles turn **clockwise** on screen.
 
 | Message | Meaning |
 |---|---|
-| `{"type":"welcome","protocol":3,"robot":1,"mode":"lockstep","period":0.1,"units":{...},"body":{...}}` | Connection accepted, see below. |
+| `{"type":"welcome","protocol":3,"robot":1,"mode":"lockstep","period":0.1,"units":{...},"body":{...},"kind":"sim","description":"...","capabilities":{...}}` | Connection accepted, see below. |
 | `{"type":"sensors", ...}` | One reading per control period, see below. |
 | `{"type":"stopped","robot":1}` | The simulation was stopped or the robot was disabled. |
 | `{"type":"error","message":"..."}` | Malformed JSON, unknown robot, invalid command, ... |
@@ -70,13 +70,16 @@ angles turn **clockwise** on screen.
 | `mode`, `period` | `"lockstep"` or `"realtime"`; control period in seconds of simulated time |
 | `units` | `{"length":"cell","meters_per_cell":0.05,"time":"s","angle":"rad"}` |
 | `body` | The robot's geometry, in cells: `radius` (1), `wheel_base` (2), `wheel_radius` (0.25), `ir_count` (18), `ir_range` (the value IR sensors read when nothing is in range), `floor_count` |
+| `kind` | `"sim"`: Pianura the simulator. A physical robot that speaks this protocol says `"bot"` |
+| `description` | A sentence about the robot, for people and for agents, not for code |
+| `capabilities` | What the robot has: `sensors`, `actuators`, `features`. See [What the robot is and has](#what-the-robot-is-and-has) |
 
 `sensors` fields:
 
 | Field | Content |
 |---|---|
 | `seq`, `t` | Sequence number (echo it in `cmd`) and simulated time |
-| `pose` | `{"x","y","theta"}`: true pose of the robot |
+| `pose` | `{"x","y","theta"}`: pose of the robot. In the simulator it is the true one (`capabilities.sensors.pose.source` says so) |
 | `ir` | 18 IR sensors, index 0 = front then clockwise every 20°: distance in cells from the body to the nearest obstacle or robot, `ir_range` when nothing is in range |
 | `bump` | 18 bump sensors, `true` = contact in that direction |
 | `contact` | `true` while the body is pushing against an obstacle or robot |
@@ -85,6 +88,80 @@ angles turn **clockwise** on screen.
 | `active` | `false` after a simulated fault |
 | `inbox` | Radio messages received since the previous reading: `[{"from":2,"to":"all","t":0.6,"data":...}]` (`to` is `"all"` for a broadcast, else the receiver id; `t` is the sending time) |
 | `inbox_dropped` | Present only if the inbox did not fit in one datagram: number of oldest messages dropped |
+
+## What the robot is and has
+
+The welcome message describes the robot, so that a client does not have to assume the
+simulator's: a program written against Pianura should run unchanged on a physical robot that
+speaks this protocol, apart from the differences declared here.
+
+```json
+"kind": "sim",
+"description": "Simulated differential-drive robot, 2 cells across (10 cm): 18 infrared distance sensors ...",
+"capabilities": {
+  "sensors": {
+    "pose":    {"source": "truth"},
+    "ir":      {"count": 18, "unit": "cell", "range": 2, "angles": [0, 0.3491, 0.6981, ...]},
+    "bump":    {"count": 18, "angles": [0, 0.3491, ...]},
+    "contact": {},
+    "floor":   {"count": 2, "min": 0, "max": 255, "angles": [-0.3491, 0.3491], "radius": 0.97},
+    "wheels":  {"unit": "cell"}
+  },
+  "actuators": {"drive": {"modes": ["v_w", "wheels"]}},
+  "features": ["radio", "draw", "inspector"]
+}
+```
+
+| Field | Content |
+|---|---|
+| `sensors` | One entry per sensor the robot has. **Each name is a key of the `sensors` message**: a sensor that is not declared is not sent, and what is declared is always sent |
+| `sensors.*.count` | How many readings the list has |
+| `sensors.*.angles` | Where each reading points: radians from the heading, positive clockwise, one per reading |
+| `sensors.ir.range`, `.unit` | The value read when nothing is in range, and the unit of the readings |
+| `sensors.floor.min`, `.max`, `.radius` | Range of the readings (black to white) and distance of the sensors from the robot's centre, in cells |
+| `sensors.pose.source` | `"truth"`: the simulator knows where the robot is. `"odometry"`: the robot's own estimate, which drifts. `"none"`: no pose, and `pose` is absent from the readings |
+| `actuators.drive.modes` | How the robot can be driven: `"v_w"` (`v` and `w` in `cmd`) and `"wheels"` (`left` and `right`) |
+| `actuators.drive.v_max`, `.w_max`, `.wheel_max` | Speed limits in cells/s and rad/s, when the robot has them: commands beyond them are reduced to the limit. The simulator has none and declares none |
+| `features` | What there is beyond sensors and motors: `"radio"` (`inbox`, `broadcast`, `send`), `"draw"` (debug drawings), `"inspector"` |
+
+What changes on a physical robot (`"kind": "bot"`), and how a client finds out:
+
+| | Simulator | Physical robot |
+|---|---|---|
+| `kind` | `sim` | `bot` |
+| `mode` | `lockstep` or `realtime` | `realtime` only: the world does not wait |
+| Sensors | 18 IR, 18 bump, 2 floor, wheels, pose | whatever it declares, with its own counts and `angles` |
+| `pose` | the truth | `odometry`, or `none` |
+| `t` | simulated time | time since the robot was switched on |
+| `features` | `radio`, `draw`, `inspector` | only what it has; maybe none |
+| Speed limits | none | declared, and enforced by the robot |
+
+So a client that wants to run on both asks before it assumes: the number of IR readings and
+their `angles` instead of "18, every 20°", `pose.source` before trusting the pose, `features`
+before using the radio. The ready-made clients do this for you: `robot.has("radio")`,
+`robot.pose_source`, `robot.ir_angles` in Python, `robot.has('radio')` and `robot.Capabilities`
+in MATLAB; readings of sensors that are not there are empty or NaN; drawings and inspector data
+are quietly left out where they do not exist, and a radio message without a radio is an error.
+
+These fields were added to version 3 without changing the others: a client that ignores them
+keeps working, and a client that finds no `capabilities` is talking to an older Pianura, which
+is the simulator with everything.
+
+### Conformance check
+
+[`python/conformance.py`](python/conformance.py) checks that a server does what its welcome
+declares: it connects as a client, validates the welcome and the descriptor, compares a reading
+with the declared sensors (nothing missing, nothing undeclared, sizes and ranges), and drives
+with every declared mode. It is the same check for the simulator and for a robot, which is what
+keeps the two aligned:
+
+```bash
+./gradlew run -Pexample=remote         # or switch a robot on
+python3 clients/python/conformance.py  # --robot, --host, --port; then press Run in Pianura
+```
+
+It prints one line per check and ends with `CONFORMS` or `DOES NOT CONFORM` (exit status 0 or 1).
+Pianura's own tests run it against the simulator.
 
 ## Radio messages
 
@@ -175,10 +252,11 @@ accepted), MATLAB with `robot.inspectState`, `inspectWatch`, `inspectPlot`, `ins
 ## Versions
 
 Clients and server must speak the same protocol version, otherwise the client refuses the
-welcome: update the clients together with Pianura.
+welcome: update the clients together with Pianura. The version changes when a message changes
+meaning; fields that are only added, and that a client may ignore, do not change it.
 
 | Version | Changes |
 |---|---|
-| 3 | Units in cells everywhere: `ir` in cells (was px, 255 = nothing), `bump` as booleans, wheel commands in cells/s (were JUSE's motor units); `meters_per_cell` and `body` in the welcome; debug drawings (`draw` in cmd); inspector (`state`, `watch`, `plot`, `log`, then `bars`, `matrix`, `network` in cmd: optional fields, older clients unaffected) |
+| 3 | Units in cells everywhere: `ir` in cells (was px, 255 = nothing), `bump` as booleans, wheel commands in cells/s (were JUSE's motor units); `meters_per_cell` and `body` in the welcome; debug drawings (`draw` in cmd); inspector (`state`, `watch`, `plot`, `log`, then `bars`, `matrix`, `network` in cmd: optional fields, older clients unaffected); then the descriptor in the welcome (`kind`, `description`, `capabilities`: added fields, older clients unaffected) |
 | 2 | Radio messages: `inbox` in sensors, `broadcast` / `send` in cmd |
 | 1 | First version |

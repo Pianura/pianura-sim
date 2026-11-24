@@ -100,8 +100,92 @@ public final class RemoteController implements RobotController {
             body.put("floor_count", r.getFloorSensorCount());
             w.put("body", body);
         }
+        // the descriptor: what this robot is and has, so that a client written for the simulator
+        // can find out what differs on another robot (fewer sensors, no true pose, no radio...)
+        w.put("kind", KIND);
+        if (r != null) {
+            w.put("description", describe(r));
+            w.put("capabilities", capabilities(r));
+        }
         server.send(from, w);
         server.log("Remote client for robot #" + robotId + " connected from " + from);
+    }
+
+    /** What answers: the simulator. A physical robot that speaks this protocol says "bot". */
+    public static final String KIND = "sim";
+
+    /** What the simulator offers beyond sensors and motors; a robot lists only what it has. */
+    public static final List<String> FEATURES = List.of("radio", "draw", "inspector");
+
+    /**
+     * The robot's capabilities for the welcome message. Every key of {@code sensors} is a key of
+     * the sensor messages, with what a client needs to use it without assuming the simulator's
+     * robot: how many readings, where they point (radians from the heading, clockwise), their
+     * unit and range. {@code pose.source} says where the pose comes from: "truth" here.
+     */
+    static Map<String, Object> capabilities(RobotUnit r) {
+        Map<String, Object> sensors = new LinkedHashMap<>();
+        sensors.put("pose", Map.of("source", "truth"));
+
+        var irs = r.getUnitObject().getIrSensors();
+        Map<String, Object> ir = new LinkedHashMap<>();
+        ir.put("count", irs.length());
+        ir.put("unit", "cell");
+        ir.put("range", r.getIrRange());
+        ir.put("angles", angles(irs));
+        sensors.put("ir", ir);
+
+        var bumps = r.getUnitObject().getBumpSensors();
+        Map<String, Object> bump = new LinkedHashMap<>();
+        bump.put("count", bumps.length());
+        bump.put("angles", angles(bumps));
+        sensors.put("bump", bump);
+
+        sensors.put("contact", new LinkedHashMap<String, Object>());
+
+        var lay = r.getUnitObject().getFloorSensors().getLayout();
+        Map<String, Object> floor = new LinkedHashMap<>();
+        floor.put("count", lay.count());
+        floor.put("min", 0);
+        floor.put("max", 255);
+        double[] fa = new double[lay.count()];
+        for (int i = 0; i < fa.length; i++) fa[i] = round4(lay.angleRad(i));
+        floor.put("angles", fa);
+        floor.put("radius", round4(lay.radiusFraction() * r.getBodyRadius()));
+        sensors.put("floor", floor);
+
+        sensors.put("wheels", Map.of("unit", "cell"));
+
+        Map<String, Object> drive = new LinkedHashMap<>();
+        drive.put("modes", List.of("v_w", "wheels"));     // the simulator sets no speed limits: none declared
+        Map<String, Object> caps = new LinkedHashMap<>();
+        caps.put("sensors", sensors);
+        caps.put("actuators", Map.of("drive", drive));
+        caps.put("features", FEATURES);
+        return caps;
+    }
+
+    private static double[] angles(io.github.raffaelegrandi.pianura.units.collisions.SensorArray a) {
+        double[] out = new double[a.length()];
+        for (int i = 0; i < out.length; i++) out[i] = round4(a.getSensorAngle(i));
+        return out;
+    }
+
+    private static double round4(double v) { return Math.round(v * 1e4) / 1e4; }
+
+    /** A sentence about the robot for people and for agents, not for code. */
+    static String describe(RobotUnit r) {
+        double across = 2 * r.getBodyRadius();
+        return String.format(Locale.ROOT,
+            "Simulated differential-drive robot, %s cells across (%s cm): %d infrared distance sensors and %d bump sensors "
+            + "around the body, %d floor sensors under the nose, wheel travel, and its true pose from the simulator.",
+            trim(across), trim(across * r.getMetersPerCell() * 100), r.getIrCount(), r.getUnitObject().getBumpSensors().length(),
+            r.getFloorSensorCount());
+    }
+
+    private static String trim(double v) {
+        String s = String.format(Locale.ROOT, "%.2f", v);
+        return s.contains(".") ? s.replaceAll("0+$", "").replaceAll("\\.$", "") : s;
     }
 
     void disconnect(SocketAddress from) {

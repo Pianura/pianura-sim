@@ -43,12 +43,25 @@ time plots and a log, all stamped with the simulated time:
 
     robot.inspect.state("searching").watch("nodes", n).plot("error", e).log("goal seen")
 
+What the robot is and has: the welcome message says it (kind "sim" or "bot", a description,
+its sensors, actuators and features), so the same program can run on the simulator and on a
+physical robot that speaks this protocol:
+
+    robot.kind                # "sim" for the simulator, "bot" for a physical robot
+    robot.has("radio")        # a feature ("radio", "draw", "inspector") or a sensor ("bump", "floor", ...)
+    robot.pose_source         # "truth" in the simulator; "odometry" or "none" on a robot
+    robot.ir_angles           # where each IR sensor points, radians from the heading, clockwise
+
+Drawings and inspector data are debugging aids: on a robot without them they are quietly left
+out. Radio messages are part of the algorithm: without a radio, broadcast() and send() fail.
+
 Units (protocol version 3): lengths in cells, time in seconds, angles in radians. One cell is
 robot.meters_per_cell meters (0.05 by default: the robot is 2 cells, 10 cm, across).
 Screen convention: y grows downwards, positive angles turn clockwise on screen.
 """
 
 import json
+import math
 import socket
 from dataclasses import dataclass, field
 from typing import Any, List, Optional, Sequence, Union
@@ -76,15 +89,16 @@ class Message:
 class Sensors:
     t: float                    # simulated time (s)
     seq: int                    # sequence number, echoed back by drive()/wheels()
-    x: float                    # pose: position in cells ...
+    x: float                    # pose: position in cells ... (nan on a robot without a pose, see robot.pose_source)
     y: float
     theta: float                # ... and heading in radians (clockwise on screen)
-    ir: List[float]             # 18 IR sensors: cells from the body to the nearest hit, robot.ir_range if nothing
-                                # in range (index 0 = front, then clockwise every 20 degrees)
-    bump: List[bool]            # 18 bump sensors, True = contact in that direction
+    ir: List[float]             # IR sensors: cells from the body to the nearest hit, robot.ir_range if nothing in
+                                # range. In the simulator 18, index 0 = front, then clockwise every 20 degrees;
+                                # in general robot.ir_angles says where each one points
+    bump: List[bool]            # bump sensors, True = contact in that direction (empty if the robot has none)
     contact: bool               # the body is pushing against something
-    floor: List[int]            # floor sensors, 0 = black, 255 = white (0 = left, 1 = right)
-    wheel_left: float           # distance travelled by each wheel (cells, signed)
+    floor: List[int]            # floor sensors, 0 = black, 255 = white (0 = left, 1 = right; empty if none)
+    wheel_left: float           # distance travelled by each wheel (cells, signed; nan if not measured)
     wheel_right: float
     active: bool
     inbox: List[Message] = field(default_factory=list)   # radio messages received since the previous reading
@@ -273,6 +287,55 @@ class PianuraRobot:
                 self.welcome = msg
                 return msg
 
+    # -- what the robot is and has (the descriptor in the welcome message) ----------------
+
+    @property
+    def kind(self) -> str:
+        """"sim" for the simulator, "bot" for a physical robot (after connect())."""
+        return str(self._welcome().get("kind", "sim"))
+
+    @property
+    def description(self) -> str:
+        """A sentence about the robot, for people ("" if the server sends none)."""
+        return str(self._welcome().get("description", ""))
+
+    @property
+    def capabilities(self) -> dict:
+        """The robot's sensors, actuators and features as declared in the welcome message.
+
+        Empty with a Pianura that does not send them yet: has() then answers True, because such
+        a server is the simulator, with everything."""
+        return self._welcome().get("capabilities") or {}
+
+    def has(self, name: str) -> bool:
+        """True if the robot declares this feature ("radio", "draw", "inspector"), sensor ("pose",
+        "ir", "bump", "contact", "floor", "wheels") or actuator ("drive")."""
+        caps = self.capabilities
+        if not caps:
+            return True
+        if name == "pose":
+            return self.pose_source != "none"
+        return (name in caps.get("features", []) or name in caps.get("sensors", {})
+                or name in caps.get("actuators", {}))
+
+    @property
+    def pose_source(self) -> str:
+        """Where the pose in the sensor readings comes from: "truth" (the simulator knows it),
+        "odometry" (the robot's own estimate, which drifts) or "none" (no pose: x, y, theta are nan)."""
+        pose = self.capabilities.get("sensors", {}).get("pose")
+        if pose is None:
+            return "none" if self.capabilities else "truth"
+        return str(pose.get("source", "truth"))
+
+    @property
+    def ir_angles(self) -> List[float]:
+        """Direction of each IR sensor: radians from the heading, positive clockwise."""
+        ir = self.capabilities.get("sensors", {}).get("ir", {})
+        if "angles" in ir:
+            return [float(a) for a in ir["angles"]]
+        n = int(self._welcome()["body"]["ir_count"])
+        return [2 * math.pi * i / n for i in range(n)]
+
     @property
     def meters_per_cell(self) -> float:
         """Scale of the scenario: meters per cell (after connect())."""
@@ -317,12 +380,15 @@ class PianuraRobot:
             kind = msg.get("type")
             if kind == "sensors":
                 self._last_seq = int(msg["seq"])
-                pose, wheels = msg["pose"], msg["wheels"]
-                return Sensors(t=msg["t"], seq=self._last_seq, x=pose["x"], y=pose["y"], theta=pose["theta"],
-                               ir=[float(v) for v in msg["ir"]], bump=[bool(v) for v in msg["bump"]],
-                               contact=bool(msg["contact"]), floor=[int(v) for v in msg["floor"]],
-                               wheel_left=wheels["left"], wheel_right=wheels["right"],
-                               active=bool(msg["active"]),
+                # a robot sends only the sensors it has: what is missing reads as nan or empty
+                nan = float("nan")
+                pose, wheels = msg.get("pose") or {}, msg.get("wheels") or {}
+                return Sensors(t=msg["t"], seq=self._last_seq,
+                               x=pose.get("x", nan), y=pose.get("y", nan), theta=pose.get("theta", nan),
+                               ir=[float(v) for v in msg.get("ir", [])], bump=[bool(v) for v in msg.get("bump", [])],
+                               contact=bool(msg.get("contact", False)), floor=[int(v) for v in msg.get("floor", [])],
+                               wheel_left=wheels.get("left", nan), wheel_right=wheels.get("right", nan),
+                               active=bool(msg.get("active", True)),
                                inbox=[Message(sender=int(m["from"]), to=None if m["to"] == "all" else int(m["to"]),
                                               t=m["t"], data=m["data"]) for m in msg.get("inbox", [])],
                                raw=msg)
@@ -340,12 +406,19 @@ class PianuraRobot:
     def broadcast(self, data: Any):
         """Radio message to every robot in range; it leaves with the next drive()/wheels()."""
         json.dumps(data)                                  # fail now if it is not JSON data
+        self._need_radio()
         self._broadcast.append(data)
 
     def send(self, to: int, data: Any):
         """Radio message to robot `to` (delivered only if it is in range); leaves with the next drive()/wheels()."""
         json.dumps(data)
+        self._need_radio()
         self._send_to.append({"to": int(to), "data": data})
+
+    def _need_radio(self):
+        if self.welcome is not None and not self.has("radio"):
+            raise PianuraError(f"robot {self.robot_id} has no radio (it is not among its features): "
+                               "check robot.has(\"radio\") before sending")
 
     def layer(self, name: str = "default") -> Layer:
         """Debug drawing layer `name`; what is drawn leaves with the next drive()/wheels()."""
@@ -367,9 +440,11 @@ class PianuraRobot:
         sends = [{"to": "all", "data": d} for d in self._broadcast[1:]] + self._send_to
         if sends:
             msg["send"] = sends
-        if self._draw:
+        # debugging aids: left out on a robot that does not have them
+        if self._draw and (self.welcome is None or self.has("draw")):
             msg["draw"] = self._draw
-        msg.update(self._insp)
+        if self.welcome is None or self.has("inspector"):
+            msg.update(self._insp)
         self._broadcast, self._send_to, self._draw, self._insp = [], [], [], {}
         self._send(msg)
 

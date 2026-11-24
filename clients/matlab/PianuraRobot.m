@@ -40,11 +40,22 @@ classdef PianuraRobot < handle
     % inspectNetwork(name, {a0, a1, ...}, {W1, ...}); like drawings, they leave with the next
     % drive()/wheels().
     %
+    % What the robot is and has comes with the welcome message, so the same program can run on
+    % the simulator and on a physical robot that speaks this protocol:
+    %   robot.Kind                 'sim' for the simulator, 'bot' for a physical robot
+    %   robot.Description          a sentence about the robot
+    %   robot.has('radio')         a feature ('radio', 'draw', 'inspector') or a sensor ('bump', ...)
+    %   robot.Capabilities         sensors, actuators and features as declared (a struct)
+    % A robot sends only the sensors it has: what is missing reads as NaN or empty. Drawings and
+    % inspector data are debugging aids, quietly left out on a robot without them; without a
+    % radio, broadcast() and send() fail with Pianura:noRadio.
+    %
     % Errors (catch them with try/catch and look at err.identifier):
     %   Pianura:stopped   the simulation was stopped, or the robot was disabled
     %   Pianura:timeout   no message from Pianura within the timeout
     %   Pianura:error     Pianura answered with an error (unknown robot, bad command, ...)
     %   Pianura:protocol  the server speaks another protocol version
+    %   Pianura:noRadio   a radio message for a robot that has no radio
     %
     % It uses Java's java.net.DatagramSocket, which ships with MATLAB: no toolbox is needed.
     % It also runs in GNU Octave (7 or later) with Java support.
@@ -59,6 +70,9 @@ classdef PianuraRobot < handle
         Port             % UDP port of the Pianura server
         Timeout          % seconds to wait for a message before Pianura:timeout
         Welcome = []     % the welcome message (mode, period, units, body geometry), after connect()
+        Kind = ''        % 'sim' or 'bot', after connect()
+        Description = '' % a sentence about the robot, after connect()
+        Capabilities = [] % sensors, actuators, features as declared; [] with a Pianura that sends none
     end
 
     properties (Access = private)
@@ -101,10 +115,30 @@ classdef PianuraRobot < handle
                             num2str(PianuraRobot.fieldOr(msg, 'protocol', NaN)), PianuraRobot.PROTOCOL_VERSION);
                     end
                     obj.Welcome = msg;
+                    obj.Kind = PianuraRobot.fieldOr(msg, 'kind', 'sim');
+                    obj.Description = PianuraRobot.fieldOr(msg, 'description', '');
+                    obj.Capabilities = PianuraRobot.fieldOr(msg, 'capabilities', []);
                     welcome = msg;
                     return;
                 end
             end
+        end
+
+        function yes = has(obj, name)
+            % has(name): true if the robot declares this feature ('radio', 'draw', 'inspector'),
+            % sensor ('pose', 'ir', 'bump', 'contact', 'floor', 'wheels') or actuator ('drive').
+            % With a Pianura that declares nothing it is always true: that is the simulator.
+            c = obj.Capabilities;
+            if isempty(c), yes = true; return; end
+            sens = PianuraRobot.fieldOr(c, 'sensors', struct());
+            if strcmp(name, 'pose')
+                yes = isfield(sens, 'pose') && ~strcmp(PianuraRobot.fieldOr(sens.pose, 'source', 'truth'), 'none');
+                return;
+            end
+            feats = PianuraRobot.fieldOr(c, 'features', {});
+            if ischar(feats), feats = {feats}; end
+            yes = (iscell(feats) && any(strcmp(feats, name))) || isfield(sens, name) ...
+                || isfield(PianuraRobot.fieldOr(c, 'actuators', struct()), name);
         end
 
         function s = sensors(obj)
@@ -129,16 +163,19 @@ classdef PianuraRobot < handle
                         s = struct();
                         s.t = msg.t;
                         s.seq = msg.seq;
-                        s.x = msg.pose.x;
-                        s.y = msg.pose.y;
-                        s.theta = msg.pose.theta;
-                        s.ir = PianuraRobot.row(msg.ir);
-                        s.bump = logical(PianuraRobot.row(msg.bump));
-                        s.contact = logical(msg.contact);
-                        s.floor = PianuraRobot.row(msg.floor);
-                        s.wheelLeft = msg.wheels.left;
-                        s.wheelRight = msg.wheels.right;
-                        s.active = logical(msg.active);
+                        % a robot sends only the sensors it has: what is missing is NaN or empty
+                        pose = PianuraRobot.fieldOr(msg, 'pose', struct());
+                        s.x = PianuraRobot.fieldOr(pose, 'x', NaN);
+                        s.y = PianuraRobot.fieldOr(pose, 'y', NaN);
+                        s.theta = PianuraRobot.fieldOr(pose, 'theta', NaN);
+                        s.ir = PianuraRobot.row(PianuraRobot.fieldOr(msg, 'ir', []));
+                        s.bump = logical(PianuraRobot.row(PianuraRobot.fieldOr(msg, 'bump', [])));
+                        s.contact = logical(PianuraRobot.fieldOr(msg, 'contact', false));
+                        s.floor = PianuraRobot.row(PianuraRobot.fieldOr(msg, 'floor', []));
+                        wh = PianuraRobot.fieldOr(msg, 'wheels', struct());
+                        s.wheelLeft = PianuraRobot.fieldOr(wh, 'left', NaN);
+                        s.wheelRight = PianuraRobot.fieldOr(wh, 'right', NaN);
+                        s.active = logical(PianuraRobot.fieldOr(msg, 'active', true));
                         s.inbox = PianuraRobot.parseInbox(PianuraRobot.fieldOr(msg, 'inbox', []));
                         s.raw = msg;
                         return;
@@ -162,12 +199,14 @@ classdef PianuraRobot < handle
         function broadcast(obj, data)
             % broadcast(data): radio message to every robot in range; it leaves with the next drive()/wheels().
             jsonencode(data);                    % fail now if it cannot be sent as JSON
+            obj.needRadio();
             obj.Broadcasts{end + 1} = data;
         end
 
         function send(obj, to, data)
             % send(to, data): radio message to robot `to` (delivered only if in range); leaves with the next drive()/wheels().
             jsonencode(data);
+            obj.needRadio();
             obj.Sends{end + 1} = struct('to', double(to), 'data', {data});
         end
 
@@ -328,18 +367,21 @@ classdef PianuraRobot < handle
             if ~isempty(sends)
                 msg.send = sends;                % a cell array is always encoded as a JSON array
             end
-            if ~isempty(obj.Draws)
+            % drawings and inspector data are debugging aids: left out on a robot without them
+            if ~isempty(obj.Draws) && obj.has('draw')
                 msg.draw = obj.Draws;
             end
-            if ~isempty(obj.InspState), msg.state = obj.InspState; end
-            if ~isempty(obj.InspLog), msg.log = obj.InspLog; end
             extra = '';                          % "watch" and "plot": objects with free names, written by hand
-            if ~isempty(obj.InspWatch), extra = [extra, ',"watch":{', strjoin(obj.InspWatch, ','), '}']; end
-            if ~isempty(obj.InspPlot), extra = [extra, ',"plot":{', strjoin(obj.InspPlot, ','), '}']; end
-            kinds = {'bars', 'matrix', 'network'};
-            for k = 1:numel(kinds)
-                if ~isempty(obj.InspViews.(kinds{k}))
-                    extra = [extra, ',"', kinds{k}, '":{', strjoin(obj.InspViews.(kinds{k}), ','), '}']; %#ok<AGROW>
+            if obj.has('inspector')
+                if ~isempty(obj.InspState), msg.state = obj.InspState; end
+                if ~isempty(obj.InspLog), msg.log = obj.InspLog; end
+                if ~isempty(obj.InspWatch), extra = [extra, ',"watch":{', strjoin(obj.InspWatch, ','), '}']; end
+                if ~isempty(obj.InspPlot), extra = [extra, ',"plot":{', strjoin(obj.InspPlot, ','), '}']; end
+                kinds = {'bars', 'matrix', 'network'};
+                for k = 1:numel(kinds)
+                    if ~isempty(obj.InspViews.(kinds{k}))
+                        extra = [extra, ',"', kinds{k}, '":{', strjoin(obj.InspViews.(kinds{k}), ','), '}']; %#ok<AGROW>
+                    end
                 end
             end
             obj.Broadcasts = {};
@@ -351,6 +393,12 @@ classdef PianuraRobot < handle
             obj.InspPlot = {};
             obj.InspViews = struct('bars', {{}}, 'matrix', {{}}, 'network', {{}});
             obj.sendJson(msg, extra);
+        end
+
+        function needRadio(obj)
+            if ~isempty(obj.Welcome) && ~obj.has('radio')
+                error('Pianura:noRadio', 'robot %d has no radio (it is not among its features): check robot.has(''radio'') first', obj.RobotId);
+            end
         end
 
         function addDraw(obj, layer, op, color, fields)
