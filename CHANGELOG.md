@@ -1,8 +1,36 @@
 # Changelog
 
-All notable changes to Pianura are listed here. Versions follow
+All notable changes to Pianura Sim are listed here. Versions follow
 [Semantic Versioning](https://semver.org/); before 1.0 the programming interface may still
 change between minor versions.
+
+## Unreleased
+
+### Name
+- The simulator is now called **Pianura Sim**: Pianura is the project it belongs to. The window,
+  the start screen, this file and the citation use the new name, and the runnable jar is
+  `pianura-sim.jar`. The Java packages and the client classes keep their names.
+
+### Interface
+- A start screen: the scenes and examples opened last, favourites, all the examples with a
+  picture each, and the scene files of a folder; a new example, `sandbox`, for scenes of your
+  own. `./gradlew run` and the jar start from here; the Home button comes back to it.
+- Two views of the simulation window. Studio: a toolbar of icons with tooltips, tools to add
+  and delete obstacles, a panel with the view options and the selected robot, a timeline of the
+  robots' states, the log. Focus: the arena takes the window, with floating controls, a card
+  that follows the selected robot and an optional caption.
+- The inspector shows the robot's body as Pianura sees it (sensors, wheels, speeds) and views
+  of its insides: bars, heat maps, a neural network whose neurons light up.
+- The window fits the screen on small displays.
+
+### Robots and remote control
+- The welcome message describes the robot (`kind`, `description`, `capabilities`: sensors with
+  their directions, drive modes, features), so that a client can run on another robot that
+  speaks the protocol; `conformance.py` checks that a server does what it declares. Protocol
+  version unchanged: only fields were added.
+- A new example, `brains`: one program per robot over UDP.
+- Fixed: a client connecting to a running simulation could receive a sensor reading before the
+  welcome, and stall the simulation until the reply timeout.
 
 ## [0.1.0] — 2026-11-20
 

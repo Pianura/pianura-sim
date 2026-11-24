@@ -127,7 +127,7 @@ public class StartPanel extends JPanel {
         side.setLayout(new BoxLayout(side, BoxLayout.Y_AXIS));
         side.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createMatteBorder(0, 0, 0, 1, Color.LIGHT_GRAY), BorderFactory.createEmptyBorder(22, 18, 18, 18)));
-        JLabel title = new JLabel("Pianura");
+        JLabel title = new JLabel("Pianura Sim");
         title.setFont(title.getFont().deriveFont(Font.BOLD, 24f));
         JLabel ver = new JLabel(version == null ? " " : version);
         ver.setForeground(muted());

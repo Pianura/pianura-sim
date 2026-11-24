@@ -16,7 +16,7 @@ public class Main {
 
 	public static void main(String[] args) throws Exception {
 		RemoteServer server = RemoteServer.start(RemoteServer.DEFAULT_PORT, RemoteServer.Mode.LOCKSTEP);
-		Simulator sim = new Simulator(new Point(30, 30), "Pianura - remote control", new RemoteScenario(server));
+		Simulator sim = new Simulator(new Point(30, 30), "Pianura Sim - remote control", new RemoteScenario(server));
 		sim.attach(server);
 		sim.printLogMsg(false, "Waiting for clients (clients/python: python3 wander.py 1 2 - clients/matlab: gotogoal() or wander([1 2])) - then press Run");
 		sim.startSimPaused();

@@ -14,8 +14,8 @@ From the repository root:
 ```
 
 An unknown name stops the build with the list of the available ones. The same goes for the
-runnable jar: `./gradlew :examples:runnableJar`, then `java -jar build/pianura.jar` opens the
-start screen and `java -jar build/pianura.jar <name>` one example. A new example needs its line
+runnable jar: `./gradlew :examples:runnableJar`, then `java -jar build/pianura-sim.jar` opens the
+start screen and `java -jar build/pianura-sim.jar <name>` one example. A new example needs its line
 in `Launcher.EXAMPLES` too (name, description, tag, and how to build its scenario for the
 picture); a test checks it. Examples open paused: arrange the scene if you like, then press
 **Run** (or Space). **Save** (Ctrl+S) keeps the arrangement in a file and **Open** (Ctrl+O)

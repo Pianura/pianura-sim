@@ -1,4 +1,4 @@
-rootProject.name = "pianura"
+rootProject.name = "pianura-sim"
 
 // core        the simulator: the library that will be published
 // algorithms  reference robot controllers, built on core

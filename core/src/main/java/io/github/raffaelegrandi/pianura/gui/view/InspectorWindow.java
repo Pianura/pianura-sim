@@ -76,7 +76,7 @@ public class InspectorWindow extends JFrame {
      * @param selectInArena called when a robot is chosen here, to select it in the arena too
      */
     public InspectorWindow(List<? extends RobotUnit> robots, DoubleSupplier simTime, Consumer<RobotUnit> selectInArena) {
-        super("Pianura - Inspector");
+        super("Pianura Sim - Inspector");
         this.robots = robots;
         this.simTime = simTime;
         this.selectInArena = selectInArena != null ? selectInArena : r -> {};

@@ -12,7 +12,7 @@ public class Main {
 
 	public static void main(String[] args) {
 		scenario = new ObstaclesScenario();
-		Simulator simManager = new Simulator(new Point(30,30), "Pianura - obstacles", scenario);
+		Simulator simManager = new Simulator(new Point(30,30), "Pianura Sim - obstacles", scenario);
 		simManager.startSimPaused();	// starts paused: arrange the scene, then Run (or Space)
 	}//end main
 

@@ -3,7 +3,7 @@ message: >-
   If you use Pianura in academic work, please cite the paper that describes
   the original JUSE and the UniBot project (preferred citation below).
 type: software
-title: "Pianura: a 2D simulator for differential-drive robots"
+title: "Pianura Sim: a 2D simulator for differential-drive robots"
 abstract: >-
   A 2D simulator for teaching and research on mobile robots and swarms:
   differential-drive kinematics, infrared, bump and floor sensors computed

@@ -1,8 +1,9 @@
-# Pianura
+# Pianura Sim
 
 **A lightweight 2D simulator for differential-drive mobile robots, written in Java.**
 
-Pianura is a simple, self-contained simulator for prototyping and testing mobile-robot
+Pianura Sim is the simulator of the Pianura project; in these pages it is called Pianura for
+short. It is a simple, self-contained simulator for prototyping and testing mobile-robot
 algorithms: navigation, obstacle avoidance, line following, multi-robot coordination and
 swarms. You write a robot in a few lines of plain Java, or drive it from any language over
 UDP, and watch it move in a 2D arena.
@@ -100,17 +101,17 @@ Pianura itself does not depend on FlatLaf: in your own project the window uses S
 standard look unless you add `com.formdev:flatlaf` to the runtime classpath.
 
 **One runnable jar.** Each [release](https://github.com/Pianura/pianura-sim/releases) has the
-examples in a single jar: download `pianura-<version>.jar` and run `java -jar
-pianura-<version>.jar` (Java 21 or later, nothing else). To build it yourself:
+examples in a single jar: download `pianura-sim-<version>.jar` and run `java -jar
+pianura-sim-<version>.jar` (Java 21 or later, nothing else). To build it yourself:
 
 ```bash
-./gradlew :examples:runnableJar          # writes build/pianura.jar (about 1.3 MB)
-java -jar build/pianura.jar              # the start screen
-java -jar build/pianura.jar planning     # one example directly; --list prints them all
+./gradlew :examples:runnableJar          # writes build/pianura-sim.jar (about 1.3 MB)
+java -jar build/pianura-sim.jar              # the start screen
+java -jar build/pianura-sim.jar planning     # one example directly; --list prints them all
 ```
 
 The jar holds Pianura, the algorithms, the examples and FlatLaf; `-Dpianura.laf=...` works
-here too (`java -Dpianura.laf=flat-dark -jar build/pianura.jar`).
+here too (`java -Dpianura.laf=flat-dark -jar build/pianura-sim.jar`).
 
 ---
 

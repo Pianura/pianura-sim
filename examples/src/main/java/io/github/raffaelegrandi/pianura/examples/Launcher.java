@@ -21,9 +21,9 @@ import io.github.raffaelegrandi.pianura.remote.RemoteServer;
 import io.github.raffaelegrandi.pianura.structures.ScenarioManager;
 
 /**
- * Entry point of the runnable jar. {@code java -jar pianura.jar} opens the start screen: the
+ * Entry point of the runnable jar. {@code java -jar pianura-sim.jar} opens the start screen: the
  * scenes and examples opened last, the favourites, all the examples, and the scene files of a
- * folder; the Home button of a simulation comes back to it. {@code java -jar pianura.jar
+ * folder; the Home button of a simulation comes back to it. {@code java -jar pianura-sim.jar
  * planning} starts one example directly, {@code --list} prints them, {@code --version} the version.
  */
 public final class Launcher {
@@ -69,7 +69,7 @@ public final class Launcher {
         if (args.length > 0) {
             String a = args[0].toLowerCase(Locale.ROOT);
             if (a.equals("--version") || a.equals("-v")) {
-                System.out.println("Pianura " + version());
+                System.out.println("Pianura Sim " + version());
                 return;
             }
             if (a.equals("--list") || a.equals("-l") || a.equals("--help") || a.equals("-h")) {
@@ -104,7 +104,7 @@ public final class Launcher {
     }
 
     private static void printList() {
-        System.out.println("Pianura " + version() + "\n\nUsage: java -jar pianura.jar [example [arguments] | --list | --version]\n\nExamples:");
+        System.out.println("Pianura Sim " + version() + "\n\nUsage: java -jar pianura-sim.jar [example [arguments] | --list | --version]\n\nExamples:");
         for (Example e : EXAMPLES) System.out.printf(Locale.ROOT, "  %-14s %s%n", e.name(), e.description());
     }
 
@@ -162,7 +162,7 @@ public final class Launcher {
                 SwingUtilities.invokeLater(() -> {
                     startWindow.comeBack();
                     JOptionPane.showMessageDialog(startWindow, "Cannot open " + e.name() + ":\n" + cause.getMessage(),
-                        "Pianura", JOptionPane.ERROR_MESSAGE);
+                        "Pianura Sim", JOptionPane.ERROR_MESSAGE);
                 });
             }
         }, "pianura-example-" + e.name());

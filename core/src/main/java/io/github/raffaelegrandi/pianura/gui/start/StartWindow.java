@@ -18,7 +18,7 @@ public class StartWindow extends JFrame {
     private final StartPanel panel;
 
     public StartWindow(StartStore store, List<StartPanel.Example> examples, StartPanel.Actions actions, String version) {
-        super("Pianura");
+        super("Pianura Sim");
         LookAndFeelSetup.install();
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         panel = new StartPanel(store, examples, actions, version);

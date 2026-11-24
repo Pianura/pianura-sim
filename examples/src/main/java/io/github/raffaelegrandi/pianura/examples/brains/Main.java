@@ -37,7 +37,7 @@ public class Main {
 		InetSocketAddress bind = lan ? new InetSocketAddress(RemoteServer.DEFAULT_PORT)
 			: new InetSocketAddress(InetAddress.getLoopbackAddress(), RemoteServer.DEFAULT_PORT);
 		RemoteServer server = RemoteServer.start(bind, RemoteServer.Mode.LOCKSTEP, waitMs);
-		Simulator sim = new Simulator(new Point(30, 30), "Pianura - one brain per robot", new BrainsScenario(server, n));
+		Simulator sim = new Simulator(new Point(30, 30), "Pianura Sim - one brain per robot", new BrainsScenario(server, n));
 		sim.attach(server);
 		sim.getViewOptions().commLinks = true;
 		sim.printLogMsg(false, "Waiting for " + n + " brains" + (lan ? " (also from the network)" : "")

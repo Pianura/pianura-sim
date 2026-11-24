@@ -12,7 +12,7 @@ public class Main {
 	
 	public static void main(String[] args) {		
 		scenario = new TimedMotionScenario();
-		Simulator simManager = new Simulator(new Point(30,30),"Pianura - timed motion",scenario);
+		Simulator simManager = new Simulator(new Point(30,30),"Pianura Sim - timed motion",scenario);
 		simManager.startSimPaused();	// starts paused: arrange the scene, then Run (or Space)
 	}//end main
 }//end class

@@ -32,18 +32,18 @@ tasks.named<JavaExec>("run") {
 }
 
 // One runnable jar with Pianura, the algorithms, the examples and FlatLaf:
-//   ./gradlew :examples:runnableJar   -> build/pianura.jar
-//   java -jar build/pianura.jar             (the start screen)
-//   java -jar build/pianura.jar planning    (one example directly; --list prints them)
+//   ./gradlew :examples:runnableJar   -> build/pianura-sim.jar
+//   java -jar build/pianura-sim.jar             (the start screen)
+//   java -jar build/pianura-sim.jar planning    (one example directly; --list prints them)
 val runnableJar by tasks.registering(Jar::class) {
     group = "distribution"
-    description = "Builds build/pianura.jar, runnable with java -jar."
-    archiveFileName.set("pianura.jar")
+    description = "Builds build/pianura-sim.jar, runnable with java -jar."
+    archiveFileName.set("pianura-sim.jar")
     destinationDirectory.set(rootProject.layout.buildDirectory)
     manifest {
         attributes(
             "Main-Class" to "io.github.raffaelegrandi.pianura.examples.Launcher",
-            "Implementation-Title" to "Pianura",
+            "Implementation-Title" to "Pianura Sim",
             "Implementation-Version" to project.version,
             "Multi-Release" to "true")      // FlatLaf ships classes for newer JDKs
     }

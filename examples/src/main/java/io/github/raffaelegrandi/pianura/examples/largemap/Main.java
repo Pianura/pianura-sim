@@ -14,7 +14,7 @@ import io.github.raffaelegrandi.pianura.Simulator;
 public class Main {
 
 	public static void main(String[] args) {
-		Simulator sim = new Simulator(new Point(30, 30), "Pianura - large map", new LargeMapScenario());
+		Simulator sim = new Simulator(new Point(30, 30), "Pianura Sim - large map", new LargeMapScenario());
 		sim.startSimPaused();
 	}
 

@@ -18,7 +18,7 @@ public class Main {
 		boolean file = args.length > 0;
 		SandboxScenario scenario = file ? new SandboxScenario(Path.of(args[0])) : new SandboxScenario();
 		String name = file ? Path.of(args[0]).getFileName().toString() : "new scene";
-		Simulator sim = new Simulator(new Point(30, 30), "Pianura - " + name, scenario);
+		Simulator sim = new Simulator(new Point(30, 30), "Pianura Sim - " + name, scenario);
 		sim.printLogMsg(false, file ? "Scene " + name + ": the robots wander avoiding obstacles"
 			: "A new scene: add obstacles with the tools on the left, Save it (Ctrl+S), then Run");
 		sim.startSimPaused();

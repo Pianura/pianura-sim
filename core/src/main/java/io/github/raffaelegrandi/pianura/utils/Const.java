@@ -19,7 +19,7 @@ public class Const {
 	public static final int gridCellCount = 40;
 	public static final int cellSize = arenaWidth / gridCellCount; // 15 pixels
 
-	public static final String guiFrameTitle = "Pianura";
+	public static final String guiFrameTitle = "Pianura Sim";
 	public static final int repaintTime = 16; // arena refresh time in ms (~60 fps)
 
 	public static final Color unitColor = Color.BLACK;
